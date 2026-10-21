@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Footprints, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 
 interface RecommendationCardProps {
@@ -108,11 +109,11 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
         {/* Subtle color bar with filled indicator */}
         <div className="w-full h-1.5 bg-black/[0.07] rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${getBarColorClass(
-              lot.estimatedAvailabilityPercent
-            )}`}
-            style={{ width: `${lot.estimatedAvailabilityPercent}%` }}
+          <motion.div
+            className={`h-full rounded-full ${getBarColorClass(lot.estimatedAvailabilityPercent)}`}
+            initial={{ width: 0 }}
+            animate={{ width: `${lot.estimatedAvailabilityPercent}%` }}
+            transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
           />
         </div>
       </div>

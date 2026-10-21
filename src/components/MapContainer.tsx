@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import * as maplibregl from 'maplibre-gl';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
 // but does not copy the worker file, so the default worker URL 404s and the map
@@ -28,6 +29,11 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
     ? (SATELLITE_STYLE as unknown as maplibregl.StyleSpecification)
     : OPENFREEMAP_POSITRON_STYLE_URL;
 }
+
+/** Pin drop-in timing; must match the .pin-drop duration in index.css. */
+const PIN_DROP_DURATION_MS = 520;
+const PIN_DROP_BASE_DELAY_MS = 300;
+const PIN_DROP_STAGGER_MS = 70;
 
 /** Shortens "Gilman Parking Structure" to "Gilman" for compact map pins. */
 function pinLabel(name: string): string {
@@ -202,7 +208,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     });
 
     // Create or refresh markers
-    lots.forEach((lot) => {
+    lots.forEach((lot, index) => {
       const isSelected = selectedLocationId === lot.locationId;
       let marker = lotMarkersRef.current.get(lot.locationId);
 
@@ -210,6 +216,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       if (!marker) {
         const el = document.createElement('div');
         el.className = 'parksmart-marker cursor-pointer group transition-transform duration-200';
+        // Staggered drop-in when pins first appear (see .pin-drop in index.css)
+        el.dataset.createdAt = String(performance.now());
+        el.dataset.dropDelay = String(PIN_DROP_BASE_DELAY_MS + index * PIN_DROP_STAGGER_MS);
         el.setAttribute('role', 'button');
         el.setAttribute('tabindex', '0');
         el.setAttribute('aria-label', `Parking Lot ${lot.name}, ${lot.estimatedAvailabilityPercent}% estimated capacity`);
@@ -246,8 +255,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           ? 'bg-amber-500'
           : 'bg-rose-500';
 
+      // The pin's HTML is rebuilt on every selection change. To keep the drop-in
+      // from replaying (or snapping) we offset its delay by the time already elapsed:
+      // a negative delay resumes the animation part-way through.
+      const elapsed = performance.now() - Number(el.dataset.createdAt);
+      const remainingDelay = Number(el.dataset.dropDelay) - elapsed;
+      const stillDropping = remainingDelay + PIN_DROP_DURATION_MS > 0;
+
       el.innerHTML = `
-        <div class="relative flex flex-col items-center">
+        <div class="${stillDropping ? 'pin-drop' : ''} relative flex flex-col items-center" style="animation-delay: ${Math.round(remainingDelay)}ms">
           ${
             isSelected
               ? `<div class="absolute -inset-2.5 rounded-full bg-white/40 animate-ping pointer-events-none"></div>
@@ -324,7 +340,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       <div
         role="radiogroup"
         aria-label="Map style"
-        className="absolute top-[136px] right-4 z-10 flex p-0.5 rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
+        className="absolute top-4 right-[58px] z-10 flex p-0.5 rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
       >
         {BASEMAP_OPTIONS.map(({ mode, label }) => (
           <button
@@ -333,13 +349,18 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             role="radio"
             aria-checked={basemap === mode}
             onClick={() => setBasemap(mode)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-[10px] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 ${
-              basemap === mode
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-700 hover:text-slate-900'
+            className={`relative px-3 py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+              basemap === mode ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'
             }`}
           >
-            {label}
+            {basemap === mode && (
+              <motion.span
+                layoutId="basemap-thumb"
+                className="absolute inset-0 rounded-[10px] bg-white shadow-sm"
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative">{label}</span>
           </button>
         ))}
       </div>

@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Calendar, Clock, ChevronDown, Check } from 'lucide-react';
+import { motion } from 'motion/react';
 import { PERMIT_OPTIONS } from '../constants.ts';
 import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from '../data/destinations.ts';
 import { ParkingPlannerRequest, PermitType, CampusDestination } from '../types.ts';
@@ -201,13 +202,19 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 aria-checked={isSelected}
                 title={`${permit.type}: ${permit.description}`}
                 onClick={() => onChange({ permitType: permit.type })}
-                className={`py-1.5 text-xs font-semibold rounded-[10px] transition-all duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 ${
-                  isSelected
-                    ? 'bg-white text-slate-900 shadow-sm shadow-black/10'
-                    : 'text-slate-600 hover:text-slate-900'
+                className={`relative py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+                  isSelected ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {permit.label}
+                {/* Shared layoutId makes the white thumb slide between options */}
+                {isSelected && (
+                  <motion.span
+                    layoutId="permit-thumb"
+                    className="absolute inset-0 rounded-[10px] bg-white shadow-sm shadow-black/10"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative">{permit.label}</span>
               </button>
             );
           })}
@@ -218,7 +225,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-75 disabled:cursor-wait flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm btn-shine relative overflow-hidden text-white bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-75 disabled:cursor-wait flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
           <>

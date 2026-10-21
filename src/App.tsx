@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Menu } from 'lucide-react';
+import { MotionConfig, motion } from 'motion/react';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
@@ -167,6 +168,8 @@ export default function App() {
   }, [devState, recommendations]);
 
   return (
+    // reducedMotion="user" turns off Motion animations for people who ask their OS for less motion
+    <MotionConfig reducedMotion="user">
     <div className="relative w-screen h-screen overflow-hidden bg-slate-100 font-sans text-slate-900 select-none">
       {/* Full-Screen MapLibre GL Map */}
       <MapContainer
@@ -206,22 +209,44 @@ export default function App() {
             : '-translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none'
         }`}
       >
-        <div className="flex-1 flex flex-col bg-white/45 backdrop-blur-2xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
+        <motion.div
+          initial={{ opacity: 0, x: -24, scale: 0.98 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="flex-1 flex flex-col bg-white/45 backdrop-blur-2xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
           {/* Panel Header */}
           {/* Left padding leaves room for the hamburger button that sits on top */}
           <header className="pl-[60px] pr-5 pt-5 pb-3 border-b border-black/5 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-base shadow-sm">
-                P
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
+            <div className="flex items-center justify-between gap-2">
+              <motion.div
+                className="flex items-center gap-2"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <motion.div
+                  className="logo-sheen relative overflow-hidden w-8 h-8 rounded-xl bg-gradient-to-br from-slate-700 to-slate-950 flex items-center justify-center text-white font-black text-base shadow-md shadow-black/20"
+                  initial={{ scale: 0.6, rotate: -12 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 18, delay: 0.1 }}
+                  whileHover={{ scale: 1.08, rotate: -4 }}
+                >
+                  P
+                </motion.div>
+                <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
                   ParkSmart
                 </h1>
-                <p className="text-[11px] font-medium text-slate-600 mt-0.5">
-                  Campus parking planner
-                </p>
-              </div>
+              </motion.div>
+
+              {/* Campus badge (text only; the official UC San Diego logo is a trademark) */}
+              <motion.span
+                className="px-2.5 py-1 rounded-full bg-white/55 border border-white/60 text-[11px] font-semibold tracking-tight text-slate-700 shadow-sm shadow-black/5 whitespace-nowrap"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.45, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              >
+                UC San Diego
+              </motion.span>
             </div>
           </header>
 
@@ -269,7 +294,7 @@ export default function App() {
           <footer className="px-5 py-2.5 bg-white/20 border-t border-black/5 text-[11px] text-slate-500 flex items-center justify-center shrink-0">
             <span>Sample data</span>
           </footer>
-        </div>
+        </motion.div>
       </aside>
 
       {/* Dev Simulator Toggle (Tucked into bottom right corner) */}
@@ -278,5 +303,6 @@ export default function App() {
         onStateChange={(state) => setDevState(state)}
       />
     </div>
+    </MotionConfig>
   );
 }
