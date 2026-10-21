@@ -56,8 +56,8 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       onKeyDown={handleKeyDown}
       className={`group relative p-3.5 rounded-2xl transition-all duration-200 cursor-pointer text-left border select-none ${
         isSelected
-          ? 'bg-blue-50/70 border-blue-400 shadow-md ring-2 ring-blue-400/30 -translate-y-0.5'
-          : 'bg-white/80 border-slate-200/90 hover:bg-white/95 hover:border-slate-300 hover:shadow-sm hover:-translate-y-0.5'
+          ? 'bg-white/85 border-white shadow-lg shadow-black/10 ring-1 ring-slate-900/15 -translate-y-0.5'
+          : 'bg-white/40 border-white/50 hover:bg-white/65 hover:shadow-md hover:shadow-black/5 hover:-translate-y-0.5'
       }`}
     >
       {/* Top Header: Badge label */}
@@ -66,14 +66,14 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           <span
             className={`px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${
               isFirstChoice
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-slate-200 text-slate-700'
+                ? 'bg-slate-900 text-white'
+                : 'bg-black/[0.07] text-slate-700'
             }`}
           >
             {badgeLabel}
           </span>
           {isSelected && (
-            <span className="flex items-center gap-1 text-[11px] font-medium text-blue-600">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Selected</span>
             </span>
@@ -83,7 +83,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
       {/* Lot Title & Walk Time */}
       <div className="flex items-baseline justify-between gap-2 mb-2">
-        <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-900 transition-colors">
+        <h3 className="text-base font-bold text-slate-900 ">
           {lot.name}
         </h3>
         <div className="flex items-center gap-1 text-slate-600 font-semibold text-xs shrink-0">
@@ -105,7 +105,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           </span>
         </div>
         {/* Subtle color bar with filled indicator */}
-        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+        <div className="w-full h-1.5 bg-black/[0.07] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-300 ${getBarColorClass(
               lot.estimatedAvailabilityPercent
@@ -116,18 +116,18 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
       </div>
 
       {/* One-line Reasoning */}
-      <div className="text-xs text-slate-600 leading-relaxed font-normal bg-slate-50/80 p-2 rounded-lg border border-slate-200/50 mb-2">
+      <div className="text-xs text-slate-600 leading-relaxed font-normal bg-black/[0.03] p-2 rounded-lg mb-2">
         {reason}
       </div>
 
       {/* Allowed Permits Footnote */}
-      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-        <span className="text-slate-400">Eligible permits</span>
+      <div className="flex items-center justify-between pt-1 border-t border-black/5 text-[11px]">
+        <span className="text-slate-500">Eligible permits</span>
         <div className="flex gap-1">
           {lot.allowedPermitTypes.map((permit) => (
             <span
               key={permit}
-              className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono text-[10px] font-medium"
+              className="px-1.5 py-0.2 rounded bg-black/5 text-slate-700 font-mono text-[10px] font-medium"
             >
               {permit}
             </span>

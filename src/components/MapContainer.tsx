@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
 // but does not copy the worker file, so the default worker URL 404s and the map
@@ -13,11 +13,31 @@ import {
   MAP_CONFIG,
   MAP_PADDING,
   OPENFREEMAP_POSITRON_STYLE_URL,
+  SATELLITE_STYLE,
+  DEFAULT_BASEMAP,
+  BasemapMode,
 } from '../constants.ts';
 import { ParkingLot, CampusDestination } from '../types.ts';
 
 // Must run before the first map is created.
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
+
+/** Returns the MapLibre style for a basemap mode. */
+function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
+  return mode === 'satellite'
+    ? (SATELLITE_STYLE as unknown as maplibregl.StyleSpecification)
+    : OPENFREEMAP_POSITRON_STYLE_URL;
+}
+
+/** Shortens "Gilman Parking Structure" to "Gilman" for compact map pins. */
+function pinLabel(name: string): string {
+  return name.replace(' Parking Structure', '');
+}
+
+const BASEMAP_OPTIONS: Array<{ mode: BasemapMode; label: string }> = [
+  { mode: 'map', label: 'Map' },
+  { mode: 'satellite', label: 'Satellite' },
+];
 
 interface MapContainerProps {
   lots: ParkingLot[];
@@ -43,6 +63,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const lotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const isLoadedRef = useRef<boolean>(false);
+  const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
 
   // Helper to frame all lots plus the destination with panel offset padding
   const frameAllPoints = (map: maplibregl.Map, animate = true) => {
@@ -69,7 +90,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: OPENFREEMAP_POSITRON_STYLE_URL,
+      style: styleFor(DEFAULT_BASEMAP),
       center: MAP_CONFIG.DEFAULT_CENTER,
       zoom: MAP_CONFIG.DEFAULT_ZOOM,
       minZoom: MAP_CONFIG.MIN_ZOOM,
@@ -133,7 +154,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       el.className = 'parksmart-destination-pin flex flex-col items-center pointer-events-none select-none z-10';
       el.innerHTML = `
         <div class="px-2.5 py-1 bg-slate-900/90 text-white text-[11px] font-medium rounded-full shadow-md backdrop-blur-sm border border-slate-700/40 flex items-center gap-1.5 whitespace-nowrap mb-1">
-          <svg class="w-3 h-3 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg class="w-3 h-3 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
@@ -221,28 +242,35 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         <div class="relative flex flex-col items-center">
           ${
             isSelected
-              ? `<div class="absolute -inset-2.5 rounded-full bg-blue-500/25 animate-ping pointer-events-none"></div>
-                 <div class="absolute -inset-1.5 rounded-full bg-blue-500/20 pointer-events-none"></div>`
+              ? `<div class="absolute -inset-2.5 rounded-full bg-white/40 animate-ping pointer-events-none"></div>
+                 <div class="absolute -inset-1.5 rounded-full bg-white/25 pointer-events-none"></div>`
               : ''
           }
           <div class="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-200 shadow-md border ${
             isSelected
-              ? 'bg-blue-600 text-white border-blue-400 scale-110 shadow-blue-500/30 shadow-lg ring-2 ring-blue-300/60 z-30'
+              ? 'bg-slate-900 text-white border-white/70 scale-110 shadow-black/40 shadow-lg ring-2 ring-white/70 z-30'
               : 'bg-white/95 text-slate-800 border-slate-200/90 hover:scale-105 hover:border-slate-300 hover:bg-white z-20'
           }">
             <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${
               isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             } text-[10px] font-bold font-mono">P</span>
-            <span class="text-xs font-semibold tracking-tight whitespace-nowrap">${lot.name.replace('Sample ', '')}</span>
+            <span class="text-xs font-semibold tracking-tight whitespace-nowrap">${pinLabel(lot.name)}</span>
             <span class="w-2 h-2 rounded-full ${availabilityColor} shrink-0 ring-1 ring-white/60"></span>
           </div>
           <div class="w-1.5 h-1.5 rotate-45 -mt-0.5 border-r border-b ${
-            isSelected ? 'bg-blue-600 border-blue-400' : 'bg-white border-slate-200'
+            isSelected ? 'bg-slate-900 border-white/70' : 'bg-white border-slate-200'
           }"></div>
         </div>
       `;
     });
   }, [lots, selectedLocationId, onSelectLot]);
+
+  // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+    map.setStyle(styleFor(basemap));
+  }, [basemap]);
 
   // Smooth flyTo camera glide when selected lot changes (applying panel left padding)
   useEffect(() => {
@@ -276,10 +304,36 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   }, [selectedLocationId, lots]);
 
   return (
-    <div
-      ref={mapContainerRef}
-      className="absolute inset-0 w-full h-full bg-[#f8f9fa] z-0 focus:outline-none"
-      aria-label="Interactive UCSD Campus Parking Map"
-    />
+    <>
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 w-full h-full bg-[#f8f9fa] z-0 focus:outline-none"
+        aria-label="Interactive UCSD Campus Parking Map"
+      />
+
+      {/* Map / Satellite toggle, iOS segmented-control style */}
+      <div
+        role="radiogroup"
+        aria-label="Map style"
+        className="absolute top-[136px] right-4 z-10 flex p-0.5 rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
+      >
+        {BASEMAP_OPTIONS.map(({ mode, label }) => (
+          <button
+            key={mode}
+            type="button"
+            role="radio"
+            aria-checked={basemap === mode}
+            onClick={() => setBasemap(mode)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-[10px] transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 ${
+              basemap === mode
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-700 hover:text-slate-900'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </>
   );
 };

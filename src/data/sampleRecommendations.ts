@@ -11,80 +11,10 @@ import {
   ParkingRecommendation,
   PermitType,
 } from '../types.ts';
+import { PARKING_LOTS } from './parkingLots.ts';
 
-/**
- * 6 Fictional sample parking lots.
- * NOTE: All coordinates and availability numbers are UNVERIFIED sample placeholders
- * placed near the central campus of UC San Diego for UI prototyping purposes.
- */
-export const SAMPLE_LOTS: ParkingLot[] = [
-  {
-    // UNVERIFIED placeholder near UCSD Library Walk / Center Hall
-    locationId: 'SAMPLE-01',
-    name: 'Sample Lot 1',
-    latitude: 32.8805,
-    longitude: -117.2348,
-    estimatedAvailabilityPercent: 82,
-    walkingMinutes: 6,
-    allowedPermitTypes: ['A', 'B', 'S', 'V'],
-    description: 'Central campus multi-tier sample structure',
-  },
-  {
-    // UNVERIFIED placeholder near UCSD Ridge Walk / Muir College
-    locationId: 'SAMPLE-02',
-    name: 'Sample Lot 2',
-    latitude: 32.8839,
-    longitude: -117.2371,
-    estimatedAvailabilityPercent: 74,
-    walkingMinutes: 8,
-    allowedPermitTypes: ['A', 'B', 'S', 'SR', 'D'],
-    description: 'West perimeter open-air sample parking lot',
-  },
-  {
-    // UNVERIFIED placeholder near UCSD Gilman Drive / South entrance
-    locationId: 'SAMPLE-03',
-    name: 'Sample Lot 3',
-    latitude: 32.8778,
-    longitude: -117.2356,
-    estimatedAvailabilityPercent: 91,
-    walkingMinutes: 11,
-    allowedPermitTypes: ['B', 'S', 'D', 'V'],
-    description: 'South transit corridor high-capacity sample structure',
-  },
-  {
-    // UNVERIFIED placeholder near UCSD North Campus / Athletics
-    locationId: 'SAMPLE-04',
-    name: 'Sample Lot 4',
-    latitude: 32.8872,
-    longitude: -117.2405,
-    estimatedAvailabilityPercent: 65,
-    walkingMinutes: 13,
-    allowedPermitTypes: ['S', 'SR', 'D', 'V'],
-    description: 'North athletic sample lot with shuttle accessibility',
-  },
-  {
-    // UNVERIFIED placeholder near UCSD Warren College / East campus
-    locationId: 'SAMPLE-05',
-    name: 'Sample Lot 5',
-    latitude: 32.8832,
-    longitude: -117.2312,
-    estimatedAvailabilityPercent: 88,
-    walkingMinutes: 5,
-    allowedPermitTypes: ['A', 'B', 'SR', 'D'],
-    description: 'East research hub subterranean sample parking',
-  },
-  {
-    // UNVERIFIED placeholder near UCSD Scholars Drive / Revelle College
-    locationId: 'SAMPLE-06',
-    name: 'Sample Lot 6',
-    latitude: 32.8759,
-    longitude: -117.2392,
-    estimatedAvailabilityPercent: 58,
-    walkingMinutes: 9,
-    allowedPermitTypes: ['A', 'B', 'S', 'SR', 'D', 'V'],
-    description: 'Southwest commuter sample parking area',
-  },
-];
+/** Re-exported so existing imports keep working. Real names/coordinates, sample stats. */
+export { PARKING_LOTS as SAMPLE_LOTS };
 
 /**
  * Calculates straight-line distance in kilometers between two geo-coordinates.
@@ -200,7 +130,7 @@ export function getSampleRecommendations(
   request: ParkingPlannerRequest
 ): ParkingPlannerResponse {
   // 1. Filter lots by the selected permit type
-  const eligibleLots = SAMPLE_LOTS.filter((lot) =>
+  const eligibleLots = PARKING_LOTS.filter((lot) =>
     lot.allowedPermitTypes.includes(request.permitType)
   );
 

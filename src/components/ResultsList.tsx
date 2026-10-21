@@ -65,9 +65,9 @@ export const ResultsList: React.FC<ResultsListProps> = ({
 
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+      <div className="flex items-center justify-between text-xs text-slate-700 font-medium px-1">
         <span>Recommended for your arrival</span>
-        <span className="text-[11px] text-slate-400">Ranked by score</span>
+        <span className="text-[11px] text-slate-600">Ranked by score</span>
       </div>
 
       <div className="space-y-3">

@@ -173,18 +173,18 @@ export default function App() {
         aria-label="Parking planner controls and recommendations"
         className="absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col pointer-events-auto"
       >
-        <div className="flex-1 flex flex-col bg-white/75 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-900/10 overflow-hidden ring-1 ring-slate-900/5">
+        <div className="flex-1 flex flex-col bg-white/45 backdrop-blur-2xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
           {/* Panel Header */}
-          <header className="px-5 pt-5 pb-3 border-b border-slate-200/50 shrink-0">
+          <header className="px-5 pt-5 pb-3 border-b border-black/5 shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-xs shadow-blue-500/30">
+              <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-base shadow-sm">
                 P
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
                   ParkSmart
                 </h1>
-                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                <p className="text-[11px] font-medium text-slate-600 mt-0.5">
                   Campus parking planner
                 </p>
               </div>
@@ -207,13 +207,10 @@ export default function App() {
             </section>
 
             {/* Subtle Divider */}
-            <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200/60" />
-              </div>
-              <div className="relative flex justify-center text-[10px] uppercase tracking-widest text-slate-400">
-                <span className="bg-white/80 px-2 rounded-full">Results</span>
-              </div>
+            <div className="flex items-center gap-3 py-1 text-[10px] uppercase tracking-widest text-slate-500">
+              <div className="flex-1 border-t border-black/10" />
+              <span>Results</span>
+              <div className="flex-1 border-t border-black/10" />
             </div>
 
             {/* Results Section */}
@@ -234,7 +231,7 @@ export default function App() {
           </div>
 
           {/* Panel Footer Note */}
-          <footer className="px-5 py-2.5 bg-slate-50/60 border-t border-slate-200/40 text-[11px] text-slate-400 flex items-center justify-center shrink-0">
+          <footer className="px-5 py-2.5 bg-white/20 border-t border-black/5 text-[11px] text-slate-500 flex items-center justify-center shrink-0">
             <span>Sample data</span>
           </footer>
         </div>

@@ -15,8 +15,8 @@ interface EmptyStateProps {
  */
 export const EmptyState: React.FC<EmptyStateProps> = ({ onResetFilters }) => {
   return (
-    <div className="p-5 text-center bg-white/70 backdrop-blur-sm rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-      <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+    <div className="p-5 text-center bg-white/40 rounded-2xl border border-white/50 space-y-3">
+      <div className="w-10 h-10 mx-auto rounded-full bg-black/5 flex items-center justify-center text-slate-400">
         <SearchX className="w-5 h-5" />
       </div>
       <div>
@@ -31,7 +31,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onResetFilters }) => {
         <button
           type="button"
           onClick={onResetFilters}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-4 focus:outline-none cursor-pointer"
+          className="text-xs font-semibold text-slate-900 hover:text-slate-700 underline underline-offset-4 focus:outline-none cursor-pointer"
         >
           Reset to default permit (S)
         </button>

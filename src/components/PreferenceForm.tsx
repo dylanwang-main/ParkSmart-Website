@@ -63,7 +63,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <div className="relative" ref={dropdownRef}>
         <label
           id="destination-label"
-          className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
         >
           Destination
         </label>
@@ -73,7 +73,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
           aria-haspopup="listbox"
           aria-expanded={isDestinationOpen}
           onClick={() => setIsDestinationOpen(!isDestinationOpen)}
-          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-slate-50/80 border border-slate-200/90 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all duration-150 flex items-center justify-between shadow-xs group"
+          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white/50 border border-white/60 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all duration-150 flex items-center justify-between shadow-xs group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <Search className="w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
@@ -88,14 +88,14 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
           </div>
           <ChevronDown
             className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-              isDestinationOpen ? 'rotate-180 text-blue-600' : ''
+              isDestinationOpen ? 'rotate-180 text-slate-700' : ''
             }`}
           />
         </button>
 
         {/* Searchable Dropdown Popup */}
         {isDestinationOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-xl rounded-xl border border-slate-200/90 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/80 backdrop-blur-2xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/15 z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="relative mb-2">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
@@ -104,7 +104,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 onChange={(e) => setDestinationSearch(e.target.value)}
                 placeholder="Search campus destinations..."
                 autoFocus
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-slate-100/80 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-800"
+                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-black/5 border border-transparent focus:outline-none focus:ring-1 focus:ring-slate-900/20 text-slate-800"
               />
             </div>
             <ul className="max-h-48 overflow-y-auto space-y-1 py-0.5 text-sm" role="listbox">
@@ -119,8 +119,8 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                       onClick={() => handleSelectDestination(dest)}
                       className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors text-xs ${
                         isCurrent
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'hover:bg-slate-100 text-slate-700'
+                          ? 'bg-black/5 text-slate-900 font-medium'
+                          : 'hover:bg-black/5 text-slate-700'
                       }`}
                     >
                       <div>
@@ -129,7 +129,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                           {dest.area}
                         </span>
                       </div>
-                      {isCurrent && <Check className="w-3.5 h-3.5 text-blue-600" />}
+                      {isCurrent && <Check className="w-3.5 h-3.5 text-slate-900" />}
                     </li>
                   );
                 })
@@ -148,7 +148,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div>
           <label
             htmlFor="arrival-date"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
           >
             Arrival date
           </label>
@@ -158,7 +158,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               type="date"
               value={formData.arrivalDate}
               onChange={(e) => onChange({ arrivalDate: e.target.value })}
-              className="w-full px-2.5 py-2 rounded-xl bg-slate-50/80 border border-slate-200/90 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all shadow-xs"
+              className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
             />
           </div>
         </div>
@@ -166,7 +166,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div>
           <label
             htmlFor="arrival-time"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5"
+            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
           >
             Arrival time
           </label>
@@ -176,7 +176,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               type="time"
               value={formData.arrivalTime}
               onChange={(e) => onChange({ arrivalTime: e.target.value })}
-              className="w-full px-2.5 py-2 rounded-xl bg-slate-50/80 border border-slate-200/90 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-600 transition-all shadow-xs"
+              className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
             />
           </div>
         </div>
@@ -185,17 +185,17 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* Permit Type Pill Selector */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
             Permit type
           </label>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-500">
             {PERMIT_OPTIONS.find((p) => p.type === formData.permitType)?.description}
           </span>
         </div>
         <div
           role="radiogroup"
           aria-label="Permit type"
-          className="grid grid-cols-6 gap-1 p-1 bg-slate-100/80 rounded-xl border border-slate-200/80"
+          className="grid grid-cols-6 gap-0.5 p-0.5 bg-black/[0.06] rounded-xl"
         >
           {PERMIT_OPTIONS.map((permit) => {
             const isSelected = formData.permitType === permit.type;
@@ -207,10 +207,10 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 aria-checked={isSelected}
                 title={`${permit.type}: ${permit.description}`}
                 onClick={() => onChange({ permitType: permit.type })}
-                className={`py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 text-center ${
+                className={`py-1.5 text-xs font-semibold rounded-[10px] transition-all duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 ${
                   isSelected
-                    ? 'bg-blue-600 text-white shadow-xs scale-[1.02]'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                    ? 'bg-white text-slate-900 shadow-sm shadow-black/10'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {permit.label}
@@ -224,7 +224,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-150 shadow-md shadow-blue-500/20 disabled:opacity-75 disabled:cursor-wait flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-75 disabled:cursor-wait flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
           <>

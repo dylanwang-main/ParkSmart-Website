@@ -10,7 +10,9 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 
 - **React 19** with **TypeScript**
 - **Tailwind CSS v4** for clean, low-saturation glassmorphism UI
-- **MapLibre GL JS** with free **OpenFreeMap Positron** vector tiles (no API key required)
+- **MapLibre GL JS** with two free, keyless basemaps and a Map / Satellite toggle:
+  - **Satellite (default):** USGS National Map imagery (public domain, cached to zoom 16)
+  - **Map:** OpenFreeMap Positron vector tiles
 - **Motion (`motion/react`)** for smooth, subtle card stagger transitions
 - No backend, no routing, no external authentication required
 
@@ -18,9 +20,21 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 
 ## Architecture & Layout
 
-- **Full-Screen Map Canvas**: Low-saturation, calm campus basemap styled via OpenFreeMap Positron vector tiles. Automatically fits bounds to all lots and active destination with panel offset padding (left: 404px, edges: ~60px).
-- **Floating Glass Panel (`380px` wide)**: Positioned on the left with translucent white glass (`backdrop-blur-xl`), soft shadow, and high contrast typography.
+- **Full-Screen Map Canvas**: Satellite imagery by default, with a Map / Satellite toggle in the top right. Automatically fits bounds to all lots and active destination with panel offset padding (left: 404px, edges: ~60px).
+- **Floating Glass Panel (`380px` wide)**: Positioned on the left with Apple Maps style frosted glass (`bg-white/45`, `backdrop-blur-2xl`, boosted saturation), a neutral palette, and color reserved for availability.
 - **Corner State Simulator**: A dedicated developer switcher in the bottom-right corner to test all 4 required UI states (`Normal`, `Loading`, `Empty`, `Error`).
+
+---
+
+## What Is Real vs Sample
+
+| Data | Status | Source |
+|---|---|---|
+| Parking structure names and pin locations | **Real** (verified 2026-10-21) | UCSD campus GIS, Building Points Public layer |
+| Destination names and locations | **Real** (verified 2026-10-21) | Same UCSD GIS layer |
+| Availability %, eligible permits, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
+
+Lot data lives in `src/data/parkingLots.ts`. Pins mark each structure's building point, not its vehicle entrance. Mapping each structure to its official P-number (e.g. P701) is still an open question for the backend team.
 
 ---
 

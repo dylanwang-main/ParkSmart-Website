@@ -11,6 +11,34 @@ import { CampusDestination, PermitType } from './types.ts';
  */
 export const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 
+/** Basemap options shown in the Map / Satellite toggle. */
+export type BasemapMode = 'satellite' | 'map';
+export const DEFAULT_BASEMAP: BasemapMode = 'satellite';
+
+/**
+ * USGS National Map aerial imagery: public domain, free, no API key.
+ * Mostly NAIP 1-meter imagery. The service publishes cached tiles down to
+ * about 1:9,028 scale (zoom 16); MapLibre upscales beyond that.
+ * Service info: https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer
+ */
+const USGS_IMAGERY_TILE_URL =
+  'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}';
+const USGS_IMAGERY_MAX_ZOOM = 16;
+
+export const SATELLITE_STYLE = {
+  version: 8,
+  sources: {
+    'usgs-imagery': {
+      type: 'raster',
+      tiles: [USGS_IMAGERY_TILE_URL],
+      tileSize: 256,
+      maxzoom: USGS_IMAGERY_MAX_ZOOM,
+      attribution: 'Imagery: USDA, USGS The National Map',
+    },
+  },
+  layers: [{ id: 'usgs-imagery', type: 'raster', source: 'usgs-imagery' }],
+} as const;
+
 /**
  * UCSD Campus Map Center, Zoom & Framing Padding Settings
  */
@@ -18,7 +46,8 @@ export const MAP_CONFIG = {
   // Center near University of California San Diego central campus (Library Walk / Price Center)
   DEFAULT_CENTER: [-117.2374, 32.8812] as [number, number],
   DEFAULT_ZOOM: 15.0,
-  FOCUSED_ZOOM: 16.3,
+  // Kept at or below the satellite imagery max zoom (16) so it stays sharp.
+  FOCUSED_ZOOM: 15.9,
   MIN_ZOOM: 13.5,
   MAX_ZOOM: 18.0,
   FLY_DURATION_MS: 1200,
@@ -71,44 +100,16 @@ export const SCORING_WEIGHTS = {
 } as const;
 
 /**
- * 5 Sample Campus Destinations for the dropdown selector
+ * Campus destinations for the dropdown selector.
+ * Names and coordinates verified 2026-10-21 from UCSD's official campus GIS
+ * ("Building Points Public" layer, BaseData/Campus_Map_Vector/MapServer/26).
  */
 export const SAMPLE_DESTINATIONS: CampusDestination[] = [
-  {
-    id: 'DEST-01',
-    name: 'Geisel Library',
-    area: 'Central Campus',
-    latitude: 32.8812,
-    longitude: -117.2375,
-  },
-  {
-    id: 'DEST-02',
-    name: 'Price Center',
-    area: 'Student Center',
-    latitude: 32.8798,
-    longitude: -117.2361,
-  },
-  {
-    id: 'DEST-03',
-    name: 'Franklin Antonio Hall',
-    area: 'Warren College',
-    latitude: 32.8828,
-    longitude: -117.2325,
-  },
-  {
-    id: 'DEST-04',
-    name: 'Jacobs School of Engineering',
-    area: 'Warren College',
-    latitude: 32.8821,
-    longitude: -117.2338,
-  },
-  {
-    id: 'DEST-05',
-    name: 'RIMAC Arena',
-    area: 'North Campus',
-    latitude: 32.8856,
-    longitude: -117.2396,
-  },
+  { id: 'DEST-01', name: 'Geisel Library', area: 'Central Campus', latitude: 32.88117324, longitude: -117.23758039 },
+  { id: 'DEST-02', name: 'Price Center West', area: 'Student Center', latitude: 32.87941051, longitude: -117.23683532 },
+  { id: 'DEST-03', name: 'Franklin Antonio Hall', area: 'Engineering', latitude: 32.88350079, longitude: -117.23482442 },
+  { id: 'DEST-04', name: 'Jacobs Hall', area: 'Engineering', latitude: 32.88165733, longitude: -117.2352757 },
+  { id: 'DEST-05', name: 'RIMAC', area: 'Recreation', latitude: 32.88525013, longitude: -117.23947914 },
 ];
 
 /**
