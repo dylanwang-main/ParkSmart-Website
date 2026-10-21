@@ -249,7 +249,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       // Create new marker if not exists
       if (!marker) {
         const el = document.createElement('div');
-        el.className = 'parksmart-marker cursor-pointer group transition-transform duration-200';
+        el.className = 'parksmart-marker';
         // Staggered drop-in when pins first appear (see .pin-drop in index.css)
         el.dataset.createdAt = String(performance.now());
         el.dataset.dropDelay = String(PIN_DROP_BASE_DELAY_MS + index * PIN_DROP_STAGGER_MS);
@@ -276,9 +276,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           }
         });
 
+        // 'center' anchors the 0x0 marker element exactly on the coordinate
         marker = new maplibregl.Marker({
           element: el,
-          anchor: 'bottom',
+          anchor: 'center',
         })
           .setLngLat([lot.longitude, lot.latitude])
           .addTo(map);
@@ -293,12 +294,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       // selected/hovered pin reliably stacks above overlapping neighbors.
       el.style.zIndex = isSelected ? '3' : '1';
       el.setAttribute('aria-pressed', String(isSelected));
+      // iOS system green / orange / red
       const availabilityColor =
         lot.estimatedAvailabilityPercent >= 75
-          ? 'bg-emerald-500'
+          ? '#34c759'
           : lot.estimatedAvailabilityPercent >= 50
-          ? 'bg-amber-500'
-          : 'bg-rose-500';
+          ? '#ff9f0a'
+          : '#ff3b30';
+      const avail = `<span class="ps-avail" style="background:${availabilityColor}"></span>`;
+      const label = `<span class="ps-label">${pinLabel(lot.name)}</span>`;
 
       // The pin's HTML is rebuilt on every selection change. To keep the drop-in
       // from replaying (or snapping) we offset its delay by the time already elapsed:
@@ -307,32 +311,26 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const remainingDelay = Number(el.dataset.dropDelay) - elapsed;
       const stillDropping = remainingDelay + PIN_DROP_DURATION_MS > 0;
 
+      // Label style follows the basemap: white-on-dark for satellite, dark-on-light for map
+      el.classList.toggle('ps-on-light', basemap === 'map');
+      el.classList.toggle('ps-selected', isSelected);
+
       el.innerHTML = `
-        <div class="${stillDropping ? 'pin-drop' : ''} relative flex flex-col items-center" style="animation-delay: ${Math.round(remainingDelay)}ms">
+        <div class="${stillDropping ? 'pin-drop' : ''}" style="position:absolute;left:0;top:0;animation-delay:${Math.round(remainingDelay)}ms">
           ${
             isSelected
-              ? `<div class="absolute -inset-2.5 rounded-full bg-white/40 animate-ping pointer-events-none"></div>
-                 <div class="absolute -inset-1.5 rounded-full bg-white/25 pointer-events-none"></div>`
-              : ''
+              ? `<span class="ps-ground"></span>
+                 <span class="ps-balloon">
+                   <span class="ps-balloon-head">P${avail}</span>
+                   <span class="ps-balloon-tail"></span>
+                 </span>`
+              : `<span class="ps-glyph">P${avail}</span>`
           }
-          <div class="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-200 shadow-md border ${
-            isSelected
-              ? 'bg-slate-900 text-white border-white/70 scale-110 shadow-black/40 shadow-lg ring-2 ring-white/70'
-              : 'bg-white/95 text-slate-800 border-slate-200/90 hover:scale-105 hover:border-slate-300 hover:bg-white'
-          }">
-            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${
-              isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-            } text-[10px] font-bold font-mono">P</span>
-            <span class="text-xs font-semibold tracking-tight whitespace-nowrap">${pinLabel(lot.name)}</span>
-            <span class="w-2 h-2 rounded-full ${availabilityColor} shrink-0 ring-1 ring-white/60"></span>
-          </div>
-          <div class="w-1.5 h-1.5 rotate-45 -mt-0.5 border-r border-b ${
-            isSelected ? 'bg-slate-900 border-white/70' : 'bg-white border-slate-200'
-          }"></div>
+          ${label}
         </div>
       `;
     });
-  }, [lots, selectedLocationId, onSelectLot]);
+  }, [lots, selectedLocationId, onSelectLot, basemap]);
 
   // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
   useEffect(() => {
