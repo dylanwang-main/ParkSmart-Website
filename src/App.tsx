@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Menu } from 'lucide-react';
-import { MotionConfig, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
+import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
 import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from './data/destinations.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
@@ -19,6 +20,9 @@ import {
   DevSimulationState,
   PermitType,
 } from './types.ts';
+
+/** Width the open planner panel covers on the left (380px panel + 24px gap). */
+const PANEL_OFFSET_PX = 404;
 
 /**
  * Returns today's date formatted as YYYY-MM-DD in local time.
@@ -66,6 +70,9 @@ export default function App() {
   // accurate even if the user changes the permit pill before searching again)
   const [searchedPermit, setSearchedPermit] = useState<PermitType>('S');
 
+  // Lot detail card (opened by clicking a pin on the map)
+  const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
+
   // Side panel open/closed (hamburger toggle)
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
 
@@ -77,6 +84,7 @@ export default function App() {
     (customInputs?: ParkingPlannerRequest) => {
       const inputs = customInputs || formInputs;
       setIsLoading(true);
+      setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
 
       // 1-second shimmer duration as required by specs
       const timer = setTimeout(() => {
@@ -128,8 +136,42 @@ export default function App() {
   }, []);
 
   // Handle clearing selection on map background click
+  // Pin clicks on the map also open the lot detail card (panel card clicks do not,
+  // since those cards already show the same details)
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedLocationId;
+  const handleSelectLotFromMap = useCallback((locationId: string) => {
+    const next = selectedIdRef.current === locationId ? null : locationId;
+    setSelectedLocationId(next);
+    setIsDetailOpen(next !== null);
+  }, []);
+
+  // Whenever nothing is selected (from any source), the card is closed too
+  useEffect(() => {
+    if (!selectedLocationId) setIsDetailOpen(false);
+  }, [selectedLocationId]);
+
   const handleClearSelection = useCallback(() => {
+    setIsDetailOpen(false);
     setSelectedLocationId(null);
+  }, []);
+
+  // Lot whose detail card is open (any selected pin or card)
+  const selectedLot = useMemo(
+    () => SAMPLE_LOTS.find((lot) => lot.locationId === selectedLocationId) ?? null,
+    [selectedLocationId]
+  );
+
+  // Esc closes the lot card
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsDetailOpen(false);
+        setSelectedLocationId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   // Handle retry from error state
@@ -176,9 +218,10 @@ export default function App() {
         lots={SAMPLE_LOTS}
         selectedLocationId={selectedLocationId}
         selectedDestination={currentDestination}
-        onSelectLot={handleSelectLot}
+        onSelectLot={handleSelectLotFromMap}
         onClearSelection={handleClearSelection}
         isPanelOpen={isPanelOpen}
+        isDetailOpen={isDetailOpen}
       />
 
       {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
@@ -298,6 +341,32 @@ export default function App() {
       </aside>
 
       {/* Dev Simulator Toggle (Tucked into bottom right corner) */}
+      {/* Lot detail card: centered in the visible map area (beside the panel when it is open) */}
+      <div
+        className="absolute bottom-6 z-20 -translate-x-1/2 transition-[left] duration-300 ease-out pointer-events-none"
+        style={{ left: isPanelOpen ? `calc(${PANEL_OFFSET_PX}px + (100% - ${PANEL_OFFSET_PX}px) / 2)` : '50%' }}
+      >
+        <AnimatePresence mode="wait">
+          {isDetailOpen && selectedLot && currentDestination && (
+            <motion.div
+              key={selectedLot.locationId}
+              className="pointer-events-auto"
+              initial={{ opacity: 0, y: 24, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+            >
+              <LotDetailCard
+                lot={selectedLot}
+                userPermit={formInputs.permitType}
+                destination={currentDestination}
+                onClose={handleClearSelection}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       <DevStateControl
         currentState={devState}
         onStateChange={(state) => setDevState(state)}

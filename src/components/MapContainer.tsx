@@ -31,6 +31,9 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
     : OPENFREEMAP_POSITRON_STYLE_URL;
 }
 
+/** Height of the bottom strip covered by the lot detail card (card + margins). */
+const DETAIL_CARD_INSET_PX = 330;
+
 /** Pin drop-in timing; must match the .pin-drop duration in index.css. */
 const PIN_DROP_DURATION_MS = 520;
 const PIN_DROP_BASE_DELAY_MS = 300;
@@ -70,6 +73,8 @@ interface MapContainerProps {
   onClearSelection: () => void;
   /** Whether the left planner panel is showing; controls how much map is covered. */
   isPanelOpen: boolean;
+  /** Whether the lot detail card is showing at the bottom of the map. */
+  isDetailOpen: boolean;
 }
 
 /**
@@ -83,6 +88,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onSelectLot,
   onClearSelection,
   isPanelOpen,
+  isDetailOpen,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -97,6 +103,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const viewportWidth = typeof window === 'undefined' ? 1440 : window.innerWidth;
   const padding = {
     ...MAP_PADDING,
+    // While the lot card is open, treat the strip it covers as hidden too
+    bottom: isDetailOpen ? DETAIL_CARD_INSET_PX : MAP_PADDING.bottom,
     left: isPanelOpen ? Math.min(MAP_PADDING.left, viewportWidth / 2) : MAP_PADDING.right,
   };
   const paddingRef = useRef(padding);

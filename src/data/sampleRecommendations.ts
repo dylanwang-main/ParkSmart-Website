@@ -43,7 +43,7 @@ function calculateDistanceKm(
  * Estimates walking time in minutes based on distance from the chosen destination.
  * Standard average campus walking speed: approx 12-14 min/km, minimum 3 min.
  */
-function estimateWalkingTime(lot: ParkingLot, destinationId: string): number {
+export function estimateWalkingTime(lot: ParkingLot, destinationId: string): number {
   const dest = CAMPUS_DESTINATIONS.find((d) => d.id === destinationId);
   if (!dest) {
     return lot.walkingMinutes;
