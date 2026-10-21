@@ -20,9 +20,13 @@ import {
   BasemapMode,
 } from '../constants.ts';
 import { ParkingLot, CampusDestination } from '../types.ts';
+import { availabilityStatus } from '../utils/availability.ts';
 
 // Must run before the first map is created.
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
+// Start the tile workers now, so they download in parallel with React mounting
+// instead of after the map is created.
+maplibregl.prewarm();
 
 /** Returns the MapLibre style for a basemap mode. */
 function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
@@ -35,9 +39,9 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
 const DETAIL_CARD_INSET_PX = 330;
 
 /** Pin drop-in timing; must match the .pin-drop duration in index.css. */
-const PIN_DROP_DURATION_MS = 520;
-const PIN_DROP_BASE_DELAY_MS = 300;
-const PIN_DROP_STAGGER_MS = 70;
+const PIN_DROP_DURATION_MS = 420;
+const PIN_DROP_BASE_DELAY_MS = 120;
+const PIN_DROP_STAGGER_MS = 40;
 
 /** Shortens "Gilman Parking Structure" to "Gilman" for compact map pins. */
 function pinLabel(name: string): string {
@@ -125,7 +129,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.fitBounds(bounds, {
       padding: paddingRef.current,
       maxZoom: 16.0,
-      duration: !animate || prefersReducedMotion ? 0 : 900,
+      duration: !animate || prefersReducedMotion ? 0 : 600,
     });
   };
 
@@ -297,31 +301,29 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       // Update marker element styling and contents
       const el = marker.getElement();
-      // Selected pin always stacks above neighbors (Gilman and Triton overlap when zoomed out)
-      // Every pin gets an explicit z-index (creating its own stacking context) so the
-      // selected/hovered pin reliably stacks above overlapping neighbors.
+      // Explicit z-index on every pin (its own stacking context) so the selected or
+      // hovered pin reliably stacks above overlapping neighbors like Gilman/Triton.
       el.style.zIndex = isSelected ? '3' : '1';
       el.setAttribute('aria-pressed', String(isSelected));
-      // iOS system green / orange / red
-      const availabilityColor =
-        lot.estimatedAvailabilityPercent >= 75
-          ? '#34c759'
-          : lot.estimatedAvailabilityPercent >= 50
-          ? '#ff9f0a'
-          : '#ff3b30';
-      const avail = `<span class="ps-avail" style="background:${availabilityColor}"></span>`;
+      // Label style follows the basemap: white-on-dark for satellite, dark-on-light for map.
+      // A class flip is enough; no need to rebuild the pin.
+      el.classList.toggle('ps-on-light', basemap === 'map');
+      el.classList.toggle('ps-selected', isSelected);
+
+      // Rebuild the pin's HTML only when its selected state actually changed
+      // (usually 1 or 2 pins per click, not all of them).
+      const selectedKey = String(isSelected);
+      if (el.dataset.renderedSelected === selectedKey) return;
+      el.dataset.renderedSelected = selectedKey;
+
+      const avail = `<span class="ps-avail" style="background:${availabilityStatus(lot.estimatedAvailabilityPercent).color}"></span>`;
       const label = `<span class="ps-label">${pinLabel(lot.name)}</span>`;
 
-      // The pin's HTML is rebuilt on every selection change. To keep the drop-in
-      // from replaying (or snapping) we offset its delay by the time already elapsed:
-      // a negative delay resumes the animation part-way through.
+      // If the pin is rebuilt while its drop-in is still playing, offset the delay by the
+      // time already elapsed; a negative delay resumes the animation part-way through.
       const elapsed = performance.now() - Number(el.dataset.createdAt);
       const remainingDelay = Number(el.dataset.dropDelay) - elapsed;
       const stillDropping = remainingDelay + PIN_DROP_DURATION_MS > 0;
-
-      // Label style follows the basemap: white-on-dark for satellite, dark-on-light for map
-      el.classList.toggle('ps-on-light', basemap === 'map');
-      el.classList.toggle('ps-selected', isSelected);
 
       el.innerHTML = `
         <div class="${stillDropping ? 'pin-drop' : ''}" style="position:absolute;left:0;top:0;animation-delay:${Math.round(remainingDelay)}ms">
@@ -395,7 +397,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           <div
             role="radiogroup"
             aria-label="Map style"
-            className="flex h-[34px] p-[2px] rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
+            className="flex h-[34px] p-[2px] rounded-xl bg-white/55 backdrop-blur-xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
           >
             {BASEMAP_OPTIONS.map(({ mode, label }) => (
               <button

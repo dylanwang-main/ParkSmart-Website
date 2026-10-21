@@ -32,7 +32,7 @@ export const DevStateControl: React.FC<DevStateControlProps> = ({
   return (
     <div className="fixed bottom-10 right-4 z-30 font-sans text-xs">
       {isOpen ? (
-        <div className="p-3 bg-white/60 backdrop-blur-2xl backdrop-saturate-150 rounded-2xl border border-white/50 shadow-xl shadow-black/15 w-60 animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="p-3 bg-white/60 backdrop-blur-xl backdrop-saturate-150 rounded-2xl border border-white/50 shadow-xl shadow-black/15 w-60 animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
             <div className="flex items-center gap-1.5 font-semibold text-slate-800">
               <Sliders className="w-3.5 h-3.5 text-slate-900" />
@@ -75,7 +75,7 @@ export const DevStateControl: React.FC<DevStateControlProps> = ({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/55 backdrop-blur-2xl border border-white/50 text-slate-700 hover:text-slate-900 shadow-sm hover:shadow transition-all font-medium text-xs cursor-pointer group"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/55 backdrop-blur-xl border border-white/50 text-slate-700 hover:text-slate-900 shadow-sm hover:shadow transition-all font-medium text-xs cursor-pointer group"
         >
           <Sliders className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 transition-colors" />
           <span>Dev: simulate state ({currentState})</span>

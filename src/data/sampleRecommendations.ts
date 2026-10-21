@@ -4,13 +4,12 @@
  */
 
 import { SCORING_WEIGHTS } from '../constants.ts';
-import { CAMPUS_DESTINATIONS } from './destinations.ts';
+import { DESTINATIONS_BY_ID } from './destinations.ts';
 import {
   ParkingLot,
   ParkingPlannerRequest,
   ParkingPlannerResponse,
   ParkingRecommendation,
-  PermitType,
 } from '../types.ts';
 import { PARKING_LOTS } from './parkingLots.ts';
 
@@ -44,7 +43,7 @@ function calculateDistanceKm(
  * Standard average campus walking speed: approx 12-14 min/km, minimum 3 min.
  */
 export function estimateWalkingTime(lot: ParkingLot, destinationId: string): number {
-  const dest = CAMPUS_DESTINATIONS.find((d) => d.id === destinationId);
+  const dest = DESTINATIONS_BY_ID.get(destinationId);
   if (!dest) {
     return lot.walkingMinutes;
   }

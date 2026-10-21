@@ -68,7 +68,7 @@
   100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 .pin-drop {
-  animation: pin-drop 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pin-drop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* One-time light sweep across the ParkSmart logo tile */

@@ -4,11 +4,11 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Calendar, Clock, ChevronDown, Check } from 'lucide-react';
+import { Search, ChevronDown, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PERMIT_OPTIONS } from '../constants.ts';
-import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from '../data/destinations.ts';
-import { ParkingPlannerRequest, PermitType, CampusDestination } from '../types.ts';
+import { CAMPUS_DESTINATIONS, getDestination } from '../data/destinations.ts';
+import { ParkingPlannerRequest, CampusDestination } from '../types.ts';
 
 interface PreferenceFormProps {
   formData: ParkingPlannerRequest;
@@ -32,8 +32,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selectedDestination =
-    CAMPUS_DESTINATIONS.find((d) => d.id === formData.destinationId) ||
-    CAMPUS_DESTINATIONS.find((d) => d.id === DEFAULT_DESTINATION_ID)!;
+    getDestination(formData.destinationId);
 
   // Filter campus destinations based on search query
   const query = destinationSearch.trim().toLowerCase();
@@ -93,7 +92,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
         {/* Searchable Dropdown Popup */}
         {isDestinationOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-2xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/20 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/20 z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="relative mb-2">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input

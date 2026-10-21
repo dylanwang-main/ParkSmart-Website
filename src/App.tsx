@@ -12,7 +12,7 @@ import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
-import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from './data/destinations.ts';
+import { DEFAULT_DESTINATION_ID, getDestination } from './data/destinations.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
@@ -64,7 +64,6 @@ export default function App() {
 
   // 4. Loading & Animation State
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [hasCalculatedOnce, setHasCalculatedOnce] = useState<boolean>(false);
 
   // Permit the current results were computed for (so card highlights stay
   // accurate even if the user changes the permit pill before searching again)
@@ -92,7 +91,6 @@ export default function App() {
         setRecommendations(response.recommendations);
         setSearchedPermit(inputs.permitType);
         setIsLoading(false);
-        setHasCalculatedOnce(true);
 
         // Pre-select the First Choice recommendation lot by default
         if (response.recommendations.length > 0) {
@@ -194,9 +192,7 @@ export default function App() {
 
   // Selected campus destination object
   const currentDestination = useMemo(
-    () =>
-      CAMPUS_DESTINATIONS.find((d) => d.id === formInputs.destinationId) ||
-      CAMPUS_DESTINATIONS.find((d) => d.id === DEFAULT_DESTINATION_ID)!,
+    () => getDestination(formInputs.destinationId),
     [formInputs.destinationId]
   );
 
@@ -234,7 +230,7 @@ export default function App() {
         className={`absolute top-[34px] left-7 z-30 w-9 h-9 rounded-xl flex items-center justify-center text-slate-800 transition-all duration-300 hover:bg-black/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
           isPanelOpen
             ? ''
-            : 'bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/15 hover:bg-white/70'
+            : 'bg-white/55 backdrop-blur-xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/15 hover:bg-white/70'
         }`}
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
@@ -246,17 +242,17 @@ export default function App() {
         aria-label="Parking planner controls and recommendations"
         aria-hidden={!isPanelOpen}
         inert={!isPanelOpen}
-        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col transition-all duration-300 ease-out motion-reduce:transition-none ${
+        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
           isPanelOpen
-            ? 'translate-x-0 opacity-100 pointer-events-auto'
-            : '-translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none'
+            ? 'translate-x-0 pointer-events-auto'
+            : '-translate-x-[calc(100%+2rem)] pointer-events-none'
         }`}
       >
         <motion.div
           initial={{ opacity: 0, x: -24, scale: 0.98 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-1 flex flex-col bg-white/45 backdrop-blur-2xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex-1 flex flex-col bg-white/45 backdrop-blur-xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
           {/* Panel Header */}
           {/* Left padding leaves room for the hamburger button that sits on top */}
           <header className="pl-[60px] pr-5 pt-5 pb-3 border-b border-black/5 shrink-0">
@@ -348,13 +344,16 @@ export default function App() {
       >
         <AnimatePresence mode="wait">
           {isDetailOpen && selectedLot && currentDestination && (
+            // Only transforms here. Fading a *parent* of a backdrop-filter element makes
+            // Chrome skip the blur until the fade ends (the frost "pops in"), so the
+            // opacity fade lives on the glass card itself (see LotDetailCard).
             <motion.div
               key={selectedLot.locationId}
               className="pointer-events-auto"
-              initial={{ opacity: 0, y: 24, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 16, scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              initial={{ y: 20, scale: 0.97 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 12, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 38 }}
             >
               <LotDetailCard
                 lot={selectedLot}

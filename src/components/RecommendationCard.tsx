@@ -4,9 +4,22 @@
  */
 
 import React from 'react';
-import { Footprints, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Footprints, CheckCircle2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
+import { AvailabilityLevel, availabilityStatus } from '../utils/availability.ts';
+
+const BADGE_CLASS: Record<AvailabilityLevel, string> = {
+  plenty: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+  filling: 'text-amber-700 bg-amber-50 border-amber-200',
+  nearlyFull: 'text-rose-700 bg-rose-50 border-rose-200',
+};
+
+const BAR_CLASS: Record<AvailabilityLevel, string> = {
+  plenty: 'bg-emerald-500',
+  filling: 'bg-amber-500',
+  nearlyFull: 'bg-rose-500',
+};
 
 interface RecommendationCardProps {
   recommendation: ParkingRecommendation;
@@ -27,18 +40,10 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 }) => {
   const { badgeLabel, lot, reason } = recommendation;
 
-  // Determine availability status color
-  const getAvailabilityColorClass = (percent: number) => {
-    if (percent >= 75) return 'text-emerald-700 bg-emerald-50 border-emerald-200';
-    if (percent >= 50) return 'text-amber-700 bg-amber-50 border-amber-200';
-    return 'text-rose-700 bg-rose-50 border-rose-200';
-  };
-
-  const getBarColorClass = (percent: number) => {
-    if (percent >= 75) return 'bg-emerald-500';
-    if (percent >= 50) return 'bg-amber-500';
-    return 'bg-rose-500';
-  };
+  // Badge and bar colors come from the shared availability buckets
+  const level = availabilityStatus(lot.estimatedAvailabilityPercent).level;
+  const badgeClass = BADGE_CLASS[level];
+  const barClass = BAR_CLASS[level];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -100,9 +105,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="text-slate-500 font-medium">Estimated availability</span>
           <span
-            className={`font-semibold px-1.5 py-0.2 rounded border text-[11px] ${getAvailabilityColorClass(
-              lot.estimatedAvailabilityPercent
-            )}`}
+            className={`font-semibold px-1.5 py-0.2 rounded border text-[11px] ${badgeClass}`}
           >
             {lot.estimatedAvailabilityPercent}%
           </span>
@@ -110,10 +113,10 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         {/* Subtle color bar with filled indicator */}
         <div className="w-full h-1.5 bg-black/[0.07] rounded-full overflow-hidden">
           <motion.div
-            className={`h-full rounded-full ${getBarColorClass(lot.estimatedAvailabilityPercent)}`}
+            className={`h-full rounded-full ${barClass}`}
             initial={{ width: 0 }}
             animate={{ width: `${lot.estimatedAvailabilityPercent}%` }}
-            transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           />
         </div>
       </div>

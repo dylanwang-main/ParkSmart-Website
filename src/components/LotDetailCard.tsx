@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { CheckCircle2, Footprints, X, XCircle } from 'lucide-react';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
+import { availabilityStatus } from '../utils/availability.ts';
 
 interface LotDetailCardProps {
   lot: ParkingLot;
@@ -15,17 +16,6 @@ interface LotDetailCardProps {
   userPermit: PermitType;
   destination: CampusDestination;
   onClose: () => void;
-}
-
-/** Availability thresholds (percent of spaces open) for the plain-language status. */
-const PLENTY_THRESHOLD = 75;
-const FILLING_THRESHOLD = 50;
-
-/** Plain-language status plus iOS system color for an availability percentage. */
-function availabilityStatus(percent: number): { label: string; color: string } {
-  if (percent >= PLENTY_THRESHOLD) return { label: 'Plenty of space', color: '#34c759' };
-  if (percent >= FILLING_THRESHOLD) return { label: 'Filling up', color: '#ff9f0a' };
-  return { label: 'Nearly full', color: '#ff3b30' };
 }
 
 /**
@@ -45,10 +35,15 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   const walkMinutes = estimateWalkingTime(lot, destination.id);
 
   return (
-    <div
+    <motion.div
+      // Fade lives on the glass element itself so the blur renders from the first frame
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.14, ease: 'easeOut' }}
       role="dialog"
       aria-label={`${lot.name} details`}
-      className="w-[340px] max-w-[calc(100vw-2rem)] p-4 rounded-[24px] bg-white/70 backdrop-blur-2xl backdrop-saturate-[1.8] border border-white/60 shadow-2xl shadow-black/25 text-slate-900"
+      className="w-[340px] max-w-[calc(100vw-2rem)] p-4 rounded-[24px] bg-white/70 backdrop-blur-xl backdrop-saturate-[1.8] border border-white/60 shadow-2xl shadow-black/25 text-slate-900"
     >
       {/* Header: glyph, name, close */}
       <div className="flex items-start gap-3">
@@ -92,7 +87,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             style={{ backgroundColor: status.color }}
             initial={{ width: 0 }}
             animate={{ width: `${percent}%` }}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
           />
         </div>
       </div>
@@ -133,6 +128,6 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       <p className="mt-3 text-[11px] text-slate-500 text-center">
         Sample estimate, not live availability
       </p>
-    </div>
+    </motion.div>
   );
 };

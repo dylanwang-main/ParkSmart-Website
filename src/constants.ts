@@ -48,7 +48,7 @@ export const MAP_CONFIG = {
   DEFAULT_ZOOM: 15.0,
   MIN_ZOOM: 13.5,
   MAX_ZOOM: 18.0,
-  FLY_DURATION_MS: 1200,
+  FLY_DURATION_MS: 700,
 } as const;
 
 /**
@@ -67,24 +67,11 @@ export const MAP_PADDING = {
  * Animation duration & timing curves
  */
 export const ANIMATION_TIMINGS = {
-  SHIMMER_DURATION_MS: 1000,
-  TRANSITION_QUICK_MS: 150,
-  TRANSITION_DEFAULT_MS: 250,
-  STAGGER_DELAY_SECONDS: 0.08,
+  // Simulated request time for sample data; keep short so the UI feels instant
+  SHIMMER_DURATION_MS: 350,
+  STAGGER_DELAY_SECONDS: 0.05,
 } as const;
 
-/**
- * UI Color Tokens & Availability Palette
- */
-export const COLOR_TOKENS = {
-  ACCENT_PRIMARY: '#2563EB', // Clean transit blue
-  ACCENT_HOVER: '#1D4ED8',
-  ACCENT_RING: '#93C5FD',
-  CARD_SELECTED_BORDER: '#3B82F6',
-  MARKER_DEFAULT: '#475569',
-  MARKER_HIGHLIGHT: '#2563EB',
-  MARKER_BACKUP: '#0284C7',
-} as const;
 
 /**
  * Scoring weights for recommendation engine:

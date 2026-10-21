@@ -162,3 +162,13 @@ export const CAMPUS_DESTINATIONS: CampusDestination[] = [
 
 /** Destination selected when the app first loads. */
 export const DEFAULT_DESTINATION_ID = 'geisel-library';
+
+/** O(1) lookup by ID, built once, instead of scanning the list on every render. */
+export const DESTINATIONS_BY_ID: ReadonlyMap<string, CampusDestination> = new Map(
+  CAMPUS_DESTINATIONS.map((d) => [d.id, d])
+);
+
+/** Returns the destination for an ID, falling back to the default destination. */
+export function getDestination(id: string): CampusDestination {
+  return DESTINATIONS_BY_ID.get(id) ?? DESTINATIONS_BY_ID.get(DEFAULT_DESTINATION_ID)!;
+}
