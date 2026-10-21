@@ -54,6 +54,15 @@ Open your browser to `http://localhost:3000` (or the URL provided by Vite).
 npm run build
 ```
 
+### 4. Run Tests and Type Checks
+
+```bash
+npm test        # Vitest: scoring formula and permit filtering
+npm run lint    # TypeScript type check
+```
+
+Tests live next to the code they cover (`src/data/sampleRecommendations.test.ts`). Run both before opening a PR.
+
 ---
 
 ## Swapping in Real API Data
