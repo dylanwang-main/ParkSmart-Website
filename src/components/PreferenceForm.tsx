@@ -5,7 +5,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Calendar, Clock, ChevronDown, Check } from 'lucide-react';
-import { SAMPLE_DESTINATIONS, PERMIT_OPTIONS } from '../constants.ts';
+import { PERMIT_OPTIONS } from '../constants.ts';
+import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from '../data/destinations.ts';
 import { ParkingPlannerRequest, PermitType, CampusDestination } from '../types.ts';
 
 interface PreferenceFormProps {
@@ -30,14 +31,13 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selectedDestination =
-    SAMPLE_DESTINATIONS.find((d) => d.id === formData.destinationId) ||
-    SAMPLE_DESTINATIONS[0];
+    CAMPUS_DESTINATIONS.find((d) => d.id === formData.destinationId) ||
+    CAMPUS_DESTINATIONS.find((d) => d.id === DEFAULT_DESTINATION_ID)!;
 
   // Filter campus destinations based on search query
-  const filteredDestinations = SAMPLE_DESTINATIONS.filter(
-    (dest) =>
-      dest.name.toLowerCase().includes(destinationSearch.toLowerCase()) ||
-      dest.area.toLowerCase().includes(destinationSearch.toLowerCase())
+  const query = destinationSearch.trim().toLowerCase();
+  const filteredDestinations = CAMPUS_DESTINATIONS.filter((dest) =>
+    dest.name.toLowerCase().includes(query)
   );
 
   // Close dropdown on outside click
@@ -81,9 +81,6 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               <span className="text-sm font-medium text-slate-800">
                 {selectedDestination.name}
               </span>
-              <span className="text-xs text-slate-500 ml-1.5 font-normal">
-                ({selectedDestination.area})
-              </span>
             </div>
           </div>
           <ChevronDown
@@ -95,7 +92,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
         {/* Searchable Dropdown Popup */}
         {isDestinationOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/80 backdrop-blur-2xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/15 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-2xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/20 z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="relative mb-2">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
@@ -125,9 +122,6 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                     >
                       <div>
                         <span className="font-semibold">{dest.name}</span>
-                        <span className="text-slate-400 ml-1.5 font-normal">
-                          {dest.area}
-                        </span>
                       </div>
                       {isCurrent && <Check className="w-3.5 h-3.5 text-slate-900" />}
                     </li>

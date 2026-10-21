@@ -20,7 +20,8 @@ export type PermitType = 'A' | 'B' | 'S' | 'SR' | 'D' | 'V';
 export interface CampusDestination {
   id: string;
   name: string;
-  area: string;
+  /** Optional grouping label; not provided by the UCSD GIS source. */
+  area?: string;
   latitude: number;
   longitude: number;
 }

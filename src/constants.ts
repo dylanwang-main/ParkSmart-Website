@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CampusDestination, PermitType } from './types.ts';
+import { PermitType } from './types.ts';
 
 /**
  * OpenFreeMap free, keyless Positron vector tile style URL.
@@ -99,18 +99,6 @@ export const SCORING_WEIGHTS = {
   MAX_WALK_BENCHMARK_MINUTES: 20,
 } as const;
 
-/**
- * Campus destinations for the dropdown selector.
- * Names and coordinates verified 2026-10-21 from UCSD's official campus GIS
- * ("Building Points Public" layer, BaseData/Campus_Map_Vector/MapServer/26).
- */
-export const SAMPLE_DESTINATIONS: CampusDestination[] = [
-  { id: 'DEST-01', name: 'Geisel Library', area: 'Central Campus', latitude: 32.88117324, longitude: -117.23758039 },
-  { id: 'DEST-02', name: 'Price Center West', area: 'Student Center', latitude: 32.87941051, longitude: -117.23683532 },
-  { id: 'DEST-03', name: 'Franklin Antonio Hall', area: 'Engineering', latitude: 32.88350079, longitude: -117.23482442 },
-  { id: 'DEST-04', name: 'Jacobs Hall', area: 'Engineering', latitude: 32.88165733, longitude: -117.2352757 },
-  { id: 'DEST-05', name: 'RIMAC', area: 'Recreation', latitude: 32.88525013, longitude: -117.23947914 },
-];
 
 /**
  * Permit metadata with plain-language labels

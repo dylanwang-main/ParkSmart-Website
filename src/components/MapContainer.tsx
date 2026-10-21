@@ -45,6 +45,8 @@ interface MapContainerProps {
   selectedDestination: CampusDestination | null;
   onSelectLot: (locationId: string) => void;
   onClearSelection: () => void;
+  /** Whether the left planner panel is showing; controls how much map is covered. */
+  isPanelOpen: boolean;
 }
 
 /**
@@ -57,6 +59,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   selectedDestination,
   onSelectLot,
   onClearSelection,
+  isPanelOpen,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -64,6 +67,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const isLoadedRef = useRef<boolean>(false);
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
+
+  // Map padding: reserve the panel's width on the left only while it is open.
+  const padding = isPanelOpen ? MAP_PADDING : { ...MAP_PADDING, left: MAP_PADDING.right };
+  const paddingRef = useRef(padding);
+  paddingRef.current = padding;
 
   // Helper to frame all lots plus the destination with panel offset padding
   const frameAllPoints = (map: maplibregl.Map, animate = true) => {
@@ -78,7 +86,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     map.fitBounds(bounds, {
-      padding: MAP_PADDING,
+      padding: paddingRef.current,
       maxZoom: 16.0,
       duration: !animate || prefersReducedMotion ? 0 : 900,
     });
@@ -295,13 +303,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       map.flyTo({
         center: [targetLot.longitude, targetLot.latitude],
         zoom: MAP_CONFIG.FOCUSED_ZOOM,
-        padding: MAP_PADDING,
+        padding: paddingRef.current,
         speed: 1.0,
         curve: 1.2,
         essential: true,
       });
     }
-  }, [selectedLocationId, lots]);
+    // isPanelOpen is a dependency so the camera re-centers when the panel opens or closes
+  }, [selectedLocationId, lots, isPanelOpen]);
 
   return (
     <>

@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ParkingRecommendation } from '../types.ts';
+import { ParkingRecommendation, PermitType } from '../types.ts';
 import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
@@ -15,6 +15,8 @@ interface ResultsListProps {
   isLoading: boolean;
   isError: boolean;
   recommendations: ParkingRecommendation[];
+  /** The permit these results were computed for; highlighted on each card. */
+  userPermit: PermitType;
   selectedLocationId: string | null;
   onSelectLot: (locationId: string) => void;
   onRetry: () => void;
@@ -29,6 +31,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   isLoading,
   isError,
   recommendations,
+  userPermit,
   selectedLocationId,
   onSelectLot,
   onRetry,
@@ -85,6 +88,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             >
               <RecommendationCard
                 recommendation={rec}
+                userPermit={userPermit}
                 isSelected={selectedLocationId === rec.lot.locationId}
                 onSelect={() => onSelectLot(rec.lot.locationId)}
               />

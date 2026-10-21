@@ -4,11 +4,13 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Menu } from 'lucide-react';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
-import { SAMPLE_DESTINATIONS, ANIMATION_TIMINGS } from './constants.ts';
+import { ANIMATION_TIMINGS } from './constants.ts';
+import { CAMPUS_DESTINATIONS, DEFAULT_DESTINATION_ID } from './data/destinations.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
@@ -29,12 +31,11 @@ function getTodayDateString(): string {
 }
 
 /**
- * Returns the upcoming hour formatted as HH:00 in local time.
+ * Returns the current local time formatted as HH:MM (24-hour, as <input type="time"> expects).
  */
-function getNextHourTimeString(): string {
+function getCurrentTimeString(): string {
   const now = new Date();
-  const nextHour = (now.getHours() + 1) % 24;
-  return `${String(nextHour).padStart(2, '0')}:00`;
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
 /**
@@ -44,9 +45,9 @@ function getNextHourTimeString(): string {
 export default function App() {
   // 1. Form Inputs State (defaulting to Geisel Library, today, next hour, 'S' permit)
   const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>({
-    destinationId: SAMPLE_DESTINATIONS[0].id,
+    destinationId: DEFAULT_DESTINATION_ID,
     arrivalDate: getTodayDateString(),
-    arrivalTime: getNextHourTimeString(),
+    arrivalTime: getCurrentTimeString(),
     permitType: 'S',
   });
 
@@ -59,6 +60,13 @@ export default function App() {
   // 4. Loading & Animation State
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasCalculatedOnce, setHasCalculatedOnce] = useState<boolean>(false);
+
+  // Permit the current results were computed for (so card highlights stay
+  // accurate even if the user changes the permit pill before searching again)
+  const [searchedPermit, setSearchedPermit] = useState<PermitType>('S');
+
+  // Side panel open/closed (hamburger toggle)
+  const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
 
   // 5. Dev State Simulator
   const [devState, setDevState] = useState<DevSimulationState>('normal');
@@ -73,6 +81,7 @@ export default function App() {
       const timer = setTimeout(() => {
         const response = getSampleRecommendations(inputs);
         setRecommendations(response.recommendations);
+        setSearchedPermit(inputs.permitType);
         setIsLoading(false);
         setHasCalculatedOnce(true);
 
@@ -133,7 +142,7 @@ export default function App() {
     const updated: ParkingPlannerRequest = {
       ...formInputs,
       permitType: 'S',
-      destinationId: SAMPLE_DESTINATIONS[0].id,
+      destinationId: DEFAULT_DESTINATION_ID,
     };
     setFormInputs(updated);
     setDevState('normal');
@@ -143,8 +152,8 @@ export default function App() {
   // Selected campus destination object
   const currentDestination = useMemo(
     () =>
-      SAMPLE_DESTINATIONS.find((d) => d.id === formInputs.destinationId) ||
-      SAMPLE_DESTINATIONS[0],
+      CAMPUS_DESTINATIONS.find((d) => d.id === formInputs.destinationId) ||
+      CAMPUS_DESTINATIONS.find((d) => d.id === DEFAULT_DESTINATION_ID)!,
     [formInputs.destinationId]
   );
 
@@ -166,16 +175,41 @@ export default function App() {
         selectedDestination={currentDestination}
         onSelectLot={handleSelectLot}
         onClearSelection={handleClearSelection}
+        isPanelOpen={isPanelOpen}
       />
 
-      {/* Left Floating Frosted-Glass Panel (approx 380px wide) */}
+      {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
+      <button
+        type="button"
+        onClick={() => setIsPanelOpen((open) => !open)}
+        aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
+        aria-expanded={isPanelOpen}
+        aria-controls="planner-panel"
+        className={`absolute top-[34px] left-7 z-30 w-9 h-9 rounded-xl flex items-center justify-center text-slate-800 transition-all duration-300 hover:bg-black/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+          isPanelOpen
+            ? ''
+            : 'bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/15 hover:bg-white/70'
+        }`}
+      >
+        <Menu className="w-5 h-5" aria-hidden="true" />
+      </button>
+
+      {/* Left Floating Frosted-Glass Panel (approx 380px wide), slides out when hidden */}
       <aside
+        id="planner-panel"
         aria-label="Parking planner controls and recommendations"
-        className="absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col pointer-events-auto"
+        aria-hidden={!isPanelOpen}
+        inert={!isPanelOpen}
+        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col transition-all duration-300 ease-out motion-reduce:transition-none ${
+          isPanelOpen
+            ? 'translate-x-0 opacity-100 pointer-events-auto'
+            : '-translate-x-[calc(100%+2rem)] opacity-0 pointer-events-none'
+        }`}
       >
         <div className="flex-1 flex flex-col bg-white/45 backdrop-blur-2xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
           {/* Panel Header */}
-          <header className="px-5 pt-5 pb-3 border-b border-black/5 shrink-0">
+          {/* Left padding leaves room for the hamburger button that sits on top */}
+          <header className="pl-[60px] pr-5 pt-5 pb-3 border-b border-black/5 shrink-0">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-base shadow-sm">
                 P
@@ -222,6 +256,7 @@ export default function App() {
                 isLoading={activeIsLoading}
                 isError={activeIsError}
                 recommendations={activeRecommendations}
+                userPermit={searchedPermit}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}

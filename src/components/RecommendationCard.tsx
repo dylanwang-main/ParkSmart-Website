@@ -5,10 +5,11 @@
 
 import React from 'react';
 import { Footprints, CheckCircle2, ShieldAlert } from 'lucide-react';
-import { ParkingRecommendation } from '../types.ts';
+import { ParkingRecommendation, PermitType } from '../types.ts';
 
 interface RecommendationCardProps {
   recommendation: ParkingRecommendation;
+  userPermit: PermitType;
   isSelected: boolean;
   onSelect: () => void;
 }
@@ -19,6 +20,7 @@ interface RecommendationCardProps {
  */
 export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   recommendation,
+  userPermit,
   isSelected,
   onSelect,
 }) => {
@@ -122,12 +124,19 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
       {/* Allowed Permits Footnote */}
       <div className="flex items-center justify-between pt-1 border-t border-black/5 text-[11px]">
-        <span className="text-slate-500">Eligible permits</span>
-        <div className="flex gap-1">
+        <span className="flex items-center gap-1 font-medium text-emerald-700">
+          <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+          Your {userPermit} permit works here
+        </span>
+        <div className="flex gap-1" aria-label={`Eligible permits: ${lot.allowedPermitTypes.join(', ')}`}>
           {lot.allowedPermitTypes.map((permit) => (
             <span
               key={permit}
-              className="px-1.5 py-0.2 rounded bg-black/5 text-slate-700 font-mono text-[10px] font-medium"
+              className={`px-1.5 py-0.2 rounded font-mono text-[10px] ${
+                permit === userPermit
+                  ? 'bg-slate-900 text-white font-bold'
+                  : 'bg-black/5 text-slate-500 font-medium'
+              }`}
             >
               {permit}
             </span>

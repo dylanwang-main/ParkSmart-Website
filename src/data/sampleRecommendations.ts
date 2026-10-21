@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SCORING_WEIGHTS, SAMPLE_DESTINATIONS } from '../constants.ts';
+import { SCORING_WEIGHTS } from '../constants.ts';
+import { CAMPUS_DESTINATIONS } from './destinations.ts';
 import {
   ParkingLot,
   ParkingPlannerRequest,
@@ -43,7 +44,7 @@ function calculateDistanceKm(
  * Standard average campus walking speed: approx 12-14 min/km, minimum 3 min.
  */
 function estimateWalkingTime(lot: ParkingLot, destinationId: string): number {
-  const dest = SAMPLE_DESTINATIONS.find((d) => d.id === destinationId);
+  const dest = CAMPUS_DESTINATIONS.find((d) => d.id === destinationId);
   if (!dest) {
     return lot.walkingMinutes;
   }

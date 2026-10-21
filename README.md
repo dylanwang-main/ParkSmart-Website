@@ -31,7 +31,7 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 | Data | Status | Source |
 |---|---|---|
 | Parking structure names and pin locations | **Real** (verified 2026-10-21) | UCSD campus GIS, Building Points Public layer |
-| Destination names and locations | **Real** (verified 2026-10-21) | Same UCSD GIS layer |
+| Destination names and locations (141 buildings, searchable) | **Real** (verified 2026-10-21) | Same UCSD GIS layer, filtered to places people visit (`src/data/destinations.ts`) |
 | Availability %, eligible permits, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
 
 Lot data lives in `src/data/parkingLots.ts`. Pins mark each structure's building point, not its vehicle entrance. Mapping each structure to its official P-number (e.g. P701) is still an open question for the backend team.

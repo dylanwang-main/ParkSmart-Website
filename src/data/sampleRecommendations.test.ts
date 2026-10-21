@@ -4,7 +4,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { SAMPLE_DESTINATIONS, SCORING_WEIGHTS } from '../constants.ts';
+import { SCORING_WEIGHTS } from '../constants.ts';
+import { DEFAULT_DESTINATION_ID } from './destinations.ts';
 import { ParkingPlannerRequest, PermitType } from '../types.ts';
 import {
   SAMPLE_LOTS,
@@ -15,7 +16,7 @@ import {
 /** Builds a request for the first sample destination with the given permit. */
 function makeRequest(permitType: PermitType): ParkingPlannerRequest {
   return {
-    destinationId: SAMPLE_DESTINATIONS[0].id,
+    destinationId: DEFAULT_DESTINATION_ID,
     arrivalDate: '2026-10-21',
     arrivalTime: '12:00',
     permitType,
