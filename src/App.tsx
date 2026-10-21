@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
-import { TopPrototypePill } from './components/TopPrototypePill.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { SAMPLE_DESTINATIONS, ANIMATION_TIMINGS } from './constants.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
@@ -169,9 +168,6 @@ export default function App() {
         onClearSelection={handleClearSelection}
       />
 
-      {/* Top Disclaimer Pill */}
-      <TopPrototypePill />
-
       {/* Left Floating Frosted-Glass Panel (approx 380px wide) */}
       <aside
         aria-label="Parking planner controls and recommendations"
@@ -180,23 +176,18 @@ export default function App() {
         <div className="flex-1 flex flex-col bg-white/75 backdrop-blur-xl rounded-3xl border border-white/60 shadow-2xl shadow-slate-900/10 overflow-hidden ring-1 ring-slate-900/5">
           {/* Panel Header */}
           <header className="px-5 pt-5 pb-3 border-b border-slate-200/50 shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-xs shadow-blue-500/30">
-                  P
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
-                    ParkSmart
-                  </h1>
-                  <p className="text-[11px] font-medium text-slate-500 mt-0.5">
-                    Campus parking planner
-                  </p>
-                </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-xs shadow-blue-500/30">
+                P
               </div>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-slate-100/90 text-slate-600 border border-slate-200/80">
-                Prototype
-              </span>
+              <div>
+                <h1 className="text-lg font-bold text-slate-900 tracking-tight leading-none">
+                  ParkSmart
+                </h1>
+                <p className="text-[11px] font-medium text-slate-500 mt-0.5">
+                  Campus parking planner
+                </p>
+              </div>
             </div>
           </header>
 
@@ -243,9 +234,8 @@ export default function App() {
           </div>
 
           {/* Panel Footer Note */}
-          <footer className="px-5 py-2.5 bg-slate-50/60 border-t border-slate-200/40 text-[11px] text-slate-500 flex items-center justify-between shrink-0">
-            <span>65% availability · 35% walk time</span>
-            <span className="text-slate-400">Sample data</span>
+          <footer className="px-5 py-2.5 bg-slate-50/60 border-t border-slate-200/40 text-[11px] text-slate-400 flex items-center justify-center shrink-0">
+            <span>Sample data</span>
           </footer>
         </div>
       </aside>

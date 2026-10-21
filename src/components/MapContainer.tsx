@@ -5,7 +5,11 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import { MAP_CONFIG, MAP_STYLE_CONFIG, COLOR_TOKENS } from '../constants.ts';
+import {
+  MAP_CONFIG,
+  MAP_PADDING,
+  OPENFREEMAP_POSITRON_STYLE_URL,
+} from '../constants.ts';
 import { ParkingLot, CampusDestination } from '../types.ts';
 
 interface MapContainerProps {
@@ -17,8 +21,8 @@ interface MapContainerProps {
 }
 
 /**
- * Interactive full-screen map rendered with MapLibre GL and free Carto Positron light tiles.
- * Supports custom DOM markers, smooth flyTo camera glides, and marker focus rings.
+ * Interactive full-screen map rendered with MapLibre GL and OpenFreeMap Positron vector tiles.
+ * Supports custom DOM markers, smooth flyTo camera glides, and responsive panel offset framing.
  */
 export const MapContainer: React.FC<MapContainerProps> = ({
   lots,
@@ -31,14 +35,34 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const lotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const isLoadedRef = useRef<boolean>(false);
 
-  // Initialize MapLibre instance
+  // Helper to frame all lots plus the destination with panel offset padding
+  const frameAllPoints = (map: maplibregl.Map, animate = true) => {
+    if (lots.length === 0) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    lots.forEach((lot) => bounds.extend([lot.longitude, lot.latitude]));
+    if (selectedDestination) {
+      bounds.extend([selectedDestination.longitude, selectedDestination.latitude]);
+    }
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    map.fitBounds(bounds, {
+      padding: MAP_PADDING,
+      maxZoom: 16.0,
+      duration: !animate || prefersReducedMotion ? 0 : 900,
+    });
+  };
+
+  // Initialize MapLibre instance with OpenFreeMap Positron style
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: MAP_STYLE_CONFIG as unknown as maplibregl.StyleSpecification,
+      style: OPENFREEMAP_POSITRON_STYLE_URL,
       center: MAP_CONFIG.DEFAULT_CENTER,
       zoom: MAP_CONFIG.DEFAULT_ZOOM,
       minZoom: MAP_CONFIG.MIN_ZOOM,
@@ -56,7 +80,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       'top-right'
     );
 
-    // Add subtle attribution in bottom right
+    // Add OpenFreeMap & OpenStreetMap attribution in bottom right
     map.addControl(
       new maplibregl.AttributionControl({
         compact: true,
@@ -64,9 +88,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       'bottom-right'
     );
 
+    // On initial map style load, fit bounds to all lots plus the destination
+    map.on('load', () => {
+      isLoadedRef.current = true;
+      frameAllPoints(map, false);
+    });
+
     // Clicking map background clears selection
     map.on('click', (e) => {
-      // Check if original event target was a marker element
       const target = e.originalEvent.target as HTMLElement;
       if (!target.closest('.parksmart-marker')) {
         onClearSelection();
@@ -78,6 +107,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     return () => {
       map.remove();
       mapRef.current = null;
+      isLoadedRef.current = false;
     };
   }, [onClearSelection]);
 
@@ -113,8 +143,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         .addTo(map);
 
       destinationMarkerRef.current = marker;
+
+      // Re-frame if no specific lot is selected and map is loaded
+      if (isLoadedRef.current && !selectedLocationId) {
+        frameAllPoints(map, true);
+      }
     }
-  }, [selectedDestination]);
+  }, [selectedDestination, selectedLocationId]);
 
   // Render and update parking lot markers
   useEffect(() => {
@@ -202,15 +237,20 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     });
   }, [lots, selectedLocationId, onSelectLot]);
 
-  // Smooth flyTo camera glide when selected lot changes
+  // Smooth flyTo camera glide when selected lot changes (applying panel left padding)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedLocationId) return;
+    if (!map || !isLoadedRef.current) return;
+
+    if (!selectedLocationId) {
+      // Return to framed overview when selection is cleared
+      frameAllPoints(map, true);
+      return;
+    }
 
     const targetLot = lots.find((l) => l.locationId === selectedLocationId);
     if (!targetLot) return;
 
-    // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReducedMotion) {
@@ -220,6 +260,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       map.flyTo({
         center: [targetLot.longitude, targetLot.latitude],
         zoom: MAP_CONFIG.FOCUSED_ZOOM,
+        padding: MAP_PADDING,
         speed: 1.0,
         curve: 1.2,
         essential: true,

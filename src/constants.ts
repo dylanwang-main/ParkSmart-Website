@@ -6,7 +6,13 @@
 import { CampusDestination, PermitType } from './types.ts';
 
 /**
- * UCSD Campus Map Center & Zoom Settings
+ * OpenFreeMap free, keyless Positron vector tile style URL.
+ * Provides a clean, muted, low-saturation vector base map without API keys.
+ */
+export const OPENFREEMAP_POSITRON_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+
+/**
+ * UCSD Campus Map Center, Zoom & Framing Padding Settings
  */
 export const MAP_CONFIG = {
   // Center near University of California San Diego central campus (Library Walk / Price Center)
@@ -19,34 +25,15 @@ export const MAP_CONFIG = {
 } as const;
 
 /**
- * Free Light Tile Configuration for MapLibre GL
- * Carto Positron provides an ultra-clean, low-saturation, muted base map without API keys.
+ * Map viewport framing padding:
+ * Left padding equals floating panel width (380px) + 24px gap = 404px.
+ * Other boundaries receive ~60px padding to keep destination pin and lots fully visible.
  */
-export const MAP_STYLE_CONFIG = {
-  version: 8,
-  sources: {
-    'carto-positron': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',
-    },
-  },
-  layers: [
-    {
-      id: 'carto-positron-layer',
-      type: 'raster',
-      source: 'carto-positron',
-      minzoom: 0,
-      maxzoom: 20,
-    },
-  ],
+export const MAP_PADDING = {
+  left: 404,
+  right: 60,
+  top: 60,
+  bottom: 60,
 } as const;
 
 /**
@@ -132,6 +119,6 @@ export const PERMIT_OPTIONS: Array<{ type: PermitType; label: string; descriptio
   { type: 'B', label: 'B', description: 'Staff & Graduate Students' },
   { type: 'S', label: 'S', description: 'Undergraduate Commuter' },
   { type: 'SR', label: 'SR', description: 'Student Resident' },
-  { type: 'D', label: 'D', description: 'Discount / Carpool' },
+  { type: 'D', label: 'D', description: 'Employees & upper-division commuters' },
   { type: 'V', label: 'V', description: 'Visitor / Daily Pay' },
 ];

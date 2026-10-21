@@ -10,7 +10,7 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 
 - **React 19** with **TypeScript**
 - **Tailwind CSS v4** for clean, low-saturation glassmorphism UI
-- **MapLibre GL JS** with free **Carto Positron** light raster tiles (no API key required)
+- **MapLibre GL JS** with free **OpenFreeMap Positron** vector tiles (no API key required)
 - **Motion (`motion/react`)** for smooth, subtle card stagger transitions
 - No backend, no routing, no external authentication required
 
@@ -18,9 +18,8 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 
 ## Architecture & Layout
 
-- **Full-Screen Map Canvas**: Low-saturation, calm campus basemap centered near UC San Diego central campus.
+- **Full-Screen Map Canvas**: Low-saturation, calm campus basemap styled via OpenFreeMap Positron vector tiles. Automatically fits bounds to all lots and active destination with panel offset padding (left: 404px, edges: ~60px).
 - **Floating Glass Panel (`380px` wide)**: Positioned on the left with translucent white glass (`backdrop-blur-xl`), soft shadow, and high contrast typography.
-- **Top Disclaimer Pill**: Unobtrusive frosted pill at the top of the map clearly reminding users that all data is sample data.
 - **Corner State Simulator**: A dedicated developer switcher in the bottom-right corner to test all 4 required UI states (`Normal`, `Loading`, `Empty`, `Error`).
 
 ---

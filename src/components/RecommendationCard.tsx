@@ -60,7 +60,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           : 'bg-white/80 border-slate-200/90 hover:bg-white/95 hover:border-slate-300 hover:shadow-sm hover:-translate-y-0.5'
       }`}
     >
-      {/* Top Header: Badge label and Sample tag */}
+      {/* Top Header: Badge label */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <span
@@ -79,9 +79,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             </span>
           )}
         </div>
-        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-500 border border-slate-200/60">
-          Sample
-        </span>
       </div>
 
       {/* Lot Title & Walk Time */}

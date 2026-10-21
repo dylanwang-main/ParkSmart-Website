@@ -9,7 +9,7 @@
  * B: Staff/Grad Students
  * S: Undergraduate Students
  * SR: Student Residents
- * D: Discount/Carpool
+ * D: Employees & upper-division commuters
  * V: Visitor
  */
 export type PermitType = 'A' | 'B' | 'S' | 'SR' | 'D' | 'V';
