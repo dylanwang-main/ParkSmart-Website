@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import * as maplibregl from 'maplibre-gl';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
@@ -40,6 +41,22 @@ function pinLabel(name: string): string {
   return name.replace(' Parking Structure', '');
 }
 
+/**
+ * Empty MapLibre control used as a mount point for the React Map/Satellite toggle.
+ * Registering it as a real control puts it in the same top-right row as the zoom
+ * and compass buttons, so MapLibre handles alignment and spacing for us.
+ */
+class ReactMountControl implements maplibregl.IControl {
+  readonly container = document.createElement('div');
+  onAdd(): HTMLElement {
+    this.container.className = 'maplibregl-ctrl';
+    return this.container;
+  }
+  onRemove(): void {
+    this.container.remove();
+  }
+}
+
 const BASEMAP_OPTIONS: Array<{ mode: BasemapMode; label: string }> = [
   { mode: 'map', label: 'Map' },
   { mode: 'satellite', label: 'Satellite' },
@@ -73,9 +90,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
   const isLoadedRef = useRef<boolean>(false);
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
+  const [basemapControlEl, setBasemapControlEl] = useState<HTMLElement | null>(null);
 
   // Map padding: reserve the panel's width on the left only while it is open.
-  const padding = isPanelOpen ? MAP_PADDING : { ...MAP_PADDING, left: MAP_PADDING.right };
+  // Clamped to half the window so a narrow window can't produce an impossible camera.
+  const viewportWidth = typeof window === 'undefined' ? 1440 : window.innerWidth;
+  const padding = {
+    ...MAP_PADDING,
+    left: isPanelOpen ? Math.min(MAP_PADDING.left, viewportWidth / 2) : MAP_PADDING.right,
+  };
   const paddingRef = useRef(padding);
   paddingRef.current = padding;
 
@@ -112,7 +135,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       attributionControl: false,
     });
 
-    // Add minimal navigation controls in top-right
+    // Top-right row: Map/Satellite toggle first (left), then zoom + compass (right).
+    // The toggle itself is rendered by React into this control via a portal below.
+    const basemapControl = new ReactMountControl();
+    map.addControl(basemapControl, 'top-right');
+    setBasemapControlEl(basemapControl.container);
+
     map.addControl(
       new maplibregl.NavigationControl({
         showCompass: true,
@@ -185,13 +213,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         .addTo(map);
 
       destinationMarkerRef.current = marker;
-
-      // Re-frame if no specific lot is selected and map is loaded
-      if (isLoadedRef.current && !selectedLocationId) {
-        frameAllPoints(map, true);
-      }
     }
-  }, [selectedDestination, selectedLocationId]);
+  }, [selectedDestination]);
+
+  // When the user picks a different destination, show the whole picture again.
+  // (Only on destination changes, never on lot select/deselect.)
+  const lastDestinationIdRef = useRef<string | undefined>(selectedDestination?.id);
+  useEffect(() => {
+    const map = mapRef.current;
+    const destinationId = selectedDestination?.id;
+    if (destinationId === lastDestinationIdRef.current) return;
+    lastDestinationIdRef.current = destinationId;
+    if (map && isLoadedRef.current) frameAllPoints(map, true);
+  }, [selectedDestination]);
 
   // Render and update parking lot markers
   useEffect(() => {
@@ -228,6 +262,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           onSelectLot(lot.locationId);
         });
 
+        // Hovered pin rises above overlapping neighbors so it can be clicked
+        el.addEventListener('mouseenter', () => { el.style.zIndex = '4'; });
+        el.addEventListener('mouseleave', () => {
+          el.style.zIndex = el.getAttribute('aria-pressed') === 'true' ? '3' : '1';
+        });
+
         el.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -248,6 +288,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       // Update marker element styling and contents
       const el = marker.getElement();
+      // Selected pin always stacks above neighbors (Gilman and Triton overlap when zoomed out)
+      // Every pin gets an explicit z-index (creating its own stacking context) so the
+      // selected/hovered pin reliably stacks above overlapping neighbors.
+      el.style.zIndex = isSelected ? '3' : '1';
+      el.setAttribute('aria-pressed', String(isSelected));
       const availabilityColor =
         lot.estimatedAvailabilityPercent >= 75
           ? 'bg-emerald-500'
@@ -272,8 +317,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           }
           <div class="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-200 shadow-md border ${
             isSelected
-              ? 'bg-slate-900 text-white border-white/70 scale-110 shadow-black/40 shadow-lg ring-2 ring-white/70 z-30'
-              : 'bg-white/95 text-slate-800 border-slate-200/90 hover:scale-105 hover:border-slate-300 hover:bg-white z-20'
+              ? 'bg-slate-900 text-white border-white/70 scale-110 shadow-black/40 shadow-lg ring-2 ring-white/70'
+              : 'bg-white/95 text-slate-800 border-slate-200/90 hover:scale-105 hover:border-slate-300 hover:bg-white'
           }">
             <span class="inline-flex items-center justify-center w-4 h-4 rounded-full ${
               isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
@@ -296,37 +341,38 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.setStyle(styleFor(basemap));
   }, [basemap]);
 
-  // Smooth flyTo camera glide when selected lot changes (applying panel left padding)
+  // Selecting a lot: if its pin is hidden (off screen or under the panel), glide it
+  // into view. Zoom is never changed. Deselecting never moves the camera.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !isLoadedRef.current) return;
-
-    if (!selectedLocationId) {
-      // Return to framed overview when selection is cleared
-      frameAllPoints(map, true);
-      return;
-    }
+    if (!map || !isLoadedRef.current || !selectedLocationId) return;
 
     const targetLot = lots.find((l) => l.locationId === selectedLocationId);
     if (!targetLot) return;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const point = map.project([targetLot.longitude, targetLot.latitude]);
+    const { width, height } = map.getContainer().getBoundingClientRect();
+    const pad = paddingRef.current;
+    const isVisible =
+      point.x >= pad.left && point.x <= width - pad.right &&
+      point.y >= pad.top && point.y <= height - pad.bottom;
+    if (isVisible) return;
 
-    if (prefersReducedMotion) {
-      map.setCenter([targetLot.longitude, targetLot.latitude]);
-      map.setZoom(MAP_CONFIG.FOCUSED_ZOOM);
-    } else {
-      map.flyTo({
-        center: [targetLot.longitude, targetLot.latitude],
-        zoom: MAP_CONFIG.FOCUSED_ZOOM,
-        padding: paddingRef.current,
-        speed: 1.0,
-        curve: 1.2,
-        essential: true,
-      });
-    }
-    // isPanelOpen is a dependency so the camera re-centers when the panel opens or closes
-  }, [selectedLocationId, lots, isPanelOpen]);
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    map.easeTo({
+      center: [targetLot.longitude, targetLot.latitude],
+      padding: pad,
+      duration: prefersReducedMotion ? 0 : MAP_CONFIG.FLY_DURATION_MS,
+    });
+  }, [selectedLocationId, lots]);
+
+  // Opening/closing the panel only shifts the map's visual center; zoom stays put.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    map.easeTo({ padding: paddingRef.current, duration: prefersReducedMotion ? 0 : 300 });
+  }, [isPanelOpen]);
 
   return (
     <>
@@ -336,34 +382,39 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         aria-label="Interactive UCSD Campus Parking Map"
       />
 
-      {/* Map / Satellite toggle, iOS segmented-control style */}
-      <div
-        role="radiogroup"
-        aria-label="Map style"
-        className="absolute top-4 right-[58px] z-10 flex p-0.5 rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
-      >
-        {BASEMAP_OPTIONS.map(({ mode, label }) => (
-          <button
-            key={mode}
-            type="button"
-            role="radio"
-            aria-checked={basemap === mode}
-            onClick={() => setBasemap(mode)}
-            className={`relative px-3 py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
-              basemap === mode ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'
-            }`}
+      {/* Map / Satellite toggle (iOS segmented control), mounted inside the map's
+          top-right control row. Height matches a zoom button (34px incl. border). */}
+      {basemapControlEl &&
+        createPortal(
+          <div
+            role="radiogroup"
+            aria-label="Map style"
+            className="flex h-[34px] p-[2px] rounded-xl bg-white/55 backdrop-blur-2xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
           >
-            {basemap === mode && (
-              <motion.span
-                layoutId="basemap-thumb"
-                className="absolute inset-0 rounded-[10px] bg-white shadow-sm"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-              />
-            )}
-            <span className="relative">{label}</span>
-          </button>
-        ))}
-      </div>
+            {BASEMAP_OPTIONS.map(({ mode, label }) => (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={basemap === mode}
+                onClick={() => setBasemap(mode)}
+                className={`relative h-[28px] px-3 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+                  basemap === mode ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'
+                }`}
+              >
+                {basemap === mode && (
+                  <motion.span
+                    layoutId="basemap-thumb"
+                    className="absolute inset-0 rounded-[10px] bg-white shadow-sm"
+                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                  />
+                )}
+                <span className="relative">{label}</span>
+              </button>
+            ))}
+          </div>,
+          basemapControlEl
+        )}
     </>
   );
 };

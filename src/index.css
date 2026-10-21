@@ -23,6 +23,16 @@
 .maplibregl-ctrl-top-right {
   top: 16px !important;
   right: 16px !important;
+  /* Lay the top-right controls out in one row, top-aligned, with a real gap */
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.maplibregl-ctrl-top-right .maplibregl-ctrl {
+  margin: 0 !important;
+  float: none !important;
 }
 
 .maplibregl-ctrl-group {

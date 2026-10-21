@@ -46,8 +46,6 @@ export const MAP_CONFIG = {
   // Center near University of California San Diego central campus (Library Walk / Price Center)
   DEFAULT_CENTER: [-117.2374, 32.8812] as [number, number],
   DEFAULT_ZOOM: 15.0,
-  // Kept at or below the satellite imagery max zoom (16) so it stays sharp.
-  FOCUSED_ZOOM: 15.9,
   MIN_ZOOM: 13.5,
   MAX_ZOOM: 18.0,
   FLY_DURATION_MS: 1200,
