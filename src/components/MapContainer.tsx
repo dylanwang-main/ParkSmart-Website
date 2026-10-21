@@ -5,12 +5,19 @@
 
 import React, { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
+// MapLibre draws tiles in a background Web Worker. Vite bundles the main library
+// but does not copy the worker file, so the default worker URL 404s and the map
+// renders blank. `?url` makes Vite emit the worker as an asset and give us its URL.
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import {
   MAP_CONFIG,
   MAP_PADDING,
   OPENFREEMAP_POSITRON_STYLE_URL,
 } from '../constants.ts';
 import { ParkingLot, CampusDestination } from '../types.ts';
+
+// Must run before the first map is created.
+maplibregl.setWorkerUrl(maplibreWorkerUrl);
 
 interface MapContainerProps {
   lots: ParkingLot[];
