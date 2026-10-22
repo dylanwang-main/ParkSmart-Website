@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { MapPin } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 import { ParkingPlannerRequest, ParkingRecommendation } from '../types.ts';
 import { getDestination } from '../data/destinations.ts';
 import { parseArrival } from '../utils/permitRules.ts';
@@ -13,6 +13,10 @@ import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
 import { ErrorState } from './ErrorState.tsx';
+
+/** Results shown before "Show more", and how many each click reveals. */
+const INITIAL_VISIBLE = 3;
+const LOAD_MORE_STEP = 5;
 
 interface ResultsListProps {
   isLoading: boolean;
@@ -55,6 +59,14 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   onRetry,
   onResetFilters,
 }) => {
+  // Show the top 3, then reveal 5 more per "Show more" click; reset on every new search
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const previousVisibleRef = useRef(INITIAL_VISIBLE);
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE);
+    previousVisibleRef.current = INITIAL_VISIBLE;
+  }, [recommendations]);
+
   if (showIntroPrompt && !isLoading && usualTripCard) {
     return <div className="pt-2">{usualTripCard}</div>;
   }
@@ -127,7 +139,9 @@ export const ResultsList: React.FC<ResultsListProps> = ({
         className={`space-y-3 transition-[opacity,filter] duration-200 ${isStale ? 'opacity-50 grayscale' : ''}`}
         aria-disabled={isStale}
       >
-        {recommendations.map((rec, index) => {
+        {recommendations.slice(0, visibleCount).map((rec, index) => {
+          // Newly revealed cards stagger from their own start, not from the top of the list
+          const staggerIndex = index >= previousVisibleRef.current ? index - previousVisibleRef.current : index;
           return (
             <motion.div
               key={rec.lot.locationId}
@@ -135,7 +149,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
               animate={{ opacity: 1, y: 0 }}
               transition={{
                 duration: 0.25,
-                delay: index * 0.08,
+                delay: staggerIndex * 0.06,
                 ease: [0.16, 1, 0.3, 1],
               }}
             >
@@ -155,6 +169,24 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           );
         })}
       </div>
+
+      {visibleCount < recommendations.length && (
+        <button
+          type="button"
+          disabled={isStale}
+          onClick={() => {
+            previousVisibleRef.current = visibleCount;
+            setVisibleCount((n) => Math.min(recommendations.length, n + LOAD_MORE_STEP));
+          }}
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/45 border border-white/60 hover:bg-white/70 text-[13px] font-semibold text-slate-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronDown className="w-4 h-4" aria-hidden="true" />
+          Show {Math.min(LOAD_MORE_STEP, recommendations.length - visibleCount)} more
+          <span className="font-normal text-slate-500">
+            ({recommendations.length - visibleCount} left)
+          </span>
+        </button>
+      )}
     </div>
   );
 };

@@ -308,10 +308,11 @@ export default function App() {
 
   // First choice / backup IDs for labeling pins (hidden while results are stale)
   const rankedLotIds = useMemo(() => {
-    if (isStale || devState !== 'normal') return { first: null, backup: null };
+    if (isStale || devState !== 'normal') return { first: null, backup: null, third: null };
     return {
       first: recommendations[0]?.lot.locationId ?? null,
       backup: recommendations[1]?.lot.locationId ?? null,
+      third: recommendations[2]?.lot.locationId ?? null,
     };
   }, [recommendations, isStale, devState]);
 
@@ -556,6 +557,12 @@ export default function App() {
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
                 onStartRoute={() => handleStartRoute(selectedLot.locationId)}
+                onPlanFor={(date) =>
+                  handleFormChange({
+                    arrivalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+                    arrivalTime: `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`,
+                  })
+                }
                 onClose={handleClearSelection}
               />
             </motion.div>

@@ -78,16 +78,26 @@ describe('getSampleRecommendations', () => {
     expect(getSampleRecommendations(makeRequest('S', '', '12:00')).recommendations).toEqual([]);
   });
 
-  it.each(permits)('returns at most two distinct lots for a %s permit', (permit) => {
+  it.each(permits)('returns a full, distinct ranking for a %s permit, best first', (permit) => {
     const { recommendations } = getSampleRecommendations(makeRequest(permit));
-    expect(recommendations.length).toBeLessThanOrEqual(2);
     const ids = recommendations.map((rec) => rec.lot.locationId);
     expect(new Set(ids).size).toBe(ids.length);
+    recommendations.forEach((rec, i) => {
+      expect(rec.rank).toBe(i + 1);
+      if (i > 0) expect(recommendations[i - 1].score).toBeGreaterThanOrEqual(rec.score);
+    });
+  });
+
+  it('labels the first three First choice, Backup and #3', () => {
+    const { recommendations } = getSampleRecommendations(makeRequest('S'));
+    expect(recommendations.length).toBeGreaterThan(3);
+    expect(recommendations.slice(0, 3).map((r) => r.badgeLabel)).toEqual(['First choice', 'Backup', '#3']);
+    expect(recommendations[2].reason).toMatch(/^Compared with /);
   });
 
   it('ranks the first choice at or above the backup', () => {
     const { recommendations } = getSampleRecommendations(makeRequest('S'));
-    expect(recommendations).toHaveLength(2);
+    expect(recommendations.length).toBeGreaterThanOrEqual(2);
     expect(recommendations[0].badgeLabel).toBe('First choice');
     expect(recommendations[1].badgeLabel).toBe('Backup');
     expect(recommendations[0].score).toBeGreaterThanOrEqual(recommendations[1].score);

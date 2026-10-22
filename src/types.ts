@@ -54,7 +54,10 @@ import type { LotAccess } from './utils/permitRules.ts';
  * Recommendation card output after filtering and scoring.
  */
 export interface ParkingRecommendation {
-  badgeLabel: 'First choice' | 'Backup';
+  /** "First choice", "Backup", then "#3", "#4", ... */
+  badgeLabel: string;
+  /** 1-based position in the ranking. */
+  rank: number;
   lot: ParkingLot;
   score: number;
   reason: string;

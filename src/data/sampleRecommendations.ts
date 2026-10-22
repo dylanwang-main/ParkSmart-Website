@@ -118,6 +118,17 @@ export function compareReasons(
   return { first: firstReason, backup: backupReason };
 }
 
+/** Reason for picks after the backup: how they trade off against the first choice. */
+export function relativeReason(lot: ParkingLot, first: ParkingLot): string {
+  const walkDiff = lot.walkingMinutes - first.walkingMinutes;
+  const spaceDiff = lot.estimatedAvailabilityPercent - first.estimatedAvailabilityPercent;
+  const walk =
+    walkDiff > 0 ? `${walkDiff} min longer walk` : walkDiff < 0 ? `${-walkDiff} min shorter walk` : 'same walk';
+  const space =
+    spaceDiff > 0 ? `more open spaces` : spaceDiff < 0 ? `fewer open spaces` : 'similar space';
+  return `Compared with ${shortName(first)}: ${walk}, ${space}`;
+}
+
 /**
  * SCORING ALGORITHM:
  * Evaluates parking options based on 65% expected availability and 35% walking convenience.
@@ -189,15 +200,17 @@ export function getSampleRecommendations(
   if (scored.length === 0) return response([]);
 
   // 3. First choice and backup, with reasons that compare the two
+  // 3. Full ranking. First choice and backup get reasons comparing the two;
+  //    the rest are explained relative to the first choice.
   const [first, backup] = scored;
   const reasons = compareReasons(first.lot, backup?.lot ?? null, scored.map((s) => s.lot));
-  const recommendations: ParkingRecommendation[] = [
-    { badgeLabel: 'First choice', lot: first.lot, score: first.score, reason: reasons.first, access: first.access },
-  ];
-  if (backup) {
-    recommendations.push({
-      badgeLabel: 'Backup', lot: backup.lot, score: backup.score, reason: reasons.backup!, access: backup.access,
-    });
-  }
+  const recommendations: ParkingRecommendation[] = scored.map((entry, index) => ({
+    rank: index + 1,
+    badgeLabel: index === 0 ? 'First choice' : index === 1 ? 'Backup' : `#${index + 1}`,
+    lot: entry.lot,
+    score: entry.score,
+    access: entry.access,
+    reason: index === 0 ? reasons.first : index === 1 ? reasons.backup! : relativeReason(entry.lot, first.lot),
+  }));
   return response(recommendations);
 }

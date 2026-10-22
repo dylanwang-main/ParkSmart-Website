@@ -5,13 +5,13 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
+import { CalendarClock, CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt, tightFrom } from '../utils/availabilityModel.ts';
-import { accessLabel, lotAccess, usableCategories } from '../utils/permitRules.ts';
+import { accessLabel, formatAccessTime, lotAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface LotDetailCardProps {
   lot: ParkingLot;
@@ -25,6 +25,8 @@ interface LotDetailCardProps {
   isConfirmed: boolean;
   onConfirm: () => void;
   onStartRoute: () => void;
+  /** Moves the arrival to a time when this permit can use the lot. */
+  onPlanFor: (date: Date) => void;
   onClose: () => void;
 }
 
@@ -42,6 +44,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   isConfirmed,
   onConfirm,
   onStartRoute,
+  onPlanFor,
   onClose,
 }) => {
   const percent = availabilityAt(lot, availabilityTime);
@@ -164,13 +167,28 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       </div>
 
       <div className="mt-3">
-        <SpotActions
-          tone="primary"
-          isConfirmed={isConfirmed}
-          disabled={!permitWorks}
-          onConfirm={onConfirm}
-          onStartRoute={onStartRoute}
-        />
+        {permitWorks ? (
+          <SpotActions
+            tone="primary"
+            isConfirmed={isConfirmed}
+            onConfirm={onConfirm}
+            onStartRoute={onStartRoute}
+          />
+        ) : access.status === 'from' ? (
+          // Not usable at this time, but later today/this week: offer to plan for then
+          <button
+            type="button"
+            onClick={() => onPlanFor(access.from)}
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+          >
+            <CalendarClock className="w-4 h-4" aria-hidden="true" />
+            Plan for {formatAccessTime(access.from, when)} instead
+          </button>
+        ) : (
+          <p className="py-2.5 rounded-xl bg-black/[0.05] text-center text-[13px] font-medium text-slate-600">
+            Your {userPermit} permit can't park here. Try another permit or lot.
+          </p>
+        )}
       </div>
 
       <p className="mt-2 text-[11px] text-slate-500 text-center">

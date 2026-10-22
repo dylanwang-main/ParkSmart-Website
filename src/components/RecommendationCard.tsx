@@ -85,7 +85,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             className={`px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${
               isFirstChoice
                 ? 'bg-slate-900 text-white'
-                : 'bg-black/[0.07] text-slate-700'
+                : recommendation.rank === 2
+                ? 'bg-black/[0.07] text-slate-700'
+                : 'bg-black/[0.04] text-slate-500'
             }`}
           >
             {badgeLabel}

@@ -146,7 +146,7 @@ interface MapContainerProps {
   /** Whether the lot detail card is showing at the bottom of the map. */
   isDetailOpen: boolean;
   /** Current first choice / backup, labeled on the map. */
-  rankedLotIds: { first: string | null; backup: string | null };
+  rankedLotIds: { first: string | null; backup: string | null; third: string | null };
   /** User's location once they share it for a route; shown as a blue dot. */
   userLocation: { latitude: number; longitude: number } | null;
   /** Lot the route goes to; framed together with the user's location. */
@@ -352,7 +352,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     lots.forEach((lot, index) => {
       const isSelected = selectedLocationId === lot.locationId;
       const rank =
-        lot.locationId === rankedLotIds.first ? 'first' : lot.locationId === rankedLotIds.backup ? 'backup' : null;
+        lot.locationId === rankedLotIds.first
+          ? 'first'
+          : lot.locationId === rankedLotIds.backup
+          ? 'backup'
+          : lot.locationId === rankedLotIds.third
+          ? 'third'
+          : null;
       let marker = lotMarkersRef.current.get(lot.locationId);
 
       // Create new marker if not exists
@@ -423,6 +429,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           ? '<span class="ps-rank ps-rank-first">First choice</span>'
           : rank === 'backup'
           ? '<span class="ps-rank ps-rank-backup">Backup</span>'
+          : rank === 'third'
+          ? '<span class="ps-rank ps-rank-backup">#3</span>'
           : '';
       const label = `<span class="ps-label">${pinLabel(lot.name)}${rankTag}</span>`;
 
