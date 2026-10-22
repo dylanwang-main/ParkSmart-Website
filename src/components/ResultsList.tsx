@@ -5,7 +5,10 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { ParkingRecommendation, PermitType } from '../types.ts';
+import { MapPin } from 'lucide-react';
+import { ParkingPlannerRequest, ParkingRecommendation } from '../types.ts';
+import { getDestination } from '../data/destinations.ts';
+import { parseArrival } from '../utils/permitRules.ts';
 import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
@@ -15,8 +18,14 @@ interface ResultsListProps {
   isLoading: boolean;
   isError: boolean;
   recommendations: ParkingRecommendation[];
-  /** The permit these results were computed for; highlighted on each card. */
-  userPermit: PermitType;
+  /** The request these results were computed for (null before the first search). */
+  searchedRequest: ParkingPlannerRequest | null;
+  /** Show the "enter your trip details" prompt instead of results. */
+  showIntroPrompt: boolean;
+  /** True when trip details changed since the search; results are greyed out. */
+  isStale: boolean;
+  confirmedLotId: string | null;
+  onConfirmLot: (locationId: string) => void;
   selectedLocationId: string | null;
   onSelectLot: (locationId: string) => void;
   onRetry: () => void;
@@ -31,12 +40,33 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   isLoading,
   isError,
   recommendations,
-  userPermit,
+  searchedRequest,
+  showIntroPrompt,
+  isStale,
+  confirmedLotId,
+  onConfirmLot,
   selectedLocationId,
   onSelectLot,
   onRetry,
   onResetFilters,
 }) => {
+  if (showIntroPrompt && !isLoading) {
+    return (
+      <div className="pt-2">
+        <div className="p-5 text-center rounded-2xl bg-white/40 border border-white/50 space-y-2">
+          <div className="w-10 h-10 mx-auto rounded-full bg-black/5 flex items-center justify-center text-slate-600">
+            <MapPin className="w-5 h-5" aria-hidden="true" />
+          </div>
+          <p className="text-sm font-semibold text-slate-900">Enter your trip details to see options</p>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Pick where you're going, when you'll arrive and your permit, then press Find parking.
+            You can also tap any P on the map to check a structure.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-3 pt-2">
@@ -66,6 +96,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
     );
   }
 
+  // Cards describe the search that produced them, not whatever the form says now
+  const arrival = searchedRequest ? parseArrival(searchedRequest.arrivalDate, searchedRequest.arrivalTime) : null;
+  const destinationName = searchedRequest ? getDestination(searchedRequest.destinationId).name : '';
+
   return (
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between text-xs text-slate-700 font-medium px-1">
@@ -73,7 +107,17 @@ export const ResultsList: React.FC<ResultsListProps> = ({
         <span className="text-[11px] text-slate-600">Ranked by score</span>
       </div>
 
-      <div className="space-y-3">
+      {/* Results no longer match the form: say so and grey them out */}
+      {isStale && (
+        <div role="status" className="px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+          Trip details changed. Press Update results to refresh these options.
+        </div>
+      )}
+
+      <div
+        className={`space-y-3 transition-[opacity,filter] duration-200 ${isStale ? 'opacity-50 grayscale' : ''}`}
+        aria-disabled={isStale}
+      >
         {recommendations.map((rec, index) => {
           return (
             <motion.div
@@ -88,7 +132,12 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             >
               <RecommendationCard
                 recommendation={rec}
-                userPermit={userPermit}
+                userPermit={searchedRequest!.permitType}
+                arrival={arrival}
+                destinationName={destinationName}
+                isStale={isStale}
+                isConfirmed={confirmedLotId === rec.lot.locationId}
+                onConfirm={() => onConfirmLot(rec.lot.locationId)}
                 isSelected={selectedLocationId === rec.lot.locationId}
                 onSelect={() => onSelectLot(rec.lot.locationId)}
               />

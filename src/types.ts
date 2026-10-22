@@ -14,6 +14,9 @@
  */
 export type PermitType = 'A' | 'B' | 'S' | 'SR' | 'D' | 'V';
 
+/** Category painted on a parking stall. Uses the same letters as permits. */
+export type SpaceCategory = PermitType;
+
 /**
  * Campus destination representation for travel planning.
  */
@@ -36,9 +39,12 @@ export interface ParkingLot {
   longitude: number;
   estimatedAvailabilityPercent: number;
   walkingMinutes: number;
-  allowedPermitTypes: PermitType[];
+  /** Stall categories found in the structure (A, B, S, SR, D, V). SAMPLE data for now. */
+  spaceCategories: SpaceCategory[];
   description?: string;
 }
+
+import type { LotAccess } from './utils/permitRules.ts';
 
 /**
  * Recommendation card output after filtering and scoring.
@@ -48,6 +54,8 @@ export interface ParkingRecommendation {
   lot: ParkingLot;
   score: number;
   reason: string;
+  /** When the searched permit can use this lot, relative to the arrival time. */
+  access: LotAccess;
 }
 
 /**

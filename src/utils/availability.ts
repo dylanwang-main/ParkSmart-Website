@@ -18,14 +18,16 @@ export type AvailabilityLevel = 'plenty' | 'filling' | 'nearlyFull';
 export interface AvailabilityStatus {
   level: AvailabilityLevel;
   label: string;
-  /** iOS system green / orange / red */
+  /** iOS system green / orange / red (fills, bars, dots) */
   color: string;
+  /** Darker shade of the same hue, readable as text on light glass */
+  textColor: string;
 }
 
 const STATUS: Record<AvailabilityLevel, AvailabilityStatus> = {
-  plenty: { level: 'plenty', label: 'Plenty of space', color: '#34c759' },
-  filling: { level: 'filling', label: 'Filling up', color: '#ff9f0a' },
-  nearlyFull: { level: 'nearlyFull', label: 'Nearly full', color: '#ff3b30' },
+  plenty: { level: 'plenty', label: 'Plenty of space', color: '#34c759', textColor: '#1f7a37' },
+  filling: { level: 'filling', label: 'Filling up', color: '#ff9f0a', textColor: '#8a4b00' },
+  nearlyFull: { level: 'nearlyFull', label: 'Nearly full', color: '#ff3b30', textColor: '#b42318' },
 };
 
 /** Buckets an availability percentage into a level with its label and color. */

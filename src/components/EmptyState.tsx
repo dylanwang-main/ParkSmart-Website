@@ -21,10 +21,10 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onResetFilters }) => {
       </div>
       <div>
         <h4 className="text-sm font-bold text-slate-800">
-          No eligible parking found for these settings
+          No structure takes your permit at that time
         </h4>
         <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto leading-relaxed">
-          Try choosing a different permit type or switching to another campus destination.
+          Your permit may only work in some structures after 4 PM or on weekends. Try a later arrival time or a different permit.
         </p>
       </div>
       {onResetFilters && (

@@ -251,3 +251,30 @@
   .ps-ground { animation: none; }
   .ps-glyph { transition: none; }
 }
+
+/* Pin names: hidden at overview zoom to prevent collisions; shown for ranked,
+   selected, hovered or focused pins, and for every pin once zoomed in. */
+.ps-label { display: none; }
+.ps-show-labels .ps-label,
+.ps-ranked .ps-label,
+.ps-selected .ps-label,
+.parksmart-marker:hover .ps-label,
+.parksmart-marker:focus-visible .ps-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* "First choice" / "Backup" tag under a ranked pin's name, matching the panel badges */
+.ps-rank {
+  margin-top: 3px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: none;
+}
+.ps-rank-first { background: #0f172a; color: #fff; }
+.ps-rank-backup { background: rgba(255, 255, 255, 0.92); color: #334155; }

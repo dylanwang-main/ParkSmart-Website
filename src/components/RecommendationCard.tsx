@@ -4,10 +4,11 @@
  */
 
 import React from 'react';
-import { Footprints, CheckCircle2 } from 'lucide-react';
+import { Footprints, CheckCircle2, Clock, Navigation } from 'lucide-react';
 import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 import { AvailabilityLevel, availabilityStatus } from '../utils/availability.ts';
+import { accessLabel, usableCategories } from '../utils/permitRules.ts';
 
 const BADGE_CLASS: Record<AvailabilityLevel, string> = {
   plenty: 'text-emerald-700 bg-emerald-50 border-emerald-200',
@@ -23,9 +24,18 @@ const BAR_CLASS: Record<AvailabilityLevel, string> = {
 
 interface RecommendationCardProps {
   recommendation: ParkingRecommendation;
+  /** Permit the results were searched with. */
   userPermit: PermitType;
+  /** Arrival time the results were searched with. */
+  arrival: Date | null;
+  /** Destination the walk time is measured to. */
+  destinationName: string;
+  /** Results no longer match the form; disables confirming. */
+  isStale: boolean;
   isSelected: boolean;
+  isConfirmed: boolean;
   onSelect: () => void;
+  onConfirm: () => void;
 }
 
 /**
@@ -35,33 +45,30 @@ interface RecommendationCardProps {
 export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   recommendation,
   userPermit,
+  arrival,
+  destinationName,
+  isStale,
   isSelected,
+  isConfirmed,
   onSelect,
+  onConfirm,
 }) => {
-  const { badgeLabel, lot, reason } = recommendation;
+  const { badgeLabel, lot, reason, access } = recommendation;
+  const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
 
   // Badge and bar colors come from the shared availability buckets
   const level = availabilityStatus(lot.estimatedAvailabilityPercent).level;
   const badgeClass = BADGE_CLASS[level];
   const barClass = BAR_CLASS[level];
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect();
-    }
-  };
-
   const isFirstChoice = badgeLabel === 'First choice';
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={isSelected}
-      aria-label={`${badgeLabel}: ${lot.name}, ${lot.walkingMinutes} minute walk, ${lot.estimatedAvailabilityPercent}% estimated capacity`}
+    // Clicking anywhere on the card highlights the lot on the map; keyboard users use
+    // the title button. (The card itself is not a button because it contains one.)
+    <article
       onClick={onSelect}
-      onKeyDown={handleKeyDown}
+      aria-label={`${badgeLabel}: ${lot.name}`}
       className={`group relative p-3.5 rounded-2xl transition-all duration-200 cursor-pointer text-left border select-none ${
         isSelected
           ? 'bg-white/85 border-white shadow-lg shadow-black/10 ring-1 ring-slate-900/15 -translate-y-0.5'
@@ -91,13 +98,25 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
       {/* Lot Title & Walk Time */}
       <div className="flex items-baseline justify-between gap-2 mb-2">
-        <h3 className="text-base font-bold text-slate-900 ">
-          {lot.name}
+        <h3 className="text-base font-bold text-slate-900">
+          <button
+            type="button"
+            aria-pressed={isSelected}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect();
+            }}
+            className="text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+          >
+            {lot.name}
+          </button>
         </h3>
-        <div className="flex items-center gap-1 text-slate-600 font-semibold text-xs shrink-0">
-          <Footprints className="w-3.5 h-3.5 text-slate-400" />
-          <span>{lot.walkingMinutes} min walk</span>
-        </div>
+      </div>
+      <div className="-mt-1 mb-2 flex items-center gap-1 text-slate-600 text-xs">
+        <Footprints className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+        <span>
+          <span className="font-semibold">{lot.walkingMinutes} min walk</span> to {destinationName}
+        </span>
       </div>
 
       {/* Availability Meter */}
@@ -126,27 +145,57 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         {reason}
       </div>
 
-      {/* Allowed Permits Footnote */}
-      <div className="flex items-center justify-between pt-1 border-t border-black/5 text-[11px]">
+      {/* Parking hours for this permit, and which stall types it can use */}
+      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-black/5 text-[11px]">
         <span className="flex items-center gap-1 font-medium text-emerald-700">
-          <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-          Your {userPermit} permit works here
+          {access.status === 'always' ? (
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          )}
+          {arrival ? accessLabel(access, userPermit, arrival) : ''}
         </span>
-        <div className="flex gap-1" aria-label={`Eligible permits: ${lot.allowedPermitTypes.join(', ')}`}>
-          {lot.allowedPermitTypes.map((permit) => (
+        <div className="flex items-center gap-1" aria-label={`Space types here: ${lot.spaceCategories.join(', ')}. Usable now: ${usable.join(', ')}`}>
+          {lot.spaceCategories.map((category) => (
             <span
-              key={permit}
+              key={category}
+              title={usable.includes(category) ? `You can use ${category} spaces` : `${category} spaces not valid for you at this time`}
               className={`px-1.5 py-0.2 rounded font-mono text-[10px] ${
-                permit === userPermit
+                usable.includes(category)
                   ? 'bg-slate-900 text-white font-bold'
-                  : 'bg-black/5 text-slate-500 font-medium'
+                  : 'bg-black/5 text-slate-400 font-medium line-through decoration-slate-400/60'
               }`}
             >
-              {permit}
+              {category}
             </span>
           ))}
         </div>
       </div>
-    </div>
+
+      {/* Confirm step (routing will start from here in a later version) */}
+      <button
+        type="button"
+        disabled={isStale}
+        onClick={(e) => {
+          e.stopPropagation();
+          onConfirm();
+        }}
+        className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer disabled:cursor-not-allowed ${
+          isConfirmed
+            ? 'bg-[#34c759]/15 text-[#1f7a37]'
+            : 'bg-black/[0.06] text-slate-800 hover:bg-black/[0.1]'
+        }`}
+      >
+        {isConfirmed ? (
+          <>
+            <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Parking here. Directions coming soon
+          </>
+        ) : (
+          <>
+            <Navigation className="w-4 h-4" aria-hidden="true" /> Select this spot
+          </>
+        )}
+      </button>
+    </article>
   );
 };

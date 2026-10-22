@@ -13,12 +13,13 @@ import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
 import { DEFAULT_DESTINATION_ID, getDestination } from './data/destinations.ts';
+import { getArrivalError } from './utils/arrival.ts';
+import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
   DevSimulationState,
-  PermitType,
 } from './types.ts';
 
 /** Width the open planner panel covers on the left (380px panel + 24px gap). */
@@ -65,9 +66,12 @@ export default function App() {
   // 4. Loading & Animation State
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  // Permit the current results were computed for (so card highlights stay
-  // accurate even if the user changes the permit pill before searching again)
-  const [searchedPermit, setSearchedPermit] = useState<PermitType>('S');
+  // The exact request the current results were computed for. null until the first
+  // search, which is how the panel knows to show its "enter your trip" prompt.
+  const [searchedRequest, setSearchedRequest] = useState<ParkingPlannerRequest | null>(null);
+
+  // Lot the user confirmed with "Select this spot" (routing will hook in here later)
+  const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
   // Lot detail card (opened by clicking a pin on the map)
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
@@ -82,14 +86,16 @@ export default function App() {
   const runPlanner = useCallback(
     (customInputs?: ParkingPlannerRequest) => {
       const inputs = customInputs || formInputs;
+      if (getArrivalError(inputs)) return; // the form shows the message; nothing to search
       setIsLoading(true);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
+      setConfirmedLotId(null);
 
-      // 1-second shimmer duration as required by specs
+      // Short simulated request so the loading state is visible
       const timer = setTimeout(() => {
         const response = getSampleRecommendations(inputs);
         setRecommendations(response.recommendations);
-        setSearchedPermit(inputs.permitType);
+        setSearchedRequest(inputs);
         setIsLoading(false);
 
         // Pre-select the First Choice recommendation lot by default
@@ -104,12 +110,6 @@ export default function App() {
     },
     [formInputs]
   );
-
-  // Initial calculation on first mount
-  useEffect(() => {
-    runPlanner();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   // Handle preference form changes
   const handleFormChange = (changes: Partial<ParkingPlannerRequest>) => {
@@ -196,6 +196,30 @@ export default function App() {
     [formInputs.destinationId]
   );
 
+  // Results go stale when any trip detail changes after the search that produced them
+  const isStale =
+    searchedRequest !== null &&
+    (searchedRequest.destinationId !== formInputs.destinationId ||
+      searchedRequest.permitType !== formInputs.permitType ||
+      searchedRequest.arrivalDate !== formInputs.arrivalDate ||
+      searchedRequest.arrivalTime !== formInputs.arrivalTime);
+
+  // Inline validation for the arrival date/time (empty or already passed)
+  const arrivalError = getArrivalError(formInputs);
+
+  // First choice / backup IDs for labeling pins (hidden while results are stale)
+  const rankedLotIds = useMemo(() => {
+    if (isStale || devState !== 'normal') return { first: null, backup: null };
+    return {
+      first: recommendations[0]?.lot.locationId ?? null,
+      backup: recommendations[1]?.lot.locationId ?? null,
+    };
+  }, [recommendations, isStale, devState]);
+
+  const handleConfirmLot = useCallback((locationId: string) => {
+    setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
+  }, []);
+
   // Derive active rendering state based on normal computation or dev simulator
   const activeIsLoading = devState === 'loading' || isLoading;
   const activeIsError = devState === 'error';
@@ -218,6 +242,7 @@ export default function App() {
         onClearSelection={handleClearSelection}
         isPanelOpen={isPanelOpen}
         isDetailOpen={isDetailOpen}
+        rankedLotIds={rankedLotIds}
       />
 
       {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
@@ -287,6 +312,15 @@ export default function App() {
                 UC San Diego
               </motion.span>
             </div>
+            {/* One-line intro so first-time visitors know what this is for */}
+            <motion.p
+              className="mt-2 text-[13px] text-slate-700 leading-snug"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4, delay: 0.35 }}
+            >
+              Find where to park before you arrive.
+            </motion.p>
           </header>
 
           {/* Internally Scrollable Body */}
@@ -301,6 +335,11 @@ export default function App() {
                 onChange={handleFormChange}
                 onSubmit={handleFormSubmit}
                 isLoading={activeIsLoading}
+                arrivalError={arrivalError}
+                onSetArrivalNow={() =>
+                  handleFormChange({ arrivalDate: getTodayDateString(), arrivalTime: getCurrentTimeString() })
+                }
+                submitLabel={isStale ? 'Update results' : 'Find parking'}
               />
             </section>
 
@@ -320,7 +359,11 @@ export default function App() {
                 isLoading={activeIsLoading}
                 isError={activeIsError}
                 recommendations={activeRecommendations}
-                userPermit={searchedPermit}
+                searchedRequest={searchedRequest}
+                showIntroPrompt={searchedRequest === null && devState === 'normal'}
+                isStale={isStale}
+                confirmedLotId={confirmedLotId}
+                onConfirmLot={handleConfirmLot}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
@@ -358,7 +401,10 @@ export default function App() {
               <LotDetailCard
                 lot={selectedLot}
                 userPermit={formInputs.permitType}
+                arrival={parseArrival(formInputs.arrivalDate, formInputs.arrivalTime)}
                 destination={currentDestination}
+                isConfirmed={confirmedLotId === selectedLot.locationId}
+                onConfirm={() => handleConfirmLot(selectedLot.locationId)}
                 onClose={handleClearSelection}
               />
             </motion.div>

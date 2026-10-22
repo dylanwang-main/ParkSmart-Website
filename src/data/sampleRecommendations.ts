@@ -12,6 +12,7 @@ import {
   ParkingRecommendation,
 } from '../types.ts';
 import { PARKING_LOTS } from './parkingLots.ts';
+import { lotAccess, parseArrival } from '../utils/permitRules.ts';
 
 /** Re-exported so existing imports keep working. Real names/coordinates, sample stats. */
 export { PARKING_LOTS as SAMPLE_LOTS };
@@ -58,34 +59,62 @@ export function estimateWalkingTime(lot: ParkingLot, destinationId: string): num
   return Math.max(3, calculatedMinutes);
 }
 
+/** Short name for reasons, e.g. "Gilman" from "Gilman Parking Structure". */
+function shortName(lot: ParkingLot): string {
+  return lot.name.replace(' Parking Structure', '');
+}
+
 /**
- * Generates an automated plain-language reason explaining why this lot was chosen.
+ * Explains each pick by comparing it with the other one (and with every eligible
+ * lot for "closest"/"most open"), instead of restating its own numbers.
  */
-function generateRecommendationReason(
-  availability: number,
-  walkingMinutes: number,
-  rank: 'First choice' | 'Backup'
-): string {
-  if (rank === 'First choice') {
-    if (availability >= 80 && walkingMinutes <= 7) {
-      return `Optimal balance: ${availability}% expected capacity and only ${walkingMinutes} min walk`;
-    }
-    if (availability >= 85) {
-      return `Highest expected availability (${availability}%), quick ${walkingMinutes} min walk`;
-    }
-    if (walkingMinutes <= 5) {
-      return `Closest eligible parking at ${walkingMinutes} min walk with solid ${availability}% availability`;
-    }
-    return `Higher expected availability (${availability}%), ${walkingMinutes} min walk`;
-  } else {
-    if (walkingMinutes <= 6) {
-      return `Quickest backup option: ${walkingMinutes} min walk (${availability}% capacity)`;
-    }
-    if (availability >= 80) {
-      return `Reliable alternative with ${availability}% expected space buffer`;
-    }
-    return `Solid alternate candidate, ${walkingMinutes} min walk (${availability}% availability)`;
+export function compareReasons(
+  first: ParkingLot,
+  backup: ParkingLot | null,
+  allEligible: ParkingLot[]
+): { first: string; backup: string | null } {
+  const isClosest = allEligible.every((lot) => first.walkingMinutes <= lot.walkingMinutes);
+  const isMostOpen = allEligible.every(
+    (lot) => first.estimatedAvailabilityPercent >= lot.estimatedAvailabilityPercent
+  );
+
+  if (!backup) {
+    return {
+      first: `Only structure your permit can use at this time, ${first.walkingMinutes} min walk`,
+      backup: null,
+    };
   }
+
+  const walkDiff = backup.walkingMinutes - first.walkingMinutes; // > 0: first is closer
+  const spaceDiff = first.estimatedAvailabilityPercent - backup.estimatedAvailabilityPercent; // > 0: first has more room
+
+  let firstReason: string;
+  if (walkDiff > 0 && spaceDiff > 0) {
+    firstReason = `Shorter walk and more open spaces than your backup`;
+  } else if (isClosest && walkDiff > 0) {
+    firstReason = `Closest eligible parking, ${walkDiff} min shorter walk than your backup`;
+  } else if (walkDiff > 0) {
+    firstReason = `${walkDiff} min shorter walk than your backup, with ${first.estimatedAvailabilityPercent}% open`;
+  } else if (isMostOpen && spaceDiff > 0) {
+    firstReason = `Most open spaces of any eligible lot (${first.estimatedAvailabilityPercent}% vs ${backup.estimatedAvailabilityPercent}% at your backup)`;
+  } else if (spaceDiff > 0) {
+    firstReason = `More open spaces than your backup (${first.estimatedAvailabilityPercent}% vs ${backup.estimatedAvailabilityPercent}%)`;
+  } else {
+    firstReason = `Best overall balance of open spaces and walking time`;
+  }
+
+  let backupReason: string;
+  if (walkDiff < 0) {
+    backupReason = `${-walkDiff} min closer than ${shortName(first)}, but fewer open spaces`;
+  } else if (spaceDiff < 0) {
+    backupReason = `More open spaces than ${shortName(first)}, but a ${walkDiff} min longer walk`;
+  } else if (walkDiff === 0) {
+    backupReason = `Same walk as ${shortName(first)}, a little fuller`;
+  } else {
+    backupReason = `Next best if ${shortName(first)} fills up, ${walkDiff} min longer walk`;
+  }
+
+  return { first: firstReason, backup: backupReason };
 }
 
 /**
@@ -122,77 +151,50 @@ export function calculateParkingScore(
 
 /**
  * Filter and rank sample parking lots for a user request.
- * Returns the top two eligible lots (First choice & Backup).
+ * A lot is eligible when the permit can use one of its stall categories at the
+ * arrival time (see utils/permitRules.ts). Returns the top two by score.
  *
  * NOTE: Replace this function body with a fetch to your real API endpoint in production.
  */
 export function getSampleRecommendations(
   request: ParkingPlannerRequest
 ): ParkingPlannerResponse {
-  // 1. Filter lots by the selected permit type
-  const eligibleLots = PARKING_LOTS.filter((lot) =>
-    lot.allowedPermitTypes.includes(request.permitType)
-  );
-
-  // If no lots match permit type, return empty recommendations
-  if (eligibleLots.length === 0) {
-    return {
-      recommendations: [],
-      query: request,
-      generatedAt: new Date().toISOString(),
-      isSampleData: true,
-    };
-  }
-
-  // 2. Compute dynamic walk times and scores for each eligible lot
-  const scoredLots = eligibleLots.map((lot) => {
-    const walkTime = estimateWalkingTime(lot, request.destinationId);
-    const score = calculateParkingScore(lot.estimatedAvailabilityPercent, walkTime);
-    return {
-      lot: {
-        ...lot,
-        walkingMinutes: walkTime,
-      },
-      score,
-    };
-  });
-
-  // 3. Sort descending by computed score
-  scoredLots.sort((a, b) => b.score - a.score);
-
-  // 4. Select top two lots as "First choice" and "Backup"
-  const recommendations: ParkingRecommendation[] = [];
-
-  if (scoredLots.length > 0) {
-    recommendations.push({
-      badgeLabel: 'First choice',
-      lot: scoredLots[0].lot,
-      score: scoredLots[0].score,
-      reason: generateRecommendationReason(
-        scoredLots[0].lot.estimatedAvailabilityPercent,
-        scoredLots[0].lot.walkingMinutes,
-        'First choice'
-      ),
-    });
-  }
-
-  if (scoredLots.length > 1) {
-    recommendations.push({
-      badgeLabel: 'Backup',
-      lot: scoredLots[1].lot,
-      score: scoredLots[1].score,
-      reason: generateRecommendationReason(
-        scoredLots[1].lot.estimatedAvailabilityPercent,
-        scoredLots[1].lot.walkingMinutes,
-        'Backup'
-      ),
-    });
-  }
-
-  return {
+  const response = (recommendations: ParkingRecommendation[]): ParkingPlannerResponse => ({
     recommendations,
     query: request,
     generatedAt: new Date().toISOString(),
     isSampleData: true,
-  };
+  });
+
+  const arrival = parseArrival(request.arrivalDate, request.arrivalTime);
+  if (!arrival) return response([]);
+
+  // 1. Keep lots the permit can use at the arrival time; attach walk time and access
+  const scored = PARKING_LOTS.flatMap((lot) => {
+    const access = lotAccess(request.permitType, lot.spaceCategories, arrival);
+    if (access.status !== 'always' && access.status !== 'until') return [];
+    const walkingMinutes = estimateWalkingTime(lot, request.destinationId);
+    return [{
+      lot: { ...lot, walkingMinutes },
+      access,
+      score: calculateParkingScore(lot.estimatedAvailabilityPercent, walkingMinutes),
+    }];
+  });
+
+  // 2. Highest score first
+  scored.sort((a, b) => b.score - a.score);
+  if (scored.length === 0) return response([]);
+
+  // 3. First choice and backup, with reasons that compare the two
+  const [first, backup] = scored;
+  const reasons = compareReasons(first.lot, backup?.lot ?? null, scored.map((s) => s.lot));
+  const recommendations: ParkingRecommendation[] = [
+    { badgeLabel: 'First choice', lot: first.lot, score: first.score, reason: reasons.first, access: first.access },
+  ];
+  if (backup) {
+    recommendations.push({
+      badgeLabel: 'Backup', lot: backup.lot, score: backup.score, reason: reasons.backup!, access: backup.access,
+    });
+  }
+  return response(recommendations);
 }

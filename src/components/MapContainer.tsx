@@ -36,7 +36,10 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
 }
 
 /** Height of the bottom strip covered by the lot detail card (card + margins). */
-const DETAIL_CARD_INSET_PX = 330;
+const DETAIL_CARD_INSET_PX = 390;
+
+/** Zoom at which every pin shows its name (below it, only ranked/selected/hovered pins do). */
+const SHOW_ALL_LABELS_ZOOM = 16;
 
 /** Pin drop-in timing; must match the .pin-drop duration in index.css. */
 const PIN_DROP_DURATION_MS = 420;
@@ -79,6 +82,8 @@ interface MapContainerProps {
   isPanelOpen: boolean;
   /** Whether the lot detail card is showing at the bottom of the map. */
   isDetailOpen: boolean;
+  /** Current first choice / backup, labeled on the map. */
+  rankedLotIds: { first: string | null; backup: string | null };
 }
 
 /**
@@ -93,6 +98,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onClearSelection,
   isPanelOpen,
   isDetailOpen,
+  rankedLotIds,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -169,6 +175,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       }),
       'bottom-right'
     );
+
+    // Show every pin's name only when zoomed in enough that they don't collide
+    const updateLabelVisibility = () =>
+      map.getContainer().classList.toggle('ps-show-labels', map.getZoom() >= SHOW_ALL_LABELS_ZOOM);
+    map.on('zoom', updateLabelVisibility);
+    updateLabelVisibility();
 
     // On initial map style load, fit bounds to all lots plus the destination
     map.on('load', () => {
@@ -256,6 +268,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     // Create or refresh markers
     lots.forEach((lot, index) => {
       const isSelected = selectedLocationId === lot.locationId;
+      const rank =
+        lot.locationId === rankedLotIds.first ? 'first' : lot.locationId === rankedLotIds.backup ? 'backup' : null;
       let marker = lotMarkersRef.current.get(lot.locationId);
 
       // Create new marker if not exists
@@ -277,7 +291,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         // Hovered pin rises above overlapping neighbors so it can be clicked
         el.addEventListener('mouseenter', () => { el.style.zIndex = '4'; });
         el.addEventListener('mouseleave', () => {
-          el.style.zIndex = el.getAttribute('aria-pressed') === 'true' ? '3' : '1';
+          el.style.zIndex = el.dataset.baseZ ?? '1';
         });
 
         el.addEventListener('keydown', (e) => {
@@ -303,21 +317,30 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const el = marker.getElement();
       // Explicit z-index on every pin (its own stacking context) so the selected or
       // hovered pin reliably stacks above overlapping neighbors like Gilman/Triton.
-      el.style.zIndex = isSelected ? '3' : '1';
+      // Stacking: selected (3) > first choice/backup (2) > others (1); hover raises to 4
+      el.dataset.baseZ = isSelected ? '3' : rank ? '2' : '1';
+      el.style.zIndex = el.dataset.baseZ;
       el.setAttribute('aria-pressed', String(isSelected));
       // Label style follows the basemap: white-on-dark for satellite, dark-on-light for map.
       // A class flip is enough; no need to rebuild the pin.
       el.classList.toggle('ps-on-light', basemap === 'map');
       el.classList.toggle('ps-selected', isSelected);
+      el.classList.toggle('ps-ranked', rank !== null);
 
-      // Rebuild the pin's HTML only when its selected state actually changed
+      // Rebuild the pin's HTML only when its selected state or rank actually changed
       // (usually 1 or 2 pins per click, not all of them).
-      const selectedKey = String(isSelected);
-      if (el.dataset.renderedSelected === selectedKey) return;
-      el.dataset.renderedSelected = selectedKey;
+      const renderKey = `${isSelected}|${rank}`;
+      if (el.dataset.renderKey === renderKey) return;
+      el.dataset.renderKey = renderKey;
 
       const avail = `<span class="ps-avail" style="background:${availabilityStatus(lot.estimatedAvailabilityPercent).color}"></span>`;
-      const label = `<span class="ps-label">${pinLabel(lot.name)}</span>`;
+      const rankTag =
+        rank === 'first'
+          ? '<span class="ps-rank ps-rank-first">First choice</span>'
+          : rank === 'backup'
+          ? '<span class="ps-rank ps-rank-backup">Backup</span>'
+          : '';
+      const label = `<span class="ps-label">${pinLabel(lot.name)}${rankTag}</span>`;
 
       // If the pin is rebuilt while its drop-in is still playing, offset the delay by the
       // time already elapsed; a negative delay resumes the animation part-way through.
@@ -340,7 +363,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         </div>
       `;
     });
-  }, [lots, selectedLocationId, onSelectLot, basemap]);
+  }, [lots, selectedLocationId, onSelectLot, basemap, rankedLotIds]);
 
   // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
   useEffect(() => {

@@ -15,7 +15,8 @@ import { ParkingLot } from '../types.ts';
  *   - Coordinates mark each structure's building point, NOT its vehicle entrance.
  *
  * SAMPLE (not real yet):
- *   - estimatedAvailabilityPercent and allowedPermitTypes are placeholders until
+ *   - estimatedAvailabilityPercent and spaceCategories (which stall types each
+ *     structure has) are placeholders until
  *     the QPASS pipeline and verified permit rules are connected.
  *   - walkingMinutes is a fallback; real values are estimated from distance at runtime.
  *
@@ -33,7 +34,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23365383,
     estimatedAvailabilityPercent: 82,
     walkingMinutes: 8,
-    allowedPermitTypes: ['A', 'B', 'S', 'V'],
+    spaceCategories: ['A', 'B', 'S', 'V'],
   },
   {
     locationId: 'hopkins-ps',
@@ -42,7 +43,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23933606,
     estimatedAvailabilityPercent: 64,
     walkingMinutes: 6,
-    allowedPermitTypes: ['A', 'B', 'S'],
+    spaceCategories: ['A', 'B', 'S'],
   },
   {
     locationId: 'pangea-ps',
@@ -51,7 +52,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24306936,
     estimatedAvailabilityPercent: 71,
     walkingMinutes: 9,
-    allowedPermitTypes: ['B', 'S', 'SR', 'D'],
+    spaceCategories: ['B', 'S', 'SR', 'D'],
   },
   {
     locationId: 'scholars-ps',
@@ -60,7 +61,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24163894,
     estimatedAvailabilityPercent: 55,
     walkingMinutes: 7,
-    allowedPermitTypes: ['A', 'B', 'V'],
+    spaceCategories: ['A', 'B', 'V'],
   },
   {
     locationId: 'theatre-district-ps',
@@ -69,7 +70,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24305356,
     estimatedAvailabilityPercent: 77,
     walkingMinutes: 14,
-    allowedPermitTypes: ['B', 'S', 'V'],
+    spaceCategories: ['B', 'S', 'V'],
   },
   {
     locationId: 'south-ps',
@@ -78,7 +79,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23709381,
     estimatedAvailabilityPercent: 48,
     walkingMinutes: 12,
-    allowedPermitTypes: ['A', 'B', 'V'],
+    spaceCategories: ['A', 'B', 'V'],
   },
   {
     locationId: 'triton-ps',
@@ -87,7 +88,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23527198,
     estimatedAvailabilityPercent: 69,
     walkingMinutes: 7,
-    allowedPermitTypes: ['A', 'B', 'S', 'V'],
+    spaceCategories: ['A', 'B', 'S', 'V'],
   },
   {
     locationId: 'campus-point-west-ps',
@@ -96,7 +97,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22604283,
     estimatedAvailabilityPercent: 88,
     walkingMinutes: 16,
-    allowedPermitTypes: ['A', 'B', 'D'],
+    spaceCategories: ['A', 'B', 'D'],
   },
   {
     locationId: 'campus-point-east-ps',
@@ -105,7 +106,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22513874,
     estimatedAvailabilityPercent: 79,
     walkingMinutes: 17,
-    allowedPermitTypes: ['B', 'S', 'D'],
+    spaceCategories: ['B', 'S', 'D'],
   },
   {
     locationId: 'athena-ps',
@@ -114,6 +115,6 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22184339,
     estimatedAvailabilityPercent: 85,
     walkingMinutes: 20,
-    allowedPermitTypes: ['B', 'S', 'SR', 'D'],
+    spaceCategories: ['B', 'S', 'SR', 'D'],
   },
 ];

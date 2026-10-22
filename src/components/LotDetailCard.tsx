@@ -5,16 +5,21 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, Footprints, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Footprints, Navigation, X, XCircle } from 'lucide-react';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
+import { accessLabel, lotAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface LotDetailCardProps {
   lot: ParkingLot;
   /** Permit currently chosen in the planner form. */
   userPermit: PermitType;
+  /** Arrival time from the form; null if the date/time is missing or invalid. */
+  arrival: Date | null;
   destination: CampusDestination;
+  isConfirmed: boolean;
+  onConfirm: () => void;
   onClose: () => void;
 }
 
@@ -26,12 +31,19 @@ interface LotDetailCardProps {
 export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   lot,
   userPermit,
+  arrival,
   destination,
+  isConfirmed,
+  onConfirm,
   onClose,
 }) => {
   const percent = lot.estimatedAvailabilityPercent;
   const status = availabilityStatus(percent);
-  const permitWorks = lot.allowedPermitTypes.includes(userPermit);
+  // Hours are checked at the arrival time in the form (falls back to now)
+  const when = arrival ?? new Date();
+  const access = lotAccess(userPermit, lot.spaceCategories, when);
+  const permitWorks = access.status === 'always' || access.status === 'until';
+  const usable = usableCategories(userPermit, lot.spaceCategories, when);
   const walkMinutes = estimateWalkingTime(lot, destination.id);
 
   return (
@@ -75,7 +87,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           </div>
           <span
             className="px-2.5 py-1 rounded-full text-xs font-semibold"
-            style={{ color: status.color, backgroundColor: `${status.color}1f` }}
+            style={{ color: status.textColor, backgroundColor: `${status.color}26` }}
           >
             {status.label}
           </span>
@@ -95,23 +107,25 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       {/* Facts */}
       <div className="mt-4 rounded-2xl bg-black/[0.04] divide-y divide-black/5 text-[13px]">
         <div className="flex items-center gap-2 px-3 py-2.5">
-          {permitWorks ? (
+          {access.status === 'always' ? (
             <CheckCircle2 className="w-4 h-4 text-[#34c759] shrink-0" aria-hidden="true" />
+          ) : permitWorks ? (
+            <Clock className="w-4 h-4 text-[#34c759] shrink-0" aria-hidden="true" />
           ) : (
             <XCircle className="w-4 h-4 text-[#ff3b30] shrink-0" aria-hidden="true" />
           )}
-          <span className="font-medium">
-            {permitWorks ? `Your ${userPermit} permit works here` : `Not valid with your ${userPermit} permit`}
-          </span>
-          <div className="ml-auto flex gap-1">
-            {lot.allowedPermitTypes.map((permit) => (
+          <span className="font-medium">{accessLabel(access, userPermit, when)}</span>
+          <div className="ml-auto flex gap-1" aria-label={`Space types: ${lot.spaceCategories.join(', ')}`}>
+            {lot.spaceCategories.map((category) => (
               <span
-                key={permit}
+                key={category}
                 className={`px-1.5 rounded font-mono text-[10px] leading-4 ${
-                  permit === userPermit ? 'bg-slate-900 text-white font-bold' : 'bg-black/5 text-slate-500'
+                  usable.includes(category)
+                    ? 'bg-slate-900 text-white font-bold'
+                    : 'bg-black/5 text-slate-400 line-through decoration-slate-400/60'
                 }`}
               >
-                {permit}
+                {category}
               </span>
             ))}
           </div>
@@ -125,7 +139,26 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
         </div>
       </div>
 
-      <p className="mt-3 text-[11px] text-slate-500 text-center">
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={!permitWorks}
+        className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+          isConfirmed ? 'bg-[#34c759]/15 text-[#1f7a37]' : 'bg-[#007aff] text-white hover:bg-[#0067d6]'
+        }`}
+      >
+        {isConfirmed ? (
+          <>
+            <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Parking here. Directions coming soon
+          </>
+        ) : (
+          <>
+            <Navigation className="w-4 h-4" aria-hidden="true" /> Select this spot
+          </>
+        )}
+      </button>
+
+      <p className="mt-2 text-[11px] text-slate-500 text-center">
         Sample estimate, not live availability
       </p>
     </motion.div>

@@ -15,6 +15,12 @@ interface PreferenceFormProps {
   onChange: (newData: Partial<ParkingPlannerRequest>) => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
+  /** Problem with the arrival date/time, shown under the fields; blocks searching. */
+  arrivalError: string | null;
+  /** Resets the arrival date/time to right now. */
+  onSetArrivalNow: () => void;
+  /** "Find parking", or "Update results" when the shown results are stale. */
+  submitLabel: string;
 }
 
 /**
@@ -26,6 +32,9 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   onChange,
   onSubmit,
   isLoading,
+  arrivalError,
+  onSetArrivalNow,
+  submitLabel,
 }) => {
   const [isDestinationOpen, setIsDestinationOpen] = useState(false);
   const [destinationSearch, setDestinationSearch] = useState('');
@@ -152,6 +161,8 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               type="date"
               value={formData.arrivalDate}
               onChange={(e) => onChange({ arrivalDate: e.target.value })}
+              aria-invalid={arrivalError !== null}
+              aria-describedby={arrivalError ? 'arrival-error' : undefined}
               className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
             />
           </div>
@@ -170,11 +181,31 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               type="time"
               value={formData.arrivalTime}
               onChange={(e) => onChange({ arrivalTime: e.target.value })}
+              aria-invalid={arrivalError !== null}
+              aria-describedby={arrivalError ? 'arrival-error' : undefined}
               className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
             />
           </div>
         </div>
       </div>
+
+      {/* Arrival validation: empty or past date/time */}
+      {arrivalError && (
+        <div
+          id="arrival-error"
+          role="alert"
+          className="-mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#ff3b30]/10 text-[12px] text-[#c0261d] font-medium"
+        >
+          <span>{arrivalError}</span>
+          <button
+            type="button"
+            onClick={onSetArrivalNow}
+            className="shrink-0 px-2 py-0.5 rounded-md bg-white/70 text-slate-800 font-semibold hover:bg-white cursor-pointer"
+          >
+            Use now
+          </button>
+        </div>
+      )}
 
       {/* Permit Type Pill Selector */}
       <div>
@@ -223,8 +254,8 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* Primary Action Button */}
       <button
         type="submit"
-        disabled={isLoading}
-        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm btn-shine relative overflow-hidden text-white bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-75 disabled:cursor-wait flex items-center justify-center gap-2 cursor-pointer"
+        disabled={isLoading || arrivalError !== null}
+        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm btn-shine relative overflow-hidden text-white bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
           <>
@@ -232,7 +263,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             <span>Finding parking options...</span>
           </>
         ) : (
-          <span>Find parking</span>
+          <span>{submitLabel}</span>
         )}
       </button>
     </form>

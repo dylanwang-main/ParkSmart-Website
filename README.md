@@ -32,9 +32,17 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 |---|---|---|
 | Parking structure names and pin locations | **Real** (verified 2026-10-21) | UCSD campus GIS, Building Points Public layer |
 | Destination names and locations (141 buildings, searchable) | **Real** (verified 2026-10-21) | Same UCSD GIS layer, filtered to places people visit (`src/data/destinations.ts`) |
-| Availability %, eligible permits, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
+| Availability %, stall categories per structure, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
 
 Lot data lives in `src/data/parkingLots.ts`. Pins mark each structure's building point, not its vehicle entrance. Mapping each structure to its official P-number (e.g. P701) is still an open question for the backend team.
+
+---
+
+## Permit Hours (time-aware eligibility)
+
+`src/utils/permitRules.ts` encodes when each permit may use each stall category, from the team's **UCSD Parking Domain Research v1.2** (section 2). Example: an S permit can use S and D stalls 24/7, and A/B stalls weekdays 4 PM to 8 AM plus all weekend. Recommendations only include structures the permit can use **at the arrival time**, and cards show "Open 24/7" or "Valid until ...".
+
+Not modeled yet (open questions in the research doc): A 24/7, reserved, accessible and SuperSaver stalls; lot-specific rules (P386, P701, SIO); holiday category rules; the Sept 2026 D restriction's effect on other permits; ParkMobile vs pay-station V; checking the whole stay rather than just arrival. Which stall categories each structure has (`spaceCategories`) is still **sample** data.
 
 ---
 

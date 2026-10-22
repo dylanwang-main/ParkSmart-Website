@@ -10,17 +10,18 @@ import { ParkingPlannerRequest, PermitType } from '../types.ts';
 import {
   SAMPLE_LOTS,
   calculateParkingScore,
+  compareReasons,
   getSampleRecommendations,
 } from './sampleRecommendations.ts';
+import { lotAccess, parseArrival } from '../utils/permitRules.ts';
 
-/** Builds a request for the first sample destination with the given permit. */
-function makeRequest(permitType: PermitType): ParkingPlannerRequest {
-  return {
-    destinationId: DEFAULT_DESTINATION_ID,
-    arrivalDate: '2026-10-21',
-    arrivalTime: '12:00',
-    permitType,
-  };
+/** Builds a request for the default destination (Wed Oct 21, 2026, noon by default). */
+function makeRequest(
+  permitType: PermitType,
+  arrivalDate = '2026-10-21',
+  arrivalTime = '12:00'
+): ParkingPlannerRequest {
+  return { destinationId: DEFAULT_DESTINATION_ID, arrivalDate, arrivalTime, permitType };
 }
 
 describe('calculateParkingScore', () => {
@@ -57,11 +58,24 @@ describe('calculateParkingScore', () => {
 describe('getSampleRecommendations', () => {
   const permits: PermitType[] = ['A', 'B', 'S', 'SR', 'D', 'V'];
 
-  it.each(permits)('only recommends lots that allow a %s permit', (permit) => {
-    const { recommendations } = getSampleRecommendations(makeRequest(permit));
-    for (const rec of recommendations) {
-      expect(rec.lot.allowedPermitTypes).toContain(permit);
+  it.each(permits)('only recommends lots a %s permit can use at the arrival time', (permit) => {
+    const request = makeRequest(permit);
+    const arrival = parseArrival(request.arrivalDate, request.arrivalTime)!;
+    for (const rec of getSampleRecommendations(request).recommendations) {
+      expect(['always', 'until']).toContain(lotAccess(permit, rec.lot.spaceCategories, arrival).status);
     }
+  });
+
+  it('excludes lots whose only usable stalls are evening upgrades on a weekday morning', () => {
+    // South has A, B and V stalls: an S permit can use A/B only after 4 PM on weekdays
+    const morning = getSampleRecommendations(makeRequest('S', '2026-10-21', '10:00'));
+    expect(morning.recommendations.map((r) => r.lot.locationId)).not.toContain('south-ps');
+    const saturday = getSampleRecommendations(makeRequest('V', '2026-10-24', '12:00'));
+    expect(saturday.recommendations.length).toBeGreaterThan(0);
+  });
+
+  it('returns nothing for a missing date', () => {
+    expect(getSampleRecommendations(makeRequest('S', '', '12:00')).recommendations).toEqual([]);
   });
 
   it.each(permits)('returns at most two distinct lots for a %s permit', (permit) => {
@@ -83,9 +97,41 @@ describe('getSampleRecommendations', () => {
     expect(getSampleRecommendations(makeRequest('B')).isSampleData).toBe(true);
   });
 
-  it('has sample lots for every permit type so no option is a dead end', () => {
+  it('has a usable lot for every permit on a weekday at noon so no option is a dead end', () => {
+    const noon = parseArrival('2026-10-21', '12:00')!;
     for (const permit of permits) {
-      expect(SAMPLE_LOTS.some((lot) => lot.allowedPermitTypes.includes(permit))).toBe(true);
+      expect(SAMPLE_LOTS.some((lot) => lotAccess(permit, lot.spaceCategories, noon).status === 'always')).toBe(true);
     }
+  });
+});
+
+describe('compareReasons', () => {
+  const lot = (id: string, walk: number, open: number) => ({
+    locationId: id, name: `${id} Parking Structure`, latitude: 0, longitude: 0,
+    estimatedAvailabilityPercent: open, walkingMinutes: walk, spaceCategories: [],
+  });
+
+  it('compares the first choice against the backup', () => {
+    const first = lot('Gilman', 5, 80);
+    const backup = lot('Hopkins', 9, 60);
+    const reasons = compareReasons(first, backup, [first, backup]);
+    expect(reasons.first).toBe('Shorter walk and more open spaces than your backup');
+    expect(reasons.backup).toBe('Next best if Gilman fills up, 4 min longer walk');
+  });
+
+  it('explains a closer but fuller backup', () => {
+    const first = lot('Athena', 12, 90);
+    const backup = lot('Triton', 7, 55);
+    const reasons = compareReasons(first, backup, [first, backup]);
+    expect(reasons.first).toBe('Most open spaces of any eligible lot (90% vs 55% at your backup)');
+    expect(reasons.backup).toBe('5 min closer than Athena, but fewer open spaces');
+  });
+
+  it('handles a single eligible lot', () => {
+    const only = lot('Pangea', 9, 70);
+    expect(compareReasons(only, null, [only])).toEqual({
+      first: 'Only structure your permit can use at this time, 9 min walk',
+      backup: null,
+    });
   });
 });
