@@ -11,10 +11,14 @@ import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
+import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
+import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
 import { DEFAULT_DESTINATION_ID, getDestination } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
+import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
+import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, estimateWalkingTime, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
@@ -45,18 +49,42 @@ function getCurrentTimeString(): string {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
+/** "HH:MM" to minutes after midnight, clamped to the scrubber's range. */
+function minutesOf(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  const minutes = Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 9 * 60;
+  return Math.min(SCRUB_MAX, Math.max(SCRUB_MIN, minutes));
+}
+
+/** Minutes after midnight to "HH:MM". */
+function timeOf(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
 /**
  * Main application component.
  * Owns state for formInputs, recommendations, selectedLocationId, and simulated UI states.
  */
 export default function App() {
   // 1. Form Inputs State (defaulting to Geisel Library, today, next hour, 'S' permit)
-  const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>({
-    destinationId: DEFAULT_DESTINATION_ID,
-    arrivalDate: getTodayDateString(),
-    arrivalTime: getCurrentTimeString(),
-    permitType: 'S',
-  });
+  // "Your usual" (saved in this browser only). When present, the form starts on it.
+  const [usualTrip, setUsualTrip] = useState<UsualTrip | null>(() => loadUsualTrip());
+
+  const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() =>
+    usualTrip
+      ? {
+          destinationId: usualTrip.destinationId,
+          arrivalDate: nextUsualDate(usualTrip.arrivalTime),
+          arrivalTime: usualTrip.arrivalTime,
+          permitType: usualTrip.permitType,
+        }
+      : {
+          destinationId: DEFAULT_DESTINATION_ID,
+          arrivalDate: getTodayDateString(),
+          arrivalTime: getCurrentTimeString(),
+          permitType: 'S',
+        }
+  );
 
   // 2. Recommendations State
   const [recommendations, setRecommendations] = useState<ParkingRecommendation[]>([]);
@@ -77,9 +105,28 @@ export default function App() {
   // Route being started ("Start route"); location is only requested inside this flow
   const [routeLotId, setRouteLotId] = useState<string | null>(null);
   const [routeStart, setRouteStart] = useState<RouteStart | null>(null);
+  // Bumped when a route start is chosen, to replay the route-drawing animation
+  const [routeRevealKey, setRouteRevealKey] = useState<number>(0);
+  const handleRouteStart = useCallback((start: RouteStart) => {
+    setRouteStart(start);
+    setRouteRevealKey((k) => k + 1);
+  }, []);
 
   // Lot detail card (opened by clicking a pin on the map)
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
+
+  // Time scrubber: previewed time of day (minutes after midnight) and play state.
+  // Follows the arrival time until the user scrubs.
+  const [previewMinutes, setPreviewMinutes] = useState<number>(() => minutesOf(formInputs.arrivalTime));
+  const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
+  useEffect(() => {
+    setPreviewMinutes(minutesOf(formInputs.arrivalTime));
+  }, [formInputs.arrivalTime]);
+  const previewTime = useMemo(() => {
+    const day = parseArrival(formInputs.arrivalDate, '00:00') ?? new Date();
+    day.setHours(Math.floor(previewMinutes / 60), previewMinutes % 60, 0, 0);
+    return day;
+  }, [formInputs.arrivalDate, previewMinutes]);
 
   // Side panel open/closed (hamburger toggle)
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
@@ -98,21 +145,31 @@ export default function App() {
       setRouteLotId(null);
       setRouteStart(null);
 
-      // Short simulated request so the loading state is visible
-      const timer = setTimeout(() => {
+      const finish = () => {
         const response = getSampleRecommendations(inputs);
         setRecommendations(response.recommendations);
         setSearchedRequest(inputs);
         setIsLoading(false);
 
         // Pre-select the First Choice recommendation lot by default
-        if (response.recommendations.length > 0) {
-          setSelectedLocationId(response.recommendations[0].lot.locationId);
-        } else {
-          setSelectedLocationId(null);
-        }
-      }, ANIMATION_TIMINGS.SHIMMER_DURATION_MS);
+        setSelectedLocationId(response.recommendations[0]?.lot.locationId ?? null);
 
+        // Remember this trip as "your usual" (this browser only)
+        const usual: UsualTrip = {
+          destinationId: inputs.destinationId,
+          permitType: inputs.permitType,
+          arrivalTime: inputs.arrivalTime,
+        };
+        saveUsualTrip(usual);
+        setUsualTrip(usual);
+      };
+
+      // Sample data answers instantly; a real API call would keep the loading state up
+      if (ANIMATION_TIMINGS.SHIMMER_DURATION_MS === 0) {
+        finish();
+        return;
+      }
+      const timer = setTimeout(finish, ANIMATION_TIMINGS.SHIMMER_DURATION_MS);
       return () => clearTimeout(timer);
     },
     [formInputs]
@@ -204,6 +261,40 @@ export default function App() {
     [formInputs.destinationId]
   );
 
+  // Instant answer for the usual trip, shown before the first search
+  const usualPreview = useMemo(() => {
+    if (!usualTrip) return null;
+    const request: ParkingPlannerRequest = {
+      destinationId: usualTrip.destinationId,
+      permitType: usualTrip.permitType,
+      arrivalTime: usualTrip.arrivalTime,
+      arrivalDate: nextUsualDate(usualTrip.arrivalTime),
+    };
+    const arrival = parseArrival(request.arrivalDate, request.arrivalTime);
+    if (!arrival) return null;
+    const topPick = getSampleRecommendations(request).recommendations[0] ?? null;
+    const tight = topPick ? tightFrom(topPick.lot, arrival) : null;
+    const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const isToday = request.arrivalDate === getTodayDateString();
+    return {
+      request,
+      destinationName: getDestination(request.destinationId).name,
+      whenLabel: `${isToday ? 'today' : arrival.toLocaleDateString('en-US', { weekday: 'long' })} at ${fmt(arrival)}`,
+      topPick,
+      tightAt: tight ? fmt(tight) : null,
+    };
+  }, [usualTrip]);
+
+  const handleShowUsual = () => {
+    if (!usualPreview) return;
+    setFormInputs(usualPreview.request);
+    runPlanner(usualPreview.request);
+  };
+  const handleForgetUsual = () => {
+    forgetUsualTrip();
+    setUsualTrip(null);
+  };
+
   // Results go stale when any trip detail changes after the search that produced them
   const isStale =
     searchedRequest !== null &&
@@ -269,7 +360,26 @@ export default function App() {
         rankedLotIds={rankedLotIds}
         userLocation={routeStart?.kind === 'location' ? routeStart : null}
         routeLot={routeLot}
+        availabilityTime={previewTime}
+        routeRevealKey={routeRevealKey}
+        hasDriveLeg={routeStart?.kind === 'location'}
       />
+
+      {/* Time scrubber: top-left of the visible map, beside the panel */}
+      <div
+        className="absolute top-4 z-20 transition-[left] duration-300 ease-out"
+        style={{ left: isPanelOpen ? PANEL_OFFSET_PX : 76 }}
+      >
+        <TimeScrubber
+          day={previewTime}
+          minutes={previewMinutes}
+          onMinutesChange={setPreviewMinutes}
+          isPlaying={isTimelinePlaying}
+          onPlayingChange={setIsTimelinePlaying}
+          differsFromArrival={previewMinutes !== minutesOf(formInputs.arrivalTime)}
+          onUseTime={() => handleFormChange({ arrivalTime: timeOf(previewMinutes) })}
+        />
+      </div>
 
       {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
       <button
@@ -387,6 +497,18 @@ export default function App() {
                 recommendations={activeRecommendations}
                 searchedRequest={searchedRequest}
                 showIntroPrompt={searchedRequest === null && devState === 'normal'}
+                usualTripCard={
+                  usualPreview && (
+                    <UsualTripCard
+                      destinationName={usualPreview.destinationName}
+                      whenLabel={usualPreview.whenLabel}
+                      topPick={usualPreview.topPick}
+                      tightAt={usualPreview.tightAt}
+                      onShowOptions={handleShowUsual}
+                      onForget={handleForgetUsual}
+                    />
+                  )
+                }
                 isStale={isStale}
                 confirmedLotId={confirmedLotId}
                 onConfirmLot={handleConfirmLot}
@@ -429,6 +551,7 @@ export default function App() {
                 lot={selectedLot}
                 userPermit={formInputs.permitType}
                 arrival={parseArrival(formInputs.arrivalDate, formInputs.arrivalTime)}
+                availabilityTime={previewTime}
                 destination={currentDestination}
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
@@ -451,7 +574,7 @@ export default function App() {
                 destinationName={currentDestination.name}
                 walkMinutes={estimateWalkingTime(routeLot, currentDestination.id)}
                 start={routeStart}
-                onStart={setRouteStart}
+                onStart={handleRouteStart}
                 onClose={handleCloseRoute}
               />
             </motion.div>

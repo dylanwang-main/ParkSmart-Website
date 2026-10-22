@@ -47,9 +47,16 @@ Not modeled yet (open questions in the research doc): A 24/7, reserved, accessib
 
 ---
 
+## Time Scrubber and "Your Usual"
+
+- **Time scrubber** (top of the map): drag or press play to watch every pin recolor as campus fills and empties through the day. "Use this time" copies the previewed time into the arrival time. Availability by time comes from `src/utils/availabilityModel.ts`, a **sample** daily curve; swap `availabilityAt` for the real forecast when the backend connects. Labels pair numbers with confidence words: Likely open / Getting tight / Usually full.
+- **Your usual**: the last search is saved in this browser only (`localStorage`, `src/utils/usualTrip.ts`). Next visit, the form is prefilled and a card answers the usual trip instantly, with "Forget my usual" to clear it.
+
+---
+
 ## Starting a Route
 
-Location is requested **only** when the user taps **Start route** (after **Select this spot**), with a short explanation first. If they decline or it fails, they can type a starting point instead. Once shared, a blue "you are here" dot appears and the map frames the user and the lot. Animated driving and walking routes are a later task.
+Location is requested **only** when the user taps **Start route** (after **Select this spot**), with a short explanation first. If they decline or it fails, they can type a starting point instead. Once shared, a blue "you are here" dot appears and the map frames the user and the lot. The route then draws itself (drive line, then dotted walk line) with distances counting up, and **Share my spot** sends a short message via the share sheet or clipboard. Lines are straight-line curves until the routing API is connected.
 
 ---
 

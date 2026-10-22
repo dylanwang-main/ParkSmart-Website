@@ -13,6 +13,7 @@ import {
 } from '../types.ts';
 import { ALL_PARKING } from './parkingLots.ts';
 import { lotAccess, parseArrival } from '../utils/permitRules.ts';
+import { availabilityAt } from '../utils/availabilityModel.ts';
 
 /** All structures and lots (real names/coordinates, sample stats), under its original export name. */
 export { ALL_PARKING as SAMPLE_LOTS };
@@ -174,10 +175,12 @@ export function getSampleRecommendations(
     const access = lotAccess(request.permitType, lot.spaceCategories, arrival);
     if (access.status !== 'always' && access.status !== 'until') return [];
     const walkingMinutes = estimateWalkingTime(lot, request.destinationId);
+    // Availability expected at the arrival time (sample time-of-day model)
+    const estimatedAvailabilityPercent = availabilityAt(lot, arrival);
     return [{
-      lot: { ...lot, walkingMinutes },
+      lot: { ...lot, walkingMinutes, estimatedAvailabilityPercent },
       access,
-      score: calculateParkingScore(lot.estimatedAvailabilityPercent, walkingMinutes),
+      score: calculateParkingScore(estimatedAvailabilityPercent, walkingMinutes),
     }];
   });
 

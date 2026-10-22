@@ -22,6 +22,8 @@ interface ResultsListProps {
   searchedRequest: ParkingPlannerRequest | null;
   /** Show the "enter your trip details" prompt instead of results. */
   showIntroPrompt: boolean;
+  /** "Your usual" card, shown in place of the generic prompt when a trip is saved. */
+  usualTripCard?: React.ReactNode;
   /** True when trip details changed since the search; results are greyed out. */
   isStale: boolean;
   confirmedLotId: string | null;
@@ -43,6 +45,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   recommendations,
   searchedRequest,
   showIntroPrompt,
+  usualTripCard,
   isStale,
   confirmedLotId,
   onConfirmLot,
@@ -52,6 +55,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   onRetry,
   onResetFilters,
 }) => {
+  if (showIntroPrompt && !isLoading && usualTripCard) {
+    return <div className="pt-2">{usualTripCard}</div>;
+  }
+
   if (showIntroPrompt && !isLoading) {
     return (
       <div className="pt-2">

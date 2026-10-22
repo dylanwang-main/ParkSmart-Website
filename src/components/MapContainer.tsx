@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import * as maplibregl from 'maplibre-gl';
+import type { Feature, LineString } from 'geojson';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
 // but does not copy the worker file, so the default worker URL 404s and the map
 // renders blank. `?url` makes Vite emit the worker as an asset and give us its URL.
@@ -21,6 +22,7 @@ import {
 } from '../constants.ts';
 import { ParkingLot, CampusDestination } from '../types.ts';
 import { availabilityStatus } from '../utils/availability.ts';
+import { availabilityAt } from '../utils/availabilityModel.ts';
 
 // Must run before the first map is created.
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
@@ -38,8 +40,55 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
 /** Height of the bottom strip covered by the lot detail card (card + margins). */
 const DETAIL_CARD_INSET_PX = 390;
 
+/** Route reveal timing: drive line draws first, then the walk line. */
+const DRIVE_DRAW_MS = 1400;
+const WALK_DRAW_MS = 900;
+const ROUTE_CURVE_POINTS = 64;
+
+type LngLat = [number, number];
+
+/** Gentle quadratic curve between two points (bulging to one side), so the
+ * straight-line preview reads as a route rather than a ruler line. */
+function curvedPath(from: LngLat, to: LngLat, bend = 0.18): LngLat[] {
+  const mid: LngLat = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
+  const control: LngLat = [mid[0] - (to[1] - from[1]) * bend, mid[1] + (to[0] - from[0]) * bend];
+  const points: LngLat[] = [];
+  for (let i = 0; i <= ROUTE_CURVE_POINTS; i++) {
+    const t = i / ROUTE_CURVE_POINTS;
+    const a = (1 - t) ** 2, b = 2 * (1 - t) * t, c = t ** 2;
+    points.push([a * from[0] + b * control[0] + c * to[0], a * from[1] + b * control[1] + c * to[1]]);
+  }
+  return points;
+}
+
+function lineFeature(coordinates: LngLat[]): Feature<LineString> {
+  return { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } };
+}
+
+const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+
+/** Adds the route sources/layers if the current style doesn't have them (styles reset on basemap switch). */
+function ensureRouteLayers(map: maplibregl.Map): void {
+  if (map.getSource('route-drive')) return;
+  const empty = lineFeature([]);
+  map.addSource('route-drive', { type: 'geojson', data: empty });
+  map.addSource('route-walk', { type: 'geojson', data: empty });
+  map.addLayer({ id: 'route-drive-casing', type: 'line', source: 'route-drive',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': 9, 'line-opacity': 0.95 } });
+  map.addLayer({ id: 'route-drive', type: 'line', source: 'route-drive',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#007aff', 'line-width': 5.5 } });
+  map.addLayer({ id: 'route-walk-casing', type: 'line', source: 'route-walk',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#0f172a', 'line-width': 6, 'line-opacity': 0.35 } });
+  map.addLayer({ id: 'route-walk', type: 'line', source: 'route-walk',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': 3.5, 'line-dasharray': [0.1, 1.8] } });
+}
+
 /** Top padding when framing a route, leaving room for the balloon pin and its label. */
-const ROUTE_FRAME_TOP_PX = 130;
+const ROUTE_FRAME_TOP_PX = 160;
 
 /** Beyond this distance from the route's lot, we show the dot but don't zoom out to it. */
 const MAX_ROUTE_FRAME_KM = 60;
@@ -102,6 +151,12 @@ interface MapContainerProps {
   userLocation: { latitude: number; longitude: number } | null;
   /** Lot the route goes to; framed together with the user's location. */
   routeLot: ParkingLot | null;
+  /** Time the pins' availability colors represent (the time scrubber). */
+  availabilityTime: Date;
+  /** Bumps each time a route starts, replaying the drive/walk line animation. */
+  routeRevealKey: number;
+  /** Whether the route starts from the user's location (draw the drive line) or not (walk only). */
+  hasDriveLeg: boolean;
 }
 
 /**
@@ -119,7 +174,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   rankedLotIds,
   userLocation,
   routeLot,
+  availabilityTime,
+  routeRevealKey,
+  hasDriveLeg,
 }) => {
+  const availabilityTimeRef = useRef(availabilityTime);
+  availabilityTimeRef.current = availabilityTime;
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const lotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
@@ -357,7 +417,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       if (el.dataset.renderKey === renderKey) return;
       el.dataset.renderKey = renderKey;
 
-      const avail = `<span class="ps-avail" style="background:${availabilityStatus(lot.estimatedAvailabilityPercent).color}"></span>`;
+      const avail = `<span class="ps-avail" style="background:${availabilityStatus(availabilityAt(lot, availabilityTimeRef.current)).color}"></span>`;
       const rankTag =
         rank === 'first'
           ? '<span class="ps-rank ps-rank-first">First choice</span>'
@@ -418,6 +478,68 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       });
     }
   }, [userLocation, routeLot]);
+
+  // Time scrubber: recolor each pin's availability dot in place (no pin rebuilds)
+  useEffect(() => {
+    for (const lot of lots) {
+      const dot = lotMarkersRef.current.get(lot.locationId)?.getElement().querySelector<HTMLElement>('.ps-avail');
+      if (dot) dot.style.background = availabilityStatus(availabilityAt(lot, availabilityTime)).color;
+    }
+  }, [availabilityTime, lots]);
+
+  // Cinematic route reveal: draw the drive line (user -> lot), then the walk line
+  // (lot -> destination). Straight-line curves until a routing API is connected.
+  const routePathsRef = useRef<{ drive: LngLat[]; walk: LngLat[] }>({ drive: [], walk: [] });
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !isLoadedRef.current) return;
+    ensureRouteLayers(map);
+    const driveSource = map.getSource('route-drive') as maplibregl.GeoJSONSource;
+    const walkSource = map.getSource('route-walk') as maplibregl.GeoJSONSource;
+
+    if (!routeLot || !selectedDestination) {
+      routePathsRef.current = { drive: [], walk: [] };
+      driveSource.setData(lineFeature([]));
+      walkSource.setData(lineFeature([]));
+      return;
+    }
+
+    const lotPoint: LngLat = [routeLot.longitude, routeLot.latitude];
+    const drive = hasDriveLeg && userLocation ? curvedPath([userLocation.longitude, userLocation.latitude], lotPoint) : [];
+    const walk = curvedPath(lotPoint, [selectedDestination.longitude, selectedDestination.latitude], -0.12);
+    routePathsRef.current = { drive, walk };
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const driveMs = drive.length && !reduce ? DRIVE_DRAW_MS : 0;
+    const walkMs = reduce ? 0 : WALK_DRAW_MS;
+    const start = performance.now();
+    let frame = 0;
+    const draw = (now: number) => {
+      const elapsed = now - start;
+      const driveT = driveMs ? Math.min(1, elapsed / driveMs) : 1;
+      const walkT = walkMs ? Math.min(1, Math.max(0, (elapsed - driveMs) / walkMs)) : 1;
+      driveSource.setData(lineFeature(drive.slice(0, Math.max(2, Math.ceil(easeInOut(driveT) * drive.length)))));
+      walkSource.setData(lineFeature(walkT > 0 ? walk.slice(0, Math.max(2, Math.ceil(easeInOut(walkT) * walk.length))) : []));
+      if (driveT < 1 || walkT < 1) frame = requestAnimationFrame(draw);
+    };
+    frame = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(frame);
+  }, [routeRevealKey, routeLot, selectedDestination, userLocation, hasDriveLeg]);
+
+  // Basemap switches replace the style (and its layers): restore the route lines
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const restore = () => {
+      ensureRouteLayers(map);
+      (map.getSource('route-drive') as maplibregl.GeoJSONSource).setData(lineFeature(routePathsRef.current.drive));
+      (map.getSource('route-walk') as maplibregl.GeoJSONSource).setData(lineFeature(routePathsRef.current.walk));
+    };
+    map.on('style.load', restore);
+    return () => {
+      map.off('style.load', restore);
+    };
+  }, []);
 
   // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
   useEffect(() => {

@@ -25,9 +25,9 @@ export interface AvailabilityStatus {
 }
 
 const STATUS: Record<AvailabilityLevel, AvailabilityStatus> = {
-  plenty: { level: 'plenty', label: 'Plenty of space', color: '#34c759', textColor: '#1f7a37' },
-  filling: { level: 'filling', label: 'Filling up', color: '#ff9f0a', textColor: '#8a4b00' },
-  nearlyFull: { level: 'nearlyFull', label: 'Nearly full', color: '#ff3b30', textColor: '#b42318' },
+  plenty: { level: 'plenty', label: 'Likely open', color: '#34c759', textColor: '#1f7a37' },
+  filling: { level: 'filling', label: 'Getting tight', color: '#ff9f0a', textColor: '#8a4b00' },
+  nearlyFull: { level: 'nearlyFull', label: 'Usually full', color: '#ff3b30', textColor: '#b42318' },
 };
 
 /** Buckets an availability percentage into a level with its label and color. */

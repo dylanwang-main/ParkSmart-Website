@@ -129,7 +129,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           <span
             className={`font-semibold px-1.5 py-0.2 rounded border text-[11px] ${badgeClass}`}
           >
-            {lot.estimatedAvailabilityPercent}%
+            {lot.estimatedAvailabilityPercent}% · {availabilityStatus(lot.estimatedAvailabilityPercent).label}
           </span>
         </div>
         {/* Subtle color bar with filled indicator */}

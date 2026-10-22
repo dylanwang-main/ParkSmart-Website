@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, LocateFixed, MapPin, Navigation, X } from 'lucide-react';
+import { Check, LocateFixed, MapPin, Navigation, Share2, X } from 'lucide-react';
 import { ParkingLot } from '../types.ts';
 
 /** Where the route starts: the browser location, or text the user typed. */
@@ -23,6 +23,40 @@ interface RouteStartSheetProps {
   onStart: (start: RouteStart) => void;
   onClose: () => void;
 }
+
+/** Counts from 0 up to `value` over `durationMs`, starting after `delayMs` (route reveal). */
+function useCountUp(value: number, durationMs: number, delayMs: number, key: unknown): number {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(value);
+      return;
+    }
+    setShown(0);
+    let frame = 0;
+    const start = performance.now() + delayMs;
+    const tick = (now: number) => {
+      const t = Math.min(1, Math.max(0, (now - start) / durationMs));
+      setShown(Math.round(value * t * 10) / 10);
+      if (t < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [value, durationMs, delayMs, key]);
+  return shown;
+}
+
+/** Straight-line km between two points (preview only; real roads come from the routing API). */
+function straightLineKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }): number {
+  const kmPerDeg = 111.32;
+  const dx = (b.longitude - a.longitude) * kmPerDeg * Math.cos(((a.latitude + b.latitude) / 2) * (Math.PI / 180));
+  const dy = (b.latitude - a.latitude) * kmPerDeg;
+  return Math.hypot(dx, dy);
+}
+
+/** Matches the map's line timing so numbers and lines finish together. */
+const DRIVE_COUNT_MS = 1400;
+const WALK_COUNT_MS = 900;
 
 /** How long to wait for the browser's location before falling back to manual entry. */
 const LOCATION_TIMEOUT_MS = 10_000;
@@ -45,6 +79,27 @@ export const RouteStartSheet: React.FC<RouteStartSheetProps> = ({
   const [step, setStep] = useState<Step>('ask');
   const [manualText, setManualText] = useState('');
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle');
+
+  // Route reveal numbers count up alongside the lines drawing on the map
+  const driveKm = start?.kind === 'location' ? straightLineKm(start, lot) : null;
+  const shownKm = useCountUp(driveKm ?? 0, DRIVE_COUNT_MS, 0, start);
+  const shownWalk = useCountUp(walkMinutes, WALK_COUNT_MS, driveKm !== null ? DRIVE_COUNT_MS : 0, start);
+
+  const shareSpot = async () => {
+    const text = `I'm parking at ${lot.name}, then walking about ${walkMinutes} min to ${destinationName}. Planned with ParkSmart.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'My parking spot', text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setShareState('copied');
+    } catch (error) {
+      // Closing the share sheet counts as an AbortError; only flag real failures
+      if (!(error instanceof DOMException && error.name === 'AbortError')) setShareState('failed');
+    }
+  };
 
   const requestLocation = () => {
     if (!('geolocation' in navigator)) {
@@ -111,7 +166,7 @@ export const RouteStartSheet: React.FC<RouteStartSheetProps> = ({
       </div>
 
       {start ? (
-        // Summary once a start is chosen
+        // Summary once a start is chosen: numbers count up with the lines on the map
         <div className="mt-4 space-y-3">
           <ol className="rounded-2xl bg-black/[0.04] divide-y divide-black/5 text-[13px]">
             <li className="flex items-center gap-2 px-3 py-2.5">
@@ -124,18 +179,38 @@ export const RouteStartSheet: React.FC<RouteStartSheetProps> = ({
               <span className="w-4 h-4 rounded-full bg-[#007aff] text-white text-[9px] font-extrabold flex items-center justify-center shrink-0">
                 P
               </span>
-              <span className="truncate">Drive to {lot.name}</span>
+              <span className="truncate flex-1">Drive to {lot.name}</span>
+              {driveKm !== null && (
+                <span className="shrink-0 font-semibold tabular-nums text-slate-900">{shownKm.toFixed(1)} km</span>
+              )}
             </li>
             <li className="flex items-center gap-2 px-3 py-2.5">
               <MapPin className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
-              <span className="truncate">
-                Walk {walkMinutes} min to {destinationName}
-              </span>
+              <span className="truncate flex-1">Walk to {destinationName}</span>
+              <span className="shrink-0 font-semibold tabular-nums text-slate-900">{Math.round(shownWalk)} min</span>
             </li>
           </ol>
-          <p className="flex items-center justify-center gap-1.5 text-[12px] text-slate-600">
-            <CheckCircle2 className="w-4 h-4 text-[#34c759]" aria-hidden="true" />
-            Animated driving and walking routes come in a later version.
+
+          <button
+            type="button"
+            onClick={shareSpot}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#007aff] hover:bg-[#0067d6] text-white text-[13px] font-semibold transition-colors cursor-pointer"
+          >
+            {shareState === 'copied' ? (
+              <>
+                <Check className="w-4 h-4" aria-hidden="true" /> Copied. Paste it to a friend
+              </>
+            ) : (
+              <>
+                <Share2 className="w-4 h-4" aria-hidden="true" /> Share my spot
+              </>
+            )}
+          </button>
+          {shareState === 'failed' && (
+            <p role="alert" className="text-center text-[12px] text-[#b42318]">Couldn't share from this browser.</p>
+          )}
+          <p className="text-center text-[11px] text-slate-500">
+            Straight-line preview. Real roads and drive times arrive with the routing API.
           </p>
         </div>
       ) : step === 'manual' ? (

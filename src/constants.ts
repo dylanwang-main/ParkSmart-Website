@@ -59,7 +59,8 @@ export const MAP_CONFIG = {
 export const MAP_PADDING = {
   left: 404,
   right: 60,
-  top: 60,
+  // Clears the time scrubber floating at the top of the map
+  top: 100,
   bottom: 60,
 } as const;
 
@@ -67,8 +68,8 @@ export const MAP_PADDING = {
  * Animation duration & timing curves
  */
 export const ANIMATION_TIMINGS = {
-  // Simulated request time for sample data; keep short so the UI feels instant
-  SHIMMER_DURATION_MS: 350,
+  // Simulated request time. 0 = instant (sample data); set > 0 to preview the loading state
+  SHIMMER_DURATION_MS: 0,
   STAGGER_DELAY_SECONDS: 0.05,
 } as const;
 

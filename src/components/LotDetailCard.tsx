@@ -10,6 +10,7 @@ import { SpotActions } from './SpotActions.tsx';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
+import { availabilityAt, tightFrom } from '../utils/availabilityModel.ts';
 import { accessLabel, lotAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface LotDetailCardProps {
@@ -18,6 +19,8 @@ interface LotDetailCardProps {
   userPermit: PermitType;
   /** Arrival time from the form; null if the date/time is missing or invalid. */
   arrival: Date | null;
+  /** Time the availability numbers describe (the time scrubber). */
+  availabilityTime: Date;
   destination: CampusDestination;
   isConfirmed: boolean;
   onConfirm: () => void;
@@ -34,13 +37,17 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   lot,
   userPermit,
   arrival,
+  availabilityTime,
   destination,
   isConfirmed,
   onConfirm,
   onStartRoute,
   onClose,
 }) => {
-  const percent = lot.estimatedAvailabilityPercent;
+  const percent = availabilityAt(lot, availabilityTime);
+  const tight = tightFrom(lot, availabilityTime);
+  const isWeekend = availabilityTime.getDay() === 0 || availabilityTime.getDay() === 6;
+  const timeLabel = availabilityTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const status = availabilityStatus(percent);
   // Hours are checked at the arrival time in the form (falls back to now)
   const when = arrival ?? new Date();
@@ -88,7 +95,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             <div className="text-[34px] font-bold leading-none tracking-tight tabular-nums">
               {percent}%
             </div>
-            <div className="text-xs text-slate-600 mt-1">of spaces estimated open</div>
+            <div className="text-xs text-slate-600 mt-1">of spaces estimated open at {timeLabel}</div>
           </div>
           <span
             className="px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -107,6 +114,12 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
           />
         </div>
+        {/* Campus-specific insight from the (sample) daily pattern */}
+        <p className="mt-2 text-[12px] text-slate-600">
+          {tight
+            ? `Usually gets tight from ${tight.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} on ${isWeekend ? 'weekends' : 'weekdays'}.`
+            : `Usually stays open all day on ${isWeekend ? 'weekends' : 'weekdays'}.`}
+        </p>
       </div>
 
       {/* Facts */}
