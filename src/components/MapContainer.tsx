@@ -23,6 +23,7 @@ import {
 import { ParkingLot, CampusDestination } from '../types.ts';
 import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt } from '../utils/availabilityModel.ts';
+import { preloadLotAerial } from '../utils/lotAerial.ts';
 
 // Must run before the first map is created.
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
@@ -37,13 +38,13 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
     : OPENFREEMAP_POSITRON_STYLE_URL;
 }
 
-/** Height of the bottom strip covered by the lot detail card (card + margins). */
 /** Escapes text placed into marker HTML (building names can contain "&"). */
 function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-const DETAIL_CARD_INSET_PX = 390;
+/** Height of the bottom strip covered by the lot detail card (card + aerial photo + margins). */
+const DETAIL_CARD_INSET_PX = 520;
 
 /** Route reveal timing: drive line draws first, then the walk line. */
 const DRIVE_DRAW_MS = 1400;
@@ -415,7 +416,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         });
 
         // Hovered pin rises above overlapping neighbors so it can be clicked
-        el.addEventListener('mouseenter', () => { el.style.zIndex = '4'; });
+        el.addEventListener('mouseenter', () => {
+          el.style.zIndex = '4';
+          preloadLotAerial(lot); // card opens with its photo already downloading
+        });
         el.addEventListener('mouseleave', () => {
           el.style.zIndex = el.dataset.baseZ ?? '1';
         });

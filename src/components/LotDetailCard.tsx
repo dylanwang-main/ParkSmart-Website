@@ -7,6 +7,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { CalendarClock, CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
+import { LotAerial } from './LotAerial.tsx';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
@@ -71,6 +72,9 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       aria-label={`${lot.name} details`}
       className="w-[340px] max-w-[calc(100vw-2rem)] p-4 rounded-[24px] bg-white/70 backdrop-blur-xl backdrop-saturate-[1.8] border border-white/60 shadow-2xl shadow-black/25 text-slate-900"
     >
+      {/* Aerial photo of the lot (USGS NAIP), keyed so switching lots restarts the fade */}
+      <LotAerial key={lot.locationId} lot={lot} />
+
       {/* Header: glyph, name, close */}
       <div className="flex items-start gap-3">
         <div className="shrink-0 w-10 h-10 rounded-full bg-[#007aff] border-2 border-white text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-black/20">
