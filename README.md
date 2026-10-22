@@ -32,7 +32,9 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 |---|---|---|
 | Parking structure names and pin locations | **Real** (verified 2026-10-21) | UCSD campus GIS, Building Points Public layer |
 | 52 surface lots (incl. Gliderport, P386) | **Real** IDs and pins (verified 2026-10-21) | P-numbers from the team's cleaned QPASS inventory; pins at each lot's outline center in UCSD GIS layer 21 (`src/data/surfaceLots.ts`) |
-| Destination names and locations (141 buildings, searchable) | **Real** (verified 2026-10-21) | Same UCSD GIS layer, filtered to places people visit (`src/data/destinations.ts`) |
+| Destination names and locations (~300 buildings) | **Real** (verified 2026-10-21) | Same UCSD GIS layer, active buildings minus utility/storage/lab modules (`src/data/destinations.ts`) |
+| Class-schedule codes (WLH, PCYNH, CENTR...) | **Real** (verified 2026-10-21) | 24 classroom buildings from facilities.ucsd.edu/Classrooms, plus GIS alias codes |
+| "Popular" list order | **Our pick** | Swap for real search counts from `GET /destinations` |
 | Availability %, stall categories per structure, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
 
 Lot data lives in `src/data/parkingLots.ts`. Pins mark each structure's building point, not its vehicle entrance. Mapping each structure to its official P-number (e.g. P701) is still an open question for the backend team.
@@ -50,7 +52,18 @@ Not modeled yet (open questions in the research doc): A 24/7, reserved, accessib
 ## Time Scrubber and "Your Usual"
 
 - **Time scrubber** (top of the map): drag or press play to watch every pin recolor as campus fills and empties through the day. "Use this time" copies the previewed time into the arrival time. Availability by time comes from `src/utils/availabilityModel.ts`, a **sample** daily curve; swap `availabilityAt` for the real forecast when the backend connects. Labels pair numbers with confidence words: Likely open / Getting tight / Usually full.
-- **Your usual**: the last search is saved in this browser only (`localStorage`, `src/utils/usualTrip.ts`). Next visit, the form is prefilled and a card answers the usual trip instantly, with "Forget my usual" to clear it.
+- **Your usual**: only appears after you have searched. The last search is saved in this browser only (`localStorage`, `src/utils/usualTrip.ts`); next visit a card answers it instantly (the form is not prefilled), with "Forget my usual" to clear it.
+
+---
+
+## Destination Search
+
+- **No default destination.** The box says "Where are you headed?" and Find parking stays off until you pick one.
+- **Before typing:** a Popular list (lecture halls, libraries, Price Center, RIMAC).
+- **While typing:** matches by name, class-schedule code (`wlh` puts Warren Lecture Hall first) and other names (`ledden`, `calit2`). Arrow keys and Enter work.
+- **Parking in the same box:** typing `gilman` or `p406` shows lots under "Parking". Picking one opens its card on the map; it does not become your destination.
+- **Not listed?** Tap empty map, then **Park near here**, to use that spot as a dropped-pin destination (stored as an ID like `pin:32.88012,-117.23711`).
+- **Recent:** the results header lists this visit's earlier searches. Search X then Y, open Recent, pick X, and you are back on X (Y moves into Recent).
 
 ---
 

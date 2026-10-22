@@ -351,3 +351,49 @@
 
 /* Availability dots recolor smoothly while scrubbing */
 .ps-avail { transition: background-color 200ms linear; }
+
+/* "Park near here" popup shown when tapping empty map */
+.ps-drop-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ps-drop-popup .maplibregl-popup-tip { display: none; }
+.ps-drop-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  font-family: inherit;
+  color: #0f172a;
+  cursor: pointer;
+  white-space: nowrap;
+  animation: ps-drop-in 160ms ease-out;
+  transition: transform 120ms ease;
+}
+.ps-drop-button:hover { background: rgba(255, 255, 255, 0.88); }
+.ps-drop-button:active { transform: scale(0.97); }
+.ps-drop-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #0f172a;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+@keyframes ps-drop-in {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-drop-button { animation: none; }
+}

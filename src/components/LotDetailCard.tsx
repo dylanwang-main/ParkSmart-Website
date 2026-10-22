@@ -21,7 +21,8 @@ interface LotDetailCardProps {
   arrival: Date | null;
   /** Time the availability numbers describe (the time scrubber). */
   availabilityTime: Date;
-  destination: CampusDestination;
+  /** Null until the user picks a destination; the walk row is hidden then. */
+  destination: CampusDestination | null;
   isConfirmed: boolean;
   onConfirm: () => void;
   onStartRoute: () => void;
@@ -57,7 +58,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   const access = lotAccess(userPermit, lot.spaceCategories, when);
   const permitWorks = access.status === 'always' || access.status === 'until';
   const usable = usableCategories(userPermit, lot.spaceCategories, when);
-  const walkMinutes = estimateWalkingTime(lot, destination.id);
+  const walkMinutes = destination ? estimateWalkingTime(lot, destination.id) : null;
 
   return (
     <motion.div
@@ -157,13 +158,15 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             <span>{lot.accessNote}</span>
           </div>
         )}
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <Footprints className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
-          <span>
-            <span className="font-medium">{walkMinutes} min walk</span>
-            <span className="text-slate-600"> to {destination.name}</span>
-          </span>
-        </div>
+        {destination && walkMinutes !== null && (
+          <div className="flex items-center gap-2 px-3 py-2.5">
+            <Footprints className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-medium">{walkMinutes} min walk</span>
+              <span className="text-slate-600"> to {destination.name}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="mt-3">

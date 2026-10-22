@@ -17,7 +17,8 @@ export interface UsualTrip {
   arrivalTime: string;
 }
 
-const STORAGE_KEY = 'parksmart.usualTrip.v1';
+// v2: v1 could hold the old Geisel Library default from before destinations were required
+const STORAGE_KEY = 'parksmart.usualTrip.v2';
 const PERMITS: readonly PermitType[] = ['A', 'B', 'S', 'SR', 'D', 'V'];
 
 /** Minimal slice of the Storage API, so tests can pass a fake. */

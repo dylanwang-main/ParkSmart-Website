@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Search, ChevronDown, Check, MapPin, Star, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PERMIT_OPTIONS } from '../constants.ts';
-import { CAMPUS_DESTINATIONS, getDestination } from '../data/destinations.ts';
-import { ParkingPlannerRequest, CampusDestination } from '../types.ts';
+import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
+import { ALL_PARKING } from '../data/parkingLots.ts';
+import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
 
 interface PreferenceFormProps {
   formData: ParkingPlannerRequest;
@@ -21,7 +22,35 @@ interface PreferenceFormProps {
   onSetArrivalNow: () => void;
   /** "Find parking", or "Update results" when the shown results are stale. */
   submitLabel: string;
+  /** A parking lot picked from the search box: show it on the map (not a destination). */
+  onSelectParking: (locationId: string) => void;
 }
+
+/** One row in the destination dropdown: a place to go, or a lot to look at. */
+type Option =
+  | { kind: 'place'; destination: CampusDestination; matchedOn?: string }
+  | { kind: 'parking'; lot: ParkingLot };
+
+const MAX_PARKING_MATCHES = 6;
+
+/** Parking lots whose name or P-number matches the query ("gilman", "p406", "406"). */
+function searchParking(query: string): ParkingLot[] {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  return ALL_PARKING.filter((lot) => {
+    const name = lot.name.toLowerCase();
+    return name.includes(q) || (/^\d+$/.test(q) && name.includes(`p${q.padStart(3, '0')}`));
+  })
+    .sort((a, b) => Number(b.name.toLowerCase().startsWith(q)) - Number(a.name.toLowerCase().startsWith(q)))
+    .slice(0, MAX_PARKING_MATCHES);
+}
+
+/** Small section heading inside the dropdown. */
+const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <li role="presentation" className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+    {children}
+  </li>
+);
 
 /**
  * Clean floating preference form with searchable destination dropdown,
@@ -35,19 +64,46 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   arrivalError,
   onSetArrivalNow,
   submitLabel,
+  onSelectParking,
 }) => {
   const [isDestinationOpen, setIsDestinationOpen] = useState(false);
   const [destinationSearch, setDestinationSearch] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
 
-  const selectedDestination =
-    getDestination(formData.destinationId);
+  // No destination until the user picks one (or drops a pin on the map)
+  const selectedDestination = findDestination(formData.destinationId) ?? null;
+  const query = destinationSearch.trim();
 
-  // Filter campus destinations based on search query
-  const query = destinationSearch.trim().toLowerCase();
-  const filteredDestinations = CAMPUS_DESTINATIONS.filter((dest) =>
-    dest.name.toLowerCase().includes(query)
-  );
+  // Before typing: popular places. While typing: matching places and parking, with
+  // parking first when the query is clearly a lot ("Gilman", "P406")
+  const { places, parking } = useMemo(() => {
+    if (!query) {
+      return { places: POPULAR_DESTINATIONS.map((d): Option => ({ kind: 'place', destination: d })), parking: [] as Option[] };
+    }
+    return {
+      places: searchDestinations(query).map((m): Option => ({ kind: 'place', destination: m.destination, matchedOn: m.matchedOn })),
+      parking: searchParking(query).map((lot): Option => ({ kind: 'parking', lot })),
+    };
+  }, [query]);
+  const parkingFirst =
+    parking.length > 0 &&
+    (places.length === 0 || (parking[0].kind === 'parking' && parking[0].lot.name.toLowerCase().startsWith(query.toLowerCase())));
+  const sections: Array<{ label: string; options: Option[] }> = (
+    parkingFirst
+      ? [{ label: 'Parking', options: parking }, { label: 'Places', options: places }]
+      : [{ label: query ? 'Places' : 'Popular', options: places }, { label: 'Parking', options: parking }]
+  ).filter((section) => section.options.length > 0);
+  const flatOptions = sections.flatMap((section) => section.options);
+
+  // Highlight the best match whenever the results change
+  useEffect(() => setActiveIndex(0), [query]);
+
+  // Keep the highlighted row in view while arrowing through the list
+  useEffect(() => {
+    listRef.current?.querySelector(`[data-index="${activeIndex}"]`)?.scrollIntoView({ block: 'nearest' });
+  }, [activeIndex]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -60,11 +116,35 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectDestination = (dest: CampusDestination) => {
-    onChange({ destinationId: dest.id });
+  const closeDropdown = () => {
     setDestinationSearch('');
     setIsDestinationOpen(false);
   };
+
+  const chooseOption = (option: Option) => {
+    if (option.kind === 'place') onChange({ destinationId: option.destination.id });
+    else onSelectParking(option.lot.locationId);
+    closeDropdown();
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(flatOptions.length - 1, i + 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(0, i - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const option = flatOptions[activeIndex];
+      if (option) chooseOption(option);
+    } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      closeDropdown();
+    }
+  };
+
+  let rowIndex = -1;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -85,11 +165,17 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
           className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white/50 border border-white/60 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all duration-150 flex items-center justify-between shadow-xs group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <Search className="w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
+            {selectedDestination?.isPin ? (
+              <MapPin className="w-4 h-4 text-slate-700 shrink-0" />
+            ) : (
+              <Search className="w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
+            )}
             <div className="truncate">
-              <span className="text-sm font-medium text-slate-800">
-                {selectedDestination.name}
-              </span>
+              {selectedDestination ? (
+                <span className="text-sm font-medium text-slate-800">{selectedDestination.name}</span>
+              ) : (
+                <span className="text-sm text-slate-500">Where are you headed?</span>
+              )}
             </div>
           </div>
           <ChevronDown
@@ -102,46 +188,116 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         {/* Searchable Dropdown Popup */}
         {isDestinationOpen && (
           <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/20 z-50 animate-in fade-in zoom-in-95 duration-150">
-            <div className="relative mb-2">
+            <div className="relative mb-1">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={destinationSearch}
                 onChange={(e) => setDestinationSearch(e.target.value)}
-                placeholder="Search campus destinations..."
+                onKeyDown={handleSearchKeyDown}
+                placeholder="Building, code (WLH) or parking lot"
+                aria-label="Search buildings, class codes or parking"
+                aria-controls="destination-options"
+                aria-activedescendant={flatOptions.length ? `destination-option-${activeIndex}` : undefined}
                 autoFocus
-                className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg bg-black/5 border border-transparent focus:outline-none focus:ring-1 focus:ring-slate-900/20 text-slate-800"
+                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-black/5 border border-transparent focus:outline-none focus:ring-1 focus:ring-slate-900/20 text-slate-800"
               />
+              {destinationSearch && (
+                <button
+                  type="button"
+                  onClick={() => setDestinationSearch('')}
+                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-black/5 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
             </div>
-            <ul className="max-h-48 overflow-y-auto space-y-1 py-0.5 text-sm" role="listbox">
-              {filteredDestinations.length > 0 ? (
-                filteredDestinations.map((dest) => {
-                  const isCurrent = dest.id === formData.destinationId;
-                  return (
-                    <li
-                      key={dest.id}
-                      role="option"
-                      aria-selected={isCurrent}
-                      onClick={() => handleSelectDestination(dest)}
-                      className={`px-3 py-2 rounded-lg cursor-pointer flex items-center justify-between transition-colors text-xs ${
-                        isCurrent
-                          ? 'bg-black/5 text-slate-900 font-medium'
-                          : 'hover:bg-black/5 text-slate-700'
-                      }`}
-                    >
-                      <div>
-                        <span className="font-semibold">{dest.name}</span>
-                      </div>
-                      {isCurrent && <Check className="w-3.5 h-3.5 text-slate-900" />}
-                    </li>
-                  );
-                })
-              ) : (
+            <ul ref={listRef} id="destination-options" className="max-h-72 overflow-y-auto py-0.5 text-sm" role="listbox">
+              {sections.map((section) => (
+                <React.Fragment key={section.label}>
+                  <SectionLabel>{section.label}</SectionLabel>
+                  {section.options.map((option) => {
+                    rowIndex += 1;
+                    const index = rowIndex;
+                    const isActive = index === activeIndex;
+                    if (option.kind === 'parking') {
+                      const { lot } = option;
+                      return (
+                        <li
+                          key={`lot-${lot.locationId}`}
+                          id={`destination-option-${index}`}
+                          data-index={index}
+                          role="option"
+                          aria-selected={isActive}
+                          onClick={() => chooseOption(option)}
+                          onMouseMove={() => setActiveIndex(index)}
+                          className={`px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2.5 text-xs text-slate-700 ${isActive ? 'bg-black/[0.06]' : ''}`}
+                        >
+                          <span className="w-5 h-5 shrink-0 rounded-md bg-[#007aff] text-white text-[10px] font-extrabold flex items-center justify-center">P</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold truncate">{lot.name}</div>
+                            <div className="text-[11px] text-slate-500">
+                              {lot.kind === 'structure' ? 'Parking structure' : 'Surface lot'} · show on map
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    }
+                    const { destination, matchedOn } = option;
+                    const isCurrent = destination.id === formData.destinationId;
+                    return (
+                      <li
+                        key={destination.id}
+                        id={`destination-option-${index}`}
+                        data-index={index}
+                        role="option"
+                        aria-selected={isActive}
+                        onClick={() => chooseOption(option)}
+                        onMouseMove={() => setActiveIndex(index)}
+                        className={`px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2.5 text-xs ${
+                          isCurrent ? 'text-slate-900' : 'text-slate-700'
+                        } ${isActive ? 'bg-black/[0.06]' : ''}`}
+                      >
+                        {!query && destination.popular !== undefined ? (
+                          <Star className="w-3.5 h-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        ) : (
+                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" aria-hidden="true" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="font-semibold truncate">{destination.name}</div>
+                          {matchedOn && !destination.codes?.includes(matchedOn) && (
+                            <div className="text-[11px] text-slate-500 truncate">Also called {matchedOn}</div>
+                          )}
+                        </div>
+                        {destination.codes?.[0] && (
+                          <span
+                            className={`shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wide ${
+                              matchedOn && destination.codes.includes(matchedOn)
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-black/[0.06] text-slate-600'
+                            }`}
+                          >
+                            {matchedOn && destination.codes.includes(matchedOn) ? matchedOn : destination.codes[0]}
+                          </span>
+                        )}
+                        {isCurrent && <Check className="w-3.5 h-3.5 shrink-0 text-slate-900" />}
+                      </li>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+              {flatOptions.length === 0 && (
                 <li className="px-3 py-3 text-xs text-slate-500 text-center">
-                  No matching destinations
+                  No matches. Tip: tap the map to drop a pin anywhere.
                 </li>
               )}
             </ul>
+            {!query && (
+              <p className="px-3 pt-1.5 pb-0.5 text-[11px] text-slate-500 border-t border-black/5 mt-1">
+                Not listed? Tap the map to drop a pin.
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -254,7 +410,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* Primary Action Button */}
       <button
         type="submit"
-        disabled={isLoading || arrivalError !== null}
+        disabled={isLoading || arrivalError !== null || !selectedDestination}
         className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm btn-shine relative overflow-hidden text-white bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
@@ -263,7 +419,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             <span>Finding parking options...</span>
           </>
         ) : (
-          <span>{submitLabel}</span>
+          <span>{selectedDestination ? submitLabel : 'Choose a destination'}</span>
         )}
       </button>
     </form>

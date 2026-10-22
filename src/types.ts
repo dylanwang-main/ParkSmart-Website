@@ -25,6 +25,14 @@ export interface CampusDestination {
   name: string;
   /** Optional grouping label; not provided by the UCSD GIS source. */
   area?: string;
+  /** Class-schedule and building codes, e.g. ["WLH"] or ["HSS", "LEDDN"]. */
+  codes?: string[];
+  /** Other names people search for, e.g. "Ledden Auditorium", "Calit2". */
+  aliases?: string[];
+  /** Position in the "Popular" list shown before typing (1 = first). */
+  popular?: number;
+  /** True for a spot the user dropped on the map rather than a campus building. */
+  isPin?: boolean;
   latitude: number;
   longitude: number;
 }

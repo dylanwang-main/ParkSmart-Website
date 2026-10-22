@@ -38,6 +38,11 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
 }
 
 /** Height of the bottom strip covered by the lot detail card (card + margins). */
+/** Escapes text placed into marker HTML (building names can contain "&"). */
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
 const DETAIL_CARD_INSET_PX = 390;
 
 /** Route reveal timing: drive line draws first, then the walk line. */
@@ -141,6 +146,8 @@ interface MapContainerProps {
   selectedDestination: CampusDestination | null;
   onSelectLot: (locationId: string) => void;
   onClearSelection: () => void;
+  /** Tapping empty map offers "Park near here"; accepting sets a dropped-pin destination. */
+  onDropPin: (latitude: number, longitude: number) => void;
   /** Whether the left planner panel is showing; controls how much map is covered. */
   isPanelOpen: boolean;
   /** Whether the lot detail card is showing at the bottom of the map. */
@@ -169,6 +176,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   selectedDestination,
   onSelectLot,
   onClearSelection,
+  onDropPin,
   isPanelOpen,
   isDetailOpen,
   rankedLotIds,
@@ -184,6 +192,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const lotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const dropPopupRef = useRef<maplibregl.Popup | null>(null);
+  const onDropPinRef = useRef(onDropPin);
+  onDropPinRef.current = onDropPin;
+  const hasSelectionRef = useRef(false);
+  hasSelectionRef.current = selectedLocationId !== null || isDetailOpen;
   const isLoadedRef = useRef<boolean>(false);
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
   const [basemapControlEl, setBasemapControlEl] = useState<HTMLElement | null>(null);
@@ -268,12 +281,34 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       frameAllPoints(map, false);
     });
 
-    // Clicking map background clears selection
+    // Clicking the map background: first click closes an open lot; otherwise it offers
+    // "Park near here" at that spot, for places that are not in the destination list
     map.on('click', (e) => {
       const target = e.originalEvent.target as HTMLElement;
-      if (!target.closest('.parksmart-marker')) {
+      if (target.closest('.parksmart-marker, .maplibregl-popup')) return;
+      dropPopupRef.current?.remove();
+      if (hasSelectionRef.current) {
         onClearSelection();
+        return;
       }
+      const { lat, lng } = e.lngLat;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ps-drop-button';
+      button.innerHTML = '<span class="ps-drop-dot"></span>Park near here';
+      button.addEventListener('click', () => {
+        dropPopupRef.current?.remove();
+        onDropPinRef.current(lat, lng);
+      });
+      dropPopupRef.current = new maplibregl.Popup({
+        closeButton: false,
+        className: 'ps-drop-popup',
+        offset: 10,
+        maxWidth: 'none',
+      })
+        .setLngLat(e.lngLat)
+        .setDOMContent(button)
+        .addTo(map);
     });
 
     mapRef.current = map;
@@ -304,7 +339,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
-          <span>${selectedDestination.name}</span>
+          <span>${escapeHtml(selectedDestination.name)}</span>
         </div>
         <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-white shadow"></div>
       `;
@@ -331,7 +366,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const destinationId = selectedDestination?.id;
     if (destinationId === lastDestinationIdRef.current) return;
     lastDestinationIdRef.current = destinationId;
-    if (map && isLoadedRef.current) frameAllPoints(map, true);
+    dropPopupRef.current?.remove();
+    // A dropped pin is already where the user is looking; only reframe for picked places
+    if (map && isLoadedRef.current && selectedDestination && !selectedDestination.isPin) frameAllPoints(map, true);
   }, [selectedDestination]);
 
   // Render and update parking lot markers

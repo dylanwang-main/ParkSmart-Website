@@ -15,7 +15,7 @@ import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
-import { DEFAULT_DESTINATION_ID, getDestination } from './data/destinations.ts';
+import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
 import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
 import { tightFrom } from './utils/availabilityModel.ts';
@@ -26,6 +26,19 @@ import {
   ParkingRecommendation,
   DevSimulationState,
 } from './types.ts';
+
+/** How many earlier searches "Recent" keeps for this visit. */
+const MAX_HISTORY = 5;
+
+/** Same destination, date, time and permit. */
+function sameRequest(a: ParkingPlannerRequest, b: ParkingPlannerRequest): boolean {
+  return (
+    a.destinationId === b.destinationId &&
+    a.arrivalDate === b.arrivalDate &&
+    a.arrivalTime === b.arrivalTime &&
+    a.permitType === b.permitType
+  );
+}
 
 /** Width the open planner panel covers on the left (380px panel + 24px gap). */
 const PANEL_OFFSET_PX = 404;
@@ -66,25 +79,22 @@ function timeOf(minutes: number): string {
  * Owns state for formInputs, recommendations, selectedLocationId, and simulated UI states.
  */
 export default function App() {
-  // 1. Form Inputs State (defaulting to Geisel Library, today, next hour, 'S' permit)
-  // "Your usual" (saved in this browser only). When present, the form starts on it.
+  // 1. Form inputs. No destination until the user picks one (no Geisel default);
+  // date and time start at right now.
+  // "Your usual" only exists after a real search (saved in this browser only); it is
+  // offered as a card, never prefilled into the form.
   const [usualTrip, setUsualTrip] = useState<UsualTrip | null>(() => loadUsualTrip());
 
-  const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() =>
-    usualTrip
-      ? {
-          destinationId: usualTrip.destinationId,
-          arrivalDate: nextUsualDate(usualTrip.arrivalTime),
-          arrivalTime: usualTrip.arrivalTime,
-          permitType: usualTrip.permitType,
-        }
-      : {
-          destinationId: DEFAULT_DESTINATION_ID,
-          arrivalDate: getTodayDateString(),
-          arrivalTime: getCurrentTimeString(),
-          permitType: 'S',
-        }
-  );
+  const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() => ({
+    destinationId: '',
+    arrivalDate: getTodayDateString(),
+    arrivalTime: getCurrentTimeString(),
+    permitType: 'S',
+  }));
+
+  // Earlier searches this visit, most recent first (the current one is not included).
+  // Picking one swaps it with the current search, so X then Y, then "Recent", returns to X.
+  const [searchHistory, setSearchHistory] = useState<ParkingPlannerRequest[]>([]);
 
   // 2. Recommendations State
   const [recommendations, setRecommendations] = useState<ParkingRecommendation[]>([]);
@@ -98,6 +108,7 @@ export default function App() {
   // The exact request the current results were computed for. null until the first
   // search, which is how the panel knows to show its "enter your trip" prompt.
   const [searchedRequest, setSearchedRequest] = useState<ParkingPlannerRequest | null>(null);
+  const searchedRequestRef = useRef<ParkingPlannerRequest | null>(null);
 
   // Lot the user confirmed with "Select this spot" (routing will hook in here later)
   const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
@@ -139,6 +150,7 @@ export default function App() {
     (customInputs?: ParkingPlannerRequest) => {
       const inputs = customInputs || formInputs;
       if (getArrivalError(inputs)) return; // the form shows the message; nothing to search
+      if (!findDestination(inputs.destinationId)) return; // no destination picked yet
       setIsLoading(true);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
       setConfirmedLotId(null);
@@ -148,6 +160,14 @@ export default function App() {
       const finish = () => {
         const response = getSampleRecommendations(inputs);
         setRecommendations(response.recommendations);
+        // Move the search being replaced into history (unless it is the same trip)
+        const previous = searchedRequestRef.current;
+        if (previous && !sameRequest(previous, inputs)) {
+          setSearchHistory((history) =>
+            [previous, ...history.filter((r) => !sameRequest(r, previous) && !sameRequest(r, inputs))].slice(0, MAX_HISTORY)
+          );
+        }
+        searchedRequestRef.current = inputs;
         setSearchedRequest(inputs);
         setIsLoading(false);
 
@@ -245,21 +265,37 @@ export default function App() {
 
   // Handle resetting filters from empty state
   const handleResetFilters = () => {
-    const updated: ParkingPlannerRequest = {
-      ...formInputs,
-      permitType: 'S',
-      destinationId: DEFAULT_DESTINATION_ID,
-    };
+    const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S' };
     setFormInputs(updated);
     setDevState('normal');
     runPlanner(updated);
   };
 
-  // Selected campus destination object
+  // Selected campus destination (or dropped pin); null until the user picks one
   const currentDestination = useMemo(
-    () => getDestination(formInputs.destinationId),
+    () => findDestination(formInputs.destinationId) ?? null,
     [formInputs.destinationId]
   );
+
+  // A parking lot picked in the search box: select its pin and open its card.
+  // It does not become the destination.
+  const handleSelectParking = useCallback((locationId: string) => {
+    setRouteLotId(null);
+    setSelectedLocationId(locationId);
+    setIsDetailOpen(true);
+  }, []);
+
+  // "Park near here" on the map: use that spot as the destination
+  const handleDropPin = useCallback((latitude: number, longitude: number) => {
+    setFormInputs((prev) => ({ ...prev, destinationId: makePinDestinationId(latitude, longitude) }));
+  }, []);
+
+  // Re-run an earlier search from "Recent"
+  const handleRestoreSearch = (request: ParkingPlannerRequest) => {
+    setFormInputs(request);
+    setDevState('normal');
+    runPlanner(request);
+  };
 
   // Instant answer for the usual trip, shown before the first search
   const usualPreview = useMemo(() => {
@@ -272,6 +308,7 @@ export default function App() {
     };
     const arrival = parseArrival(request.arrivalDate, request.arrivalTime);
     if (!arrival) return null;
+    if (!findDestination(request.destinationId)) return null;
     const topPick = getSampleRecommendations(request).recommendations[0] ?? null;
     const tight = topPick ? tightFrom(topPick.lot, arrival) : null;
     const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -356,6 +393,7 @@ export default function App() {
         selectedDestination={currentDestination}
         onSelectLot={handleSelectLotFromMap}
         onClearSelection={handleClearSelection}
+        onDropPin={handleDropPin}
         isPanelOpen={isPanelOpen}
         isDetailOpen={isDetailOpen || routeLot !== null}
         rankedLotIds={rankedLotIds}
@@ -477,6 +515,7 @@ export default function App() {
                   handleFormChange({ arrivalDate: getTodayDateString(), arrivalTime: getCurrentTimeString() })
                 }
                 submitLabel={isStale ? 'Update results' : 'Find parking'}
+                onSelectParking={handleSelectParking}
               />
             </section>
 
@@ -497,6 +536,8 @@ export default function App() {
                 isError={activeIsError}
                 recommendations={activeRecommendations}
                 searchedRequest={searchedRequest}
+                searchHistory={searchHistory}
+                onRestoreSearch={handleRestoreSearch}
                 showIntroPrompt={searchedRequest === null && devState === 'normal'}
                 usualTripCard={
                   usualPreview && (
@@ -536,7 +577,7 @@ export default function App() {
         style={{ left: isPanelOpen ? `calc(${PANEL_OFFSET_PX}px + (100% - ${PANEL_OFFSET_PX}px) / 2)` : '50%' }}
       >
         <AnimatePresence mode="wait">
-          {isDetailOpen && selectedLot && currentDestination && (
+          {isDetailOpen && selectedLot && (
             // Only transforms here. Fading a *parent* of a backdrop-filter element makes
             // Chrome skip the blur until the fade ends (the frost "pops in"), so the
             // opacity fade lives on the glass card itself (see LotDetailCard).
@@ -578,8 +619,8 @@ export default function App() {
             >
               <RouteStartSheet
                 lot={routeLot}
-                destinationName={currentDestination.name}
-                walkMinutes={estimateWalkingTime(routeLot, currentDestination.id)}
+                destinationName={currentDestination?.name ?? 'your destination'}
+                walkMinutes={estimateWalkingTime(routeLot, currentDestination?.id ?? '')}
                 start={routeStart}
                 onStart={handleRouteStart}
                 onClose={handleCloseRoute}

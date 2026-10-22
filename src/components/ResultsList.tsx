@@ -13,6 +13,7 @@ import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
 import { ErrorState } from './ErrorState.tsx';
+import { RecentSearches } from './RecentSearches.tsx';
 
 /** Results shown before "Show more", and how many each click reveals. */
 const INITIAL_VISIBLE = 3;
@@ -24,6 +25,9 @@ interface ResultsListProps {
   recommendations: ParkingRecommendation[];
   /** The request these results were computed for (null before the first search). */
   searchedRequest: ParkingPlannerRequest | null;
+  /** Earlier searches this visit (most recent first), for the "Recent" menu. */
+  searchHistory: ParkingPlannerRequest[];
+  onRestoreSearch: (request: ParkingPlannerRequest) => void;
   /** Show the "enter your trip details" prompt instead of results. */
   showIntroPrompt: boolean;
   /** "Your usual" card, shown in place of the generic prompt when a trip is saved. */
@@ -48,6 +52,8 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   isError,
   recommendations,
   searchedRequest,
+  searchHistory,
+  onRestoreSearch,
   showIntroPrompt,
   usualTripCard,
   isStale,
@@ -80,8 +86,8 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           </div>
           <p className="text-sm font-semibold text-slate-900">Enter your trip details to see options</p>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Pick where you're going, when you'll arrive and your permit, then press Find parking.
-            You can also tap any P on the map to check a structure.
+            Pick where you're going (or tap the map to drop a pin), when you'll arrive and your
+            permit, then press Find parking. Search a lot by name or tap any P to check it.
           </p>
         </div>
       </div>
@@ -125,7 +131,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between text-xs text-slate-700 font-medium px-1">
         <span>Recommended for your arrival</span>
-        <span className="text-[11px] text-slate-600">Ranked by score</span>
+        <RecentSearches history={searchHistory} onRestore={onRestoreSearch} />
       </div>
 
       {/* Results no longer match the form: say so and grey them out */}
