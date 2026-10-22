@@ -4,6 +4,7 @@
  */
 
 import { ParkingLot } from '../types.ts';
+import { SURFACE_LOTS } from './surfaceLots.ts';
 
 /**
  * UCSD La Jolla campus parking structures.
@@ -34,6 +35,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23365383,
     estimatedAvailabilityPercent: 82,
     walkingMinutes: 8,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'S', 'V'],
   },
   {
@@ -43,6 +45,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23933606,
     estimatedAvailabilityPercent: 64,
     walkingMinutes: 6,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'S'],
   },
   {
@@ -52,6 +55,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24306936,
     estimatedAvailabilityPercent: 71,
     walkingMinutes: 9,
+    kind: 'structure',
     spaceCategories: ['B', 'S', 'SR', 'D'],
   },
   {
@@ -61,6 +65,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24163894,
     estimatedAvailabilityPercent: 55,
     walkingMinutes: 7,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'V'],
   },
   {
@@ -70,6 +75,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.24305356,
     estimatedAvailabilityPercent: 77,
     walkingMinutes: 14,
+    kind: 'structure',
     spaceCategories: ['B', 'S', 'V'],
   },
   {
@@ -79,6 +85,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23709381,
     estimatedAvailabilityPercent: 48,
     walkingMinutes: 12,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'V'],
   },
   {
@@ -88,6 +95,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.23527198,
     estimatedAvailabilityPercent: 69,
     walkingMinutes: 7,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'S', 'V'],
   },
   {
@@ -97,6 +105,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22604283,
     estimatedAvailabilityPercent: 88,
     walkingMinutes: 16,
+    kind: 'structure',
     spaceCategories: ['A', 'B', 'D'],
   },
   {
@@ -106,6 +115,7 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22513874,
     estimatedAvailabilityPercent: 79,
     walkingMinutes: 17,
+    kind: 'structure',
     spaceCategories: ['B', 'S', 'D'],
   },
   {
@@ -115,6 +125,32 @@ export const PARKING_LOTS: ParkingLot[] = [
     longitude: -117.22184339,
     estimatedAvailabilityPercent: 85,
     walkingMinutes: 20,
+    kind: 'structure',
     spaceCategories: ['B', 'S', 'SR', 'D'],
   },
+  {
+    // Named facility in the QPASS inventory; coordinates from the GIS "parking structure" points
+    locationId: 'torrey-pines-center-north-ps',
+    name: 'Torrey Pines Center North Parking Structure',
+    latitude: 32.89164809,
+    longitude: -117.24245761,
+    estimatedAvailabilityPercent: 73,
+    walkingMinutes: 15,
+    kind: 'structure',
+    spaceCategories: ['A', 'B', 'S'],
+  },
+  {
+    // Named facility in the QPASS inventory; pin uses the Torrey Pines Center South building point
+    locationId: 'torrey-pines-center-south',
+    name: 'Torrey Pines Center South',
+    latitude: 32.89031,
+    longitude: -117.24319,
+    estimatedAvailabilityPercent: 61,
+    walkingMinutes: 15,
+    kind: 'lot',
+    spaceCategories: ['B', 'S', 'D'],
+  },
 ];
+
+/** Every place ParkSmart can recommend: structures plus the dataset's surface lots. */
+export const ALL_PARKING: ParkingLot[] = [...PARKING_LOTS, ...SURFACE_LOTS];

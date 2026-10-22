@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Footprints, CheckCircle2, Clock, Navigation } from 'lucide-react';
+import { Footprints, CheckCircle2, Clock } from 'lucide-react';
+import { SpotActions } from './SpotActions.tsx';
 import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 import { AvailabilityLevel, availabilityStatus } from '../utils/availability.ts';
@@ -36,6 +37,7 @@ interface RecommendationCardProps {
   isConfirmed: boolean;
   onSelect: () => void;
   onConfirm: () => void;
+  onStartRoute: () => void;
 }
 
 /**
@@ -52,6 +54,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   isConfirmed,
   onSelect,
   onConfirm,
+  onStartRoute,
 }) => {
   const { badgeLabel, lot, reason, access } = recommendation;
   const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
@@ -172,30 +175,16 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
       </div>
 
-      {/* Confirm step (routing will start from here in a later version) */}
-      <button
-        type="button"
-        disabled={isStale}
-        onClick={(e) => {
-          e.stopPropagation();
-          onConfirm();
-        }}
-        className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer disabled:cursor-not-allowed ${
-          isConfirmed
-            ? 'bg-[#34c759]/15 text-[#1f7a37]'
-            : 'bg-black/[0.06] text-slate-800 hover:bg-black/[0.1]'
-        }`}
-      >
-        {isConfirmed ? (
-          <>
-            <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Parking here. Directions coming soon
-          </>
-        ) : (
-          <>
-            <Navigation className="w-4 h-4" aria-hidden="true" /> Select this spot
-          </>
-        )}
-      </button>
+      {/* Confirm, then start the route (location is only requested at that point) */}
+      <div className="mt-3">
+        <SpotActions
+          tone="subtle"
+          isConfirmed={isConfirmed}
+          disabled={isStale}
+          onConfirm={onConfirm}
+          onStartRoute={onStartRoute}
+        />
+      </div>
     </article>
   );
 };

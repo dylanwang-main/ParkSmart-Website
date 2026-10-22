@@ -11,11 +11,12 @@ import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
+import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { ANIMATION_TIMINGS } from './constants.ts';
 import { DEFAULT_DESTINATION_ID, getDestination } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
 import { parseArrival } from './utils/permitRules.ts';
-import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
+import { SAMPLE_LOTS, estimateWalkingTime, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
@@ -73,6 +74,10 @@ export default function App() {
   // Lot the user confirmed with "Select this spot" (routing will hook in here later)
   const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
+  // Route being started ("Start route"); location is only requested inside this flow
+  const [routeLotId, setRouteLotId] = useState<string | null>(null);
+  const [routeStart, setRouteStart] = useState<RouteStart | null>(null);
+
   // Lot detail card (opened by clicking a pin on the map)
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
@@ -90,6 +95,8 @@ export default function App() {
       setIsLoading(true);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
       setConfirmedLotId(null);
+      setRouteLotId(null);
+      setRouteStart(null);
 
       // Short simulated request so the loading state is visible
       const timer = setTimeout(() => {
@@ -164,6 +171,7 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        setRouteLotId(null);
         setIsDetailOpen(false);
         setSelectedLocationId(null);
       }
@@ -220,6 +228,22 @@ export default function App() {
     setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
   }, []);
 
+  // "Start route": show the route sheet in the bottom slot (replacing the lot card)
+  const handleStartRoute = useCallback((locationId: string) => {
+    setSelectedLocationId(locationId);
+    setIsDetailOpen(false);
+    setRouteStart(null);
+    setRouteLotId(locationId);
+  }, []);
+  const handleCloseRoute = useCallback(() => {
+    setRouteLotId(null);
+    setRouteStart(null);
+  }, []);
+  const routeLot = useMemo(
+    () => SAMPLE_LOTS.find((lot) => lot.locationId === routeLotId) ?? null,
+    [routeLotId]
+  );
+
   // Derive active rendering state based on normal computation or dev simulator
   const activeIsLoading = devState === 'loading' || isLoading;
   const activeIsError = devState === 'error';
@@ -241,8 +265,10 @@ export default function App() {
         onSelectLot={handleSelectLotFromMap}
         onClearSelection={handleClearSelection}
         isPanelOpen={isPanelOpen}
-        isDetailOpen={isDetailOpen}
+        isDetailOpen={isDetailOpen || routeLot !== null}
         rankedLotIds={rankedLotIds}
+        userLocation={routeStart?.kind === 'location' ? routeStart : null}
+        routeLot={routeLot}
       />
 
       {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
@@ -364,6 +390,7 @@ export default function App() {
                 isStale={isStale}
                 confirmedLotId={confirmedLotId}
                 onConfirmLot={handleConfirmLot}
+                onStartRoute={handleStartRoute}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
@@ -405,7 +432,27 @@ export default function App() {
                 destination={currentDestination}
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
+                onStartRoute={() => handleStartRoute(selectedLot.locationId)}
                 onClose={handleClearSelection}
+              />
+            </motion.div>
+          )}
+          {routeLot && (
+            <motion.div
+              key={`route-${routeLot.locationId}`}
+              className="pointer-events-auto"
+              initial={{ y: 20, scale: 0.97 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 12, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 600, damping: 38 }}
+            >
+              <RouteStartSheet
+                lot={routeLot}
+                destinationName={currentDestination.name}
+                walkMinutes={estimateWalkingTime(routeLot, currentDestination.id)}
+                start={routeStart}
+                onStart={setRouteStart}
+                onClose={handleCloseRoute}
               />
             </motion.div>
           )}

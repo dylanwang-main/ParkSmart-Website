@@ -41,6 +41,10 @@ export interface ParkingLot {
   walkingMinutes: number;
   /** Stall categories found in the structure (A, B, S, SR, D, V). SAMPLE data for now. */
   spaceCategories: SpaceCategory[];
+  /** Parking structure (garage) or surface lot; structures get the larger pin. */
+  kind?: 'structure' | 'lot';
+  /** Restriction to show on the lot card, e.g. needs a supplemental permit. */
+  accessNote?: string;
   description?: string;
 }
 

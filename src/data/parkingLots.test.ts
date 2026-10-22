@@ -4,10 +4,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { PARKING_LOTS } from './parkingLots.ts';
+import { ALL_PARKING as PARKING_LOTS } from './parkingLots.ts';
 
-// Rough bounding box around the UCSD La Jolla campus (incl. East Campus).
-const CAMPUS_BOUNDS = { minLat: 32.86, maxLat: 32.9, minLng: -117.255, maxLng: -117.21 };
+// Rough bounding box around the UCSD La Jolla campus (incl. East Campus, SIO and the Gliderport).
+const CAMPUS_BOUNDS = { minLat: 32.86, maxLat: 32.9, minLng: -117.26, maxLng: -117.21 };
 
 describe('PARKING_LOTS', () => {
   it('has unique location IDs', () => {

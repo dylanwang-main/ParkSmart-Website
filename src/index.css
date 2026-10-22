@@ -278,3 +278,41 @@
 }
 .ps-rank-first { background: #0f172a; color: #fff; }
 .ps-rank-backup { background: rgba(255, 255, 255, 0.92); color: #334155; }
+
+/* Surface lots: a smaller disc than parking structures, so structures stand out */
+.ps-lot .ps-glyph {
+  width: 18px;
+  height: 18px;
+  font-size: 9px;
+  line-height: 14px;
+  border-width: 1.5px;
+}
+.ps-lot .ps-glyph .ps-avail { width: 7px; height: 7px; right: -2px; top: -2px; border-width: 1px; }
+.ps-lot .ps-label { top: 12px; font-size: 11px; }
+
+/* "You are here" dot (iOS style): blue dot, white ring, soft pulsing halo */
+.ps-user {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #007aff;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
+  z-index: 5;
+}
+.ps-user::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  background: rgba(0, 122, 255, 0.22);
+  animation: ps-user-halo 2.4s ease-out infinite;
+  z-index: -1;
+}
+@keyframes ps-user-halo {
+  0% { scale: 0.4; opacity: 1; }
+  100% { scale: 1.2; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-user::after { animation: none; opacity: 0.6; }
+}

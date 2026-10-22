@@ -5,7 +5,8 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, Clock, Footprints, Navigation, X, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
+import { SpotActions } from './SpotActions.tsx';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
@@ -20,6 +21,7 @@ interface LotDetailCardProps {
   destination: CampusDestination;
   isConfirmed: boolean;
   onConfirm: () => void;
+  onStartRoute: () => void;
   onClose: () => void;
 }
 
@@ -35,6 +37,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   destination,
   isConfirmed,
   onConfirm,
+  onStartRoute,
   onClose,
 }) => {
   const percent = lot.estimatedAvailabilityPercent;
@@ -64,7 +67,9 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-[15px] font-bold leading-tight tracking-tight truncate">{lot.name}</h2>
-          <p className="text-xs text-slate-600 mt-0.5">Parking structure</p>
+          <p className="text-xs text-slate-600 mt-0.5">
+            {lot.kind === 'lot' ? 'Surface lot' : 'Parking structure'}
+          </p>
         </div>
         <button
           type="button"
@@ -130,6 +135,12 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             ))}
           </div>
         </div>
+        {lot.accessNote && (
+          <div className="flex items-start gap-2 px-3 py-2.5 text-[#8a4b00]">
+            <Info className="w-4 h-4 shrink-0 mt-px" aria-hidden="true" />
+            <span>{lot.accessNote}</span>
+          </div>
+        )}
         <div className="flex items-center gap-2 px-3 py-2.5">
           <Footprints className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
           <span>
@@ -139,24 +150,15 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onConfirm}
-        disabled={!permitWorks}
-        className={`mt-3 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
-          isConfirmed ? 'bg-[#34c759]/15 text-[#1f7a37]' : 'bg-[#007aff] text-white hover:bg-[#0067d6]'
-        }`}
-      >
-        {isConfirmed ? (
-          <>
-            <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Parking here. Directions coming soon
-          </>
-        ) : (
-          <>
-            <Navigation className="w-4 h-4" aria-hidden="true" /> Select this spot
-          </>
-        )}
-      </button>
+      <div className="mt-3">
+        <SpotActions
+          tone="primary"
+          isConfirmed={isConfirmed}
+          disabled={!permitWorks}
+          onConfirm={onConfirm}
+          onStartRoute={onStartRoute}
+        />
+      </div>
 
       <p className="mt-2 text-[11px] text-slate-500 text-center">
         Sample estimate, not live availability

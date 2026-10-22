@@ -11,11 +11,11 @@ import {
   ParkingPlannerResponse,
   ParkingRecommendation,
 } from '../types.ts';
-import { PARKING_LOTS } from './parkingLots.ts';
+import { ALL_PARKING } from './parkingLots.ts';
 import { lotAccess, parseArrival } from '../utils/permitRules.ts';
 
-/** Re-exported so existing imports keep working. Real names/coordinates, sample stats. */
-export { PARKING_LOTS as SAMPLE_LOTS };
+/** All structures and lots (real names/coordinates, sample stats), under its original export name. */
+export { ALL_PARKING as SAMPLE_LOTS };
 
 /**
  * Calculates straight-line distance in kilometers between two geo-coordinates.
@@ -170,7 +170,7 @@ export function getSampleRecommendations(
   if (!arrival) return response([]);
 
   // 1. Keep lots the permit can use at the arrival time; attach walk time and access
-  const scored = PARKING_LOTS.flatMap((lot) => {
+  const scored = ALL_PARKING.flatMap((lot) => {
     const access = lotAccess(request.permitType, lot.spaceCategories, arrival);
     if (access.status !== 'always' && access.status !== 'until') return [];
     const walkingMinutes = estimateWalkingTime(lot, request.destinationId);

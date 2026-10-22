@@ -31,6 +31,7 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 | Data | Status | Source |
 |---|---|---|
 | Parking structure names and pin locations | **Real** (verified 2026-10-21) | UCSD campus GIS, Building Points Public layer |
+| 52 surface lots (incl. Gliderport, P386) | **Real** IDs and pins (verified 2026-10-21) | P-numbers from the team's cleaned QPASS inventory; pins at each lot's outline center in UCSD GIS layer 21 (`src/data/surfaceLots.ts`) |
 | Destination names and locations (141 buildings, searchable) | **Real** (verified 2026-10-21) | Same UCSD GIS layer, filtered to places people visit (`src/data/destinations.ts`) |
 | Availability %, stall categories per structure, rankings | **Sample** | Placeholders until the QPASS pipeline and permit rules connect |
 
@@ -43,6 +44,12 @@ Lot data lives in `src/data/parkingLots.ts`. Pins mark each structure's building
 `src/utils/permitRules.ts` encodes when each permit may use each stall category, from the team's **UCSD Parking Domain Research v1.2** (section 2). Example: an S permit can use S and D stalls 24/7, and A/B stalls weekdays 4 PM to 8 AM plus all weekend. Recommendations only include structures the permit can use **at the arrival time**, and cards show "Open 24/7" or "Valid until ...".
 
 Not modeled yet (open questions in the research doc): A 24/7, reserved, accessible and SuperSaver stalls; lot-specific rules (P386, P701, SIO); holiday category rules; the Sept 2026 D restriction's effect on other permits; ParkMobile vs pay-station V; checking the whole stay rather than just arrival. Which stall categories each structure has (`spaceCategories`) is still **sample** data.
+
+---
+
+## Starting a Route
+
+Location is requested **only** when the user taps **Start route** (after **Select this spot**), with a short explanation first. If they decline or it fails, they can type a starting point instead. Once shared, a blue "you are here" dot appears and the map frames the user and the lot. Animated driving and walking routes are a later task.
 
 ---
 

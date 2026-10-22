@@ -26,6 +26,7 @@ interface ResultsListProps {
   isStale: boolean;
   confirmedLotId: string | null;
   onConfirmLot: (locationId: string) => void;
+  onStartRoute: (locationId: string) => void;
   selectedLocationId: string | null;
   onSelectLot: (locationId: string) => void;
   onRetry: () => void;
@@ -45,6 +46,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   isStale,
   confirmedLotId,
   onConfirmLot,
+  onStartRoute,
   selectedLocationId,
   onSelectLot,
   onRetry,
@@ -138,6 +140,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 isStale={isStale}
                 isConfirmed={confirmedLotId === rec.lot.locationId}
                 onConfirm={() => onConfirmLot(rec.lot.locationId)}
+                onStartRoute={() => onStartRoute(rec.lot.locationId)}
                 isSelected={selectedLocationId === rec.lot.locationId}
                 onSelect={() => onSelectLot(rec.lot.locationId)}
               />

@@ -38,6 +38,20 @@ function styleFor(mode: BasemapMode): string | maplibregl.StyleSpecification {
 /** Height of the bottom strip covered by the lot detail card (card + margins). */
 const DETAIL_CARD_INSET_PX = 390;
 
+/** Top padding when framing a route, leaving room for the balloon pin and its label. */
+const ROUTE_FRAME_TOP_PX = 130;
+
+/** Beyond this distance from the route's lot, we show the dot but don't zoom out to it. */
+const MAX_ROUTE_FRAME_KM = 60;
+
+/** Straight-line distance in km (equirectangular approximation; fine at city scale). */
+function approxDistanceKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const kmPerDegLat = 111.32;
+  const dx = (b.longitude - a.longitude) * kmPerDegLat * Math.cos(((a.latitude + b.latitude) / 2) * (Math.PI / 180));
+  const dy = (b.latitude - a.latitude) * kmPerDegLat;
+  return Math.hypot(dx, dy);
+}
+
 /** Zoom at which every pin shows its name (below it, only ranked/selected/hovered pins do). */
 const SHOW_ALL_LABELS_ZOOM = 16;
 
@@ -84,6 +98,10 @@ interface MapContainerProps {
   isDetailOpen: boolean;
   /** Current first choice / backup, labeled on the map. */
   rankedLotIds: { first: string | null; backup: string | null };
+  /** User's location once they share it for a route; shown as a blue dot. */
+  userLocation: { latitude: number; longitude: number } | null;
+  /** Lot the route goes to; framed together with the user's location. */
+  routeLot: ParkingLot | null;
 }
 
 /**
@@ -99,6 +117,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   isPanelOpen,
   isDetailOpen,
   rankedLotIds,
+  userLocation,
+  routeLot,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -229,6 +249,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-white shadow"></div>
       `;
 
+      // Above ordinary pins (1), level with ranked ones (2), below the selected pin (3)
+      el.style.zIndex = '2';
+
       const marker = new maplibregl.Marker({
         element: el,
         anchor: 'bottom',
@@ -326,6 +349,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       el.classList.toggle('ps-on-light', basemap === 'map');
       el.classList.toggle('ps-selected', isSelected);
       el.classList.toggle('ps-ranked', rank !== null);
+      el.classList.toggle('ps-lot', lot.kind === 'lot');
 
       // Rebuild the pin's HTML only when its selected state or rank actually changed
       // (usually 1 or 2 pins per click, not all of them).
@@ -364,6 +388,36 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       `;
     });
   }, [lots, selectedLocationId, onSelectLot, basemap, rankedLotIds]);
+
+  // "You are here" dot for routing, plus framing the user and the route's lot together
+  const userMarkerRef = useRef<maplibregl.Marker | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    userMarkerRef.current?.remove();
+    userMarkerRef.current = null;
+    if (!userLocation) return;
+
+    const el = document.createElement('div');
+    el.className = 'ps-user';
+    el.setAttribute('aria-label', 'Your location');
+    userMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([userLocation.longitude, userLocation.latitude])
+      .addTo(map);
+
+    if (routeLot && approxDistanceKm(userLocation, routeLot) <= MAX_ROUTE_FRAME_KM) {
+      const bounds = new maplibregl.LngLatBounds()
+        .extend([userLocation.longitude, userLocation.latitude])
+        .extend([routeLot.longitude, routeLot.latitude]);
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      map.fitBounds(bounds, {
+        // Extra room on top: the selected balloon pin rises ~50px above its point
+        padding: { ...paddingRef.current, top: Math.max(paddingRef.current.top, ROUTE_FRAME_TOP_PX) },
+        maxZoom: 16,
+        duration: prefersReducedMotion ? 0 : MAP_CONFIG.FLY_DURATION_MS,
+      });
+    }
+  }, [userLocation, routeLot]);
 
   // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
   useEffect(() => {
