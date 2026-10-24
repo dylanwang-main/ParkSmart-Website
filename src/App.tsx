@@ -14,6 +14,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
+import ucsdLogo from './assets/ucsd-logo.png';
 import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
 import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
@@ -495,14 +496,14 @@ export default function App() {
                 </h1>
               </motion.div>
 
-              {/* Campus badge (text only; the official UC San Diego logo is a trademark) */}
+              {/* Campus badge: UC San Diego wordmark on white so the navy stays crisp over the glass panel */}
               <motion.span
-                className="px-2.5 py-1 rounded-full bg-white/55 border border-white/60 text-[11px] font-semibold tracking-tight text-slate-700 shadow-sm shadow-black/5 whitespace-nowrap"
+                className="px-3 py-1.5 rounded-full bg-white/95 border border-white shadow-sm shadow-black/10 flex items-center"
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
               >
-                UC San Diego
+                <img src={ucsdLogo} alt="UC San Diego" className="h-[18px] w-auto block" />
               </motion.span>
             </div>
             {/* One-line intro so first-time visitors know what this is for */}
@@ -588,7 +589,7 @@ export default function App() {
 
           {/* Panel Footer Note */}
           <footer className="px-5 py-2.5 bg-white/20 border-t border-black/5 text-[11px] text-slate-500 flex items-center justify-center shrink-0">
-            <span>Sample data. Estimates only, not live availability.</span>
+            <span>Sample data. Estimates only. Unofficial student project, not affiliated with UC San Diego.</span>
           </footer>
         </motion.div>
       </aside>
