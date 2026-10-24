@@ -12,7 +12,6 @@ import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
-import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
@@ -21,7 +20,7 @@ import { getArrivalError } from './utils/arrival.ts';
 import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
 import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
-import { SAMPLE_LOTS, estimateWalkingTime, getSampleRecommendations } from './data/sampleRecommendations.ts';
+import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
@@ -133,16 +132,6 @@ export default function App() {
   // Lot the user confirmed with "Select this spot" (routing will hook in here later)
   const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
-  // Route being started ("Start route"); location is only requested inside this flow
-  const [routeLotId, setRouteLotId] = useState<string | null>(null);
-  const [routeStart, setRouteStart] = useState<RouteStart | null>(null);
-  // Bumped when a route start is chosen, to replay the route-drawing animation
-  const [routeRevealKey, setRouteRevealKey] = useState<number>(0);
-  const handleRouteStart = useCallback((start: RouteStart) => {
-    setRouteStart(start);
-    setRouteRevealKey((k) => k + 1);
-  }, []);
-
   // Lot detail card (opened by clicking a pin on the map)
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
@@ -166,10 +155,10 @@ export default function App() {
   // 5. Dev State Simulator
   const [devState, setDevState] = useState<DevSimulationState>('normal');
 
-  // Phone: the lot card and route sheet need the space, so tuck the planner away while they are open
+  // Phone: the lot card needs the space, so tuck the planner away while they are open
   useEffect(() => {
-    if (isMobile && (isDetailOpen || routeLotId !== null)) setIsPanelOpen(false);
-  }, [isMobile, isDetailOpen, routeLotId]);
+    if (isMobile && isDetailOpen) setIsPanelOpen(false);
+  }, [isMobile, isDetailOpen]);
 
   // Phone: the sheet is short, so bring the results into view after each search
   useEffect(() => {
@@ -186,8 +175,6 @@ export default function App() {
       setIsLoading(true);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
       setConfirmedLotId(null);
-      setRouteLotId(null);
-      setRouteStart(null);
 
       const finish = () => {
         const response = getSampleRecommendations(inputs);
@@ -283,7 +270,6 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setRouteLotId(null);
         setIsDetailOpen(false);
         setSelectedLocationId(null);
       }
@@ -315,7 +301,6 @@ export default function App() {
   // A parking lot picked in the search box: select its pin and open its card.
   // It does not become the destination.
   const handleSelectParking = useCallback((locationId: string) => {
-    setRouteLotId(null);
     setSelectedLocationId(locationId);
     setIsDetailOpen(true);
   }, []);
@@ -401,22 +386,6 @@ export default function App() {
     setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
   }, []);
 
-  // "Start route": show the route sheet in the bottom slot (replacing the lot card)
-  const handleStartRoute = useCallback((locationId: string) => {
-    setSelectedLocationId(locationId);
-    setIsDetailOpen(false);
-    setRouteStart(null);
-    setRouteLotId(locationId);
-  }, []);
-  const handleCloseRoute = useCallback(() => {
-    setRouteLotId(null);
-    setRouteStart(null);
-  }, []);
-  const routeLot = useMemo(
-    () => SAMPLE_LOTS.find((lot) => lot.locationId === routeLotId) ?? null,
-    [routeLotId]
-  );
-
   // Derive active rendering state based on normal computation or dev simulator
   const activeIsLoading = devState === 'loading' || isLoading;
   const activeIsError = devState === 'error';
@@ -439,19 +408,15 @@ export default function App() {
         onClearSelection={handleClearSelection}
         onDropPin={handleDropPin}
         isPanelOpen={isPanelOpen}
-        isDetailOpen={isDetailOpen || routeLot !== null}
+        isDetailOpen={isDetailOpen}
         rankedLotIds={rankedLotIds}
-        userLocation={routeStart?.kind === 'location' ? routeStart : null}
-        routeLot={routeLot}
         availabilityTime={previewTime}
-        routeRevealKey={routeRevealKey}
-        hasDriveLeg={routeStart?.kind === 'location'}
       />
 
       {/* Time scrubber: top-left of the visible map, beside the panel */}
       <div
         className={`absolute top-4 z-20 transition-[left] duration-300 ease-out ${
-          isMobile && (isDetailOpen || routeLot !== null) ? 'hidden' : ''
+          isMobile && isDetailOpen ? 'hidden' : ''
         }`}
         style={
           isMobile
@@ -612,7 +577,6 @@ export default function App() {
                 isStale={isStale}
                 confirmedLotId={confirmedLotId}
                 onConfirmLot={handleConfirmLot}
-                onStartRoute={handleStartRoute}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
@@ -655,7 +619,6 @@ export default function App() {
                 destination={currentDestination}
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
-                onStartRoute={() => handleStartRoute(selectedLot.locationId)}
                 onPlanFor={(date) =>
                   handleFormChange({
                     arrivalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
@@ -663,25 +626,6 @@ export default function App() {
                   })
                 }
                 onClose={handleClearSelection}
-              />
-            </motion.div>
-          )}
-          {routeLot && (
-            <motion.div
-              key={`route-${routeLot.locationId}`}
-              className="pointer-events-auto"
-              initial={{ y: 20, scale: 0.97 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: 12, scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 38 }}
-            >
-              <RouteStartSheet
-                lot={routeLot}
-                destinationName={currentDestination?.name ?? 'your destination'}
-                walkMinutes={estimateWalkingTime(routeLot, currentDestination?.id ?? '')}
-                start={routeStart}
-                onStart={handleRouteStart}
-                onClose={handleCloseRoute}
               />
             </motion.div>
           )}

@@ -26,7 +26,6 @@ interface LotDetailCardProps {
   destination: CampusDestination | null;
   isConfirmed: boolean;
   onConfirm: () => void;
-  onStartRoute: () => void;
   /** Moves the arrival to a time when this permit can use the lot. */
   onPlanFor: (date: Date) => void;
   onClose: () => void;
@@ -45,7 +44,6 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   destination,
   isConfirmed,
   onConfirm,
-  onStartRoute,
   onPlanFor,
   onClose,
 }) => {
@@ -184,7 +182,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             tone="primary"
             isConfirmed={isConfirmed}
             onConfirm={onConfirm}
-            onStartRoute={onStartRoute}
+            lot={lot}
           />
         ) : access.status === 'from' ? (
           // Not usable at this time, but later today/this week: offer to plan for then

@@ -37,7 +37,6 @@ interface RecommendationCardProps {
   isConfirmed: boolean;
   onSelect: () => void;
   onConfirm: () => void;
-  onStartRoute: () => void;
 }
 
 /**
@@ -54,7 +53,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   isConfirmed,
   onSelect,
   onConfirm,
-  onStartRoute,
 }) => {
   const { badgeLabel, lot, reason, access } = recommendation;
   const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
@@ -184,14 +182,14 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
       </div>
 
-      {/* Confirm, then start the route (location is only requested at that point) */}
+      {/* Confirm, then open directions in Google Maps */}
       <div className="mt-3">
         <SpotActions
           tone="subtle"
           isConfirmed={isConfirmed}
           disabled={isStale}
           onConfirm={onConfirm}
-          onStartRoute={onStartRoute}
+          lot={lot}
         />
       </div>
     </article>
