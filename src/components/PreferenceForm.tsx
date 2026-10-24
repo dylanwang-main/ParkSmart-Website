@@ -49,7 +49,7 @@ function searchParking(query: string): ParkingLot[] {
 
 /** Small section heading inside the dropdown. */
 const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <li role="presentation" className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+  <li role="presentation" className="px-3 pt-2 pb-1 text-[12px] font-semibold text-muted">
     {children}
   </li>
 );
@@ -171,7 +171,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <div className="relative" ref={dropdownRef}>
         <label
           id="destination-label"
-          className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+          className="block text-[13px] font-semibold text-ink mb-1.5"
         >
           Destination
         </label>
@@ -181,34 +181,34 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
           aria-haspopup="listbox"
           aria-expanded={isDestinationOpen}
           onClick={() => setIsDestinationOpen(!isDestinationOpen)}
-          className="w-full text-left px-3.5 py-2.5 rounded-xl bg-white/50 border border-white/60 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all duration-150 flex items-center justify-between shadow-xs group"
+          className="w-full text-left px-3.5 py-2.5 rounded-[10px] bg-white border border-line hover:border-navy/40 focus:outline-none focus:ring-2 focus:ring-sky/30 focus:border-sky transition-all duration-150 flex items-center justify-between shadow-xs group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             {selectedDestination?.isPin ? (
-              <MapPin className="w-4 h-4 text-slate-700 shrink-0" />
+              <MapPin className="w-4 h-4 text-ink shrink-0" />
             ) : (
-              <Search className="w-4 h-4 text-slate-400 group-hover:text-slate-600 shrink-0 transition-colors" />
+              <Search className="w-4 h-4 text-muted group-hover:text-muted shrink-0 transition-colors" />
             )}
             <div className="truncate">
               {selectedDestination ? (
-                <span className="text-sm font-medium text-slate-800">{selectedDestination.name}</span>
+                <span className="text-sm font-medium text-navy">{selectedDestination.name}</span>
               ) : (
-                <span className="text-sm text-slate-500">Where are you headed?</span>
+                <span className="text-sm text-muted">Where are you headed?</span>
               )}
             </div>
           </div>
           <ChevronDown
-            className={`w-4 h-4 text-slate-400 transition-transform duration-200 shrink-0 ${
-              isDestinationOpen ? 'rotate-180 text-slate-700' : ''
+            className={`w-4 h-4 text-muted transition-transform duration-200 shrink-0 ${
+              isDestinationOpen ? 'rotate-180 text-ink' : ''
             }`}
           />
         </button>
 
         {/* Searchable Dropdown Popup */}
         {isDestinationOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white/95 backdrop-blur-xl backdrop-saturate-150 rounded-xl border border-white/60 shadow-xl shadow-black/20 z-50 animate-in fade-in zoom-in-95 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-1.5 p-2 bg-white rounded-xl border border-line shadow-[0_12px_32px_rgba(24,43,73,0.18)] z-50 animate-in fade-in zoom-in-95 duration-150">
             <div className="relative mb-1">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={destinationSearch}
@@ -219,14 +219,14 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 aria-controls="destination-options"
                 aria-activedescendant={flatOptions.length ? `destination-option-${activeIndex}` : undefined}
                 autoFocus
-                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-black/5 border border-transparent focus:outline-none focus:ring-1 focus:ring-slate-900/20 text-slate-800"
+                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg bg-paper border border-transparent focus:outline-none focus:ring-1 focus:ring-sky/30 text-navy"
               />
               {destinationSearch && (
                 <button
                   type="button"
                   onClick={() => setDestinationSearch('')}
                   aria-label="Clear search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-black/5 cursor-pointer"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-muted hover:text-ink hover:bg-paper cursor-pointer"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -251,12 +251,12 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                           aria-selected={isActive}
                           onClick={() => chooseOption(option)}
                           onMouseMove={() => setActiveIndex(index)}
-                          className={`px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2.5 text-xs text-slate-700 ${isActive ? 'bg-black/[0.06]' : ''}`}
+                          className={`px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2.5 text-xs text-ink ${isActive ? 'bg-paper' : ''}`}
                         >
-                          <span className="w-5 h-5 shrink-0 rounded-md bg-[#007aff] text-white text-[10px] font-extrabold flex items-center justify-center">P</span>
+                          <span className="w-5 h-5 shrink-0 rounded-md bg-navy text-white text-[10px] font-extrabold flex items-center justify-center">P</span>
                           <div className="min-w-0 flex-1">
                             <div className="font-semibold truncate">{lot.name}</div>
-                            <div className="text-[11px] text-slate-500">
+                            <div className="text-[11px] text-muted">
                               {lot.kind === 'structure' ? 'Parking structure' : 'Surface lot'} · show on map
                             </div>
                           </div>
@@ -275,8 +275,8 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                         onClick={() => chooseOption(option)}
                         onMouseMove={() => setActiveIndex(index)}
                         className={`px-3 py-2 rounded-lg cursor-pointer flex items-center gap-2.5 text-xs ${
-                          isCurrent ? 'text-slate-900' : 'text-slate-700'
-                        } ${isActive ? 'bg-black/[0.06]' : ''}`}
+                          isCurrent ? 'text-navy' : 'text-ink'
+                        } ${isActive ? 'bg-paper' : ''}`}
                       >
                         <button
                           type="button"
@@ -293,11 +293,11 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                             e.stopPropagation();
                             setFavorites(toggleFavorite(destination.id));
                           }}
-                          className="shrink-0 -ml-1 p-1 rounded-md hover:bg-black/[0.08] cursor-pointer"
+                          className="shrink-0 -ml-1 p-1 rounded-md hover:bg-line cursor-pointer"
                         >
                           <Star
                             className={`w-3.5 h-3.5 ${
-                              favorites.includes(destination.id) ? 'fill-amber-400 text-amber-500' : 'text-slate-400'
+                              favorites.includes(destination.id) ? 'fill-amber-400 text-amber-500' : 'text-muted'
                             }`}
                             aria-hidden="true"
                           />
@@ -305,34 +305,34 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold truncate">{destination.name}</div>
                           {matchedOn && !destination.codes?.includes(matchedOn) && (
-                            <div className="text-[11px] text-slate-500 truncate">Also called {matchedOn}</div>
+                            <div className="text-[11px] text-muted truncate">Also called {matchedOn}</div>
                           )}
                         </div>
                         {destination.codes?.[0] && (
                           <span
                             className={`shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wide ${
                               matchedOn && destination.codes.includes(matchedOn)
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-black/[0.06] text-slate-600'
+                                ? 'bg-navy text-white'
+                                : 'bg-paper text-muted'
                             }`}
                           >
                             {matchedOn && destination.codes.includes(matchedOn) ? matchedOn : destination.codes[0]}
                           </span>
                         )}
-                        {isCurrent && <Check className="w-3.5 h-3.5 shrink-0 text-slate-900" />}
+                        {isCurrent && <Check className="w-3.5 h-3.5 shrink-0 text-navy" />}
                       </li>
                     );
                   })}
                 </React.Fragment>
               ))}
               {flatOptions.length === 0 && (
-                <li className="px-3 py-3 text-xs text-slate-500 text-center">
+                <li className="px-3 py-3 text-xs text-muted text-center">
                   No matches. Tip: tap the map to drop a pin anywhere.
                 </li>
               )}
             </ul>
             {!query && (
-              <p className="px-3 pt-1.5 pb-0.5 text-[11px] text-slate-500 border-t border-black/5 mt-1">
+              <p className="px-3 pt-1.5 pb-0.5 text-[11px] text-muted border-t border-line mt-1">
                 Tap the star to save a place. Not listed? Tap the map to drop a pin.
               </p>
             )}
@@ -345,7 +345,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div>
           <label
             htmlFor="arrival-date"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+            className="block text-[13px] font-semibold text-ink mb-1.5"
           >
             Arrival date
           </label>
@@ -358,7 +358,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               onChange={(e) => onChange({ arrivalDate: e.target.value })}
               aria-invalid={arrivalError !== null}
               aria-describedby={arrivalError ? 'arrival-error' : undefined}
-              className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
+              className="w-full px-2.5 py-2 rounded-[10px] bg-white border border-line text-[13px] font-medium text-navy focus:outline-none focus:ring-2 focus:ring-sky/30 focus:border-sky "
             />
           </div>
         </div>
@@ -366,7 +366,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div>
           <label
             htmlFor="arrival-time"
-            className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
+            className="block text-[13px] font-semibold text-ink mb-1.5"
           >
             Arrival time
           </label>
@@ -378,7 +378,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               onChange={(e) => onChange({ arrivalTime: e.target.value })}
               aria-invalid={arrivalError !== null}
               aria-describedby={arrivalError ? 'arrival-error' : undefined}
-              className="w-full px-2.5 py-2 rounded-xl bg-white/50 border border-white/60 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/15 focus:border-white transition-all shadow-xs"
+              className="w-full px-2.5 py-2 rounded-[10px] bg-white border border-line text-[13px] font-medium text-navy focus:outline-none focus:ring-2 focus:ring-sky/30 focus:border-sky "
             />
           </div>
         </div>
@@ -389,13 +389,13 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         <div
           id="arrival-error"
           role="alert"
-          className="-mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#ff3b30]/10 text-[12px] text-[#c0261d] font-medium"
+          className="-mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-[#C0392B]/10 text-[12px] text-[#A12116] font-medium"
         >
           <span>{arrivalError}</span>
           <button
             type="button"
             onClick={onSetArrivalNow}
-            className="shrink-0 px-2 py-0.5 rounded-md bg-white/70 text-slate-800 font-semibold hover:bg-white cursor-pointer"
+            className="shrink-0 px-2 py-0.5 rounded-md bg-white text-navy font-semibold hover:bg-white cursor-pointer"
           >
             Use now
           </button>
@@ -405,17 +405,17 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       {/* Permit Type Pill Selector */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
+          <label className="block text-[13px] font-semibold text-ink">
             Permit type
           </label>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[11px] text-muted">
             {PERMIT_OPTIONS.find((p) => p.type === formData.permitType)?.description}
           </span>
         </div>
         <div
           role="radiogroup"
           aria-label="Permit type"
-          className="grid grid-cols-6 gap-0.5 p-0.5 bg-black/[0.06] rounded-xl"
+          className="grid grid-cols-6 gap-0.5 p-0.5 bg-paper border border-line rounded-[10px]"
         >
           {PERMIT_OPTIONS.map((permit) => {
             const isSelected = formData.permitType === permit.type;
@@ -427,15 +427,15 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                 aria-checked={isSelected}
                 title={`${permit.type}: ${permit.description}`}
                 onClick={() => onChange({ permitType: permit.type })}
-                className={`relative py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
-                  isSelected ? 'text-slate-900' : 'text-slate-600 hover:text-slate-900'
+                className={`relative py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer ${
+                  isSelected ? 'text-white' : 'text-muted hover:text-navy'
                 }`}
               >
                 {/* Shared layoutId makes the white thumb slide between options */}
                 {isSelected && (
                   <motion.span
                     layoutId="permit-thumb"
-                    className="absolute inset-0 rounded-[10px] bg-white shadow-sm shadow-black/10"
+                    className="absolute inset-0 rounded-[8px] bg-navy"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}
@@ -450,7 +450,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <button
         type="submit"
         disabled={isLoading || arrivalError !== null || !selectedDestination}
-        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm btn-shine relative overflow-hidden text-white bg-gradient-to-b from-slate-800 to-slate-950 hover:from-slate-700 hover:to-slate-900 hover:-translate-y-px active:translate-y-0 active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-md shadow-black/20 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full py-2.5 px-4 rounded-[10px] font-semibold text-[15px] text-white bg-navy hover:bg-navy-2 border-b-[3px] border-gold active:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 focus-visible:ring-offset-2 transition-all duration-150 shadow-[0_2px_6px_rgba(24,43,73,0.3)] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2 cursor-pointer"
       >
         {isLoading ? (
           <>

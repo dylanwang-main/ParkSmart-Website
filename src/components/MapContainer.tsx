@@ -281,18 +281,18 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       const el = document.createElement('div');
       el.className = 'parksmart-destination-pin flex flex-col items-center pointer-events-none select-none z-10';
       el.innerHTML = `
-        <div class="px-2.5 py-1 bg-slate-900/90 text-white text-[11px] font-medium rounded-full shadow-md backdrop-blur-sm border border-slate-700/40 flex items-center gap-1.5 whitespace-nowrap mb-1">
-          <svg class="w-3 h-3 text-white/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <div class="px-2.5 py-1 bg-[#182B49] text-white text-[12px] font-semibold rounded-md shadow-md border border-white/40 flex items-center gap-1.5 whitespace-nowrap mb-1">
+          <svg class="w-3 h-3 text-[#FFCD00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
           <span>${escapeHtml(selectedDestination.name)}</span>
         </div>
-        <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-white shadow"></div>
+        <div class="w-3 h-3 rounded-full bg-[#FFCD00] border-2 border-[#182B49] shadow"></div>
       `;
 
       // Above ordinary pins (1), level with ranked ones (2), below the selected pin (3)
-      el.style.zIndex = '2';
+      el.style.zIndex = '1';
 
       const marker = new maplibregl.Marker({
         element: el,
@@ -402,6 +402,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       el.classList.toggle('ps-on-light', basemap === 'map');
       el.classList.toggle('ps-selected', isSelected);
       el.classList.toggle('ps-ranked', rank !== null);
+      el.classList.toggle('ps-first', rank === 'first');
+      el.classList.toggle('ps-backup', rank === 'backup');
       el.classList.toggle('ps-lot', lot.kind === 'lot');
 
       // Rebuild the pin's HTML only when its selected state or rank actually changed
@@ -507,7 +509,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           isMapReady ? 'opacity-0' : 'opacity-100'
         }`}
       >
-        <div role="status" className="flex items-center gap-2 text-xs font-medium text-slate-500">
+        <div role="status" className="flex items-center gap-2 text-xs font-medium text-muted">
           <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
           {isMapReady ? '' : 'Loading map...'}
         </div>
@@ -520,7 +522,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           <div
             role="radiogroup"
             aria-label="Map style"
-            className="flex h-[34px] p-[2px] rounded-xl bg-white/55 backdrop-blur-xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/10"
+            className="flex h-[34px] p-[2px] rounded-[10px] bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)]"
           >
             {BASEMAP_OPTIONS.map(({ mode, label }) => (
               <button
@@ -529,14 +531,14 @@ export const MapContainer: React.FC<MapContainerProps> = ({
                 role="radio"
                 aria-checked={basemap === mode}
                 onClick={() => setBasemap(mode)}
-                className={`relative h-[28px] px-3 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
-                  basemap === mode ? 'text-slate-900' : 'text-slate-700 hover:text-slate-900'
+                className={`relative h-[28px] px-3 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer ${
+                  basemap === mode ? 'text-white' : 'text-muted hover:text-navy'
                 }`}
               >
                 {basemap === mode && (
                   <motion.span
                     layoutId="basemap-thumb"
-                    className="absolute inset-0 rounded-[10px] bg-white shadow-sm"
+                    className="absolute inset-0 rounded-[8px] bg-navy"
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                   />
                 )}

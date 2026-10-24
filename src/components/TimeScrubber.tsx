@@ -76,18 +76,18 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
   const fillPercent = ((minutes - SCRUB_MIN) / (SCRUB_MAX - SCRUB_MIN)) * 100;
 
   return (
-    <div className="flex items-center gap-3 max-sm:w-full pl-1.5 pr-3 py-1.5 rounded-2xl bg-white/60 backdrop-blur-xl backdrop-saturate-150 border border-white/60 shadow-lg shadow-black/15 text-slate-900">
+    <div className="flex items-center gap-3 max-sm:w-full pl-1.5 pr-3 py-1.5 rounded-xl bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)] text-navy">
       <button
         type="button"
         onClick={() => onPlayingChange(!isPlaying)}
         aria-label={isPlaying ? 'Pause timeline' : 'Play timeline: watch campus fill up'}
-        className="shrink-0 w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center hover:bg-slate-800 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+        className="shrink-0 w-9 h-9 rounded-full bg-navy text-white flex items-center justify-center hover:bg-navy-2 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer"
       >
         {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-px" />}
       </button>
 
       <div className="w-[110px] max-sm:w-[100px] shrink-0 leading-tight whitespace-nowrap">
-        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Campus at</div>
+        <div className="text-[12px] font-medium text-muted">Campus at</div>
         <div className="text-[13px] font-bold tabular-nums">
           {weekday} {formatMinutes(minutes)}
         </div>
@@ -113,7 +113,7 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
         <button
           type="button"
           onClick={onUseTime}
-          className="shrink-0 px-2.5 py-1 rounded-lg bg-black/[0.07] hover:bg-black/[0.12] text-[11px] font-semibold text-slate-800 transition-colors cursor-pointer"
+          className="shrink-0 px-2.5 py-1 rounded-lg bg-paper border border-line hover:bg-line/60 text-[12px] font-semibold text-navy transition-colors cursor-pointer"
         >
           Use this time
         </button>

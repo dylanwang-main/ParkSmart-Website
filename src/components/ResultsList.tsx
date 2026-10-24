@@ -78,12 +78,12 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   if (showIntroPrompt && !isLoading) {
     return (
       <div className="pt-2">
-        <div className="p-5 text-center rounded-2xl bg-white/40 border border-white/50 space-y-2">
-          <div className="w-10 h-10 mx-auto rounded-full bg-black/5 flex items-center justify-center text-slate-600">
+        <div className="p-5 text-center rounded-2xl bg-white border border-line space-y-2">
+          <div className="w-10 h-10 mx-auto rounded-full bg-paper flex items-center justify-center text-muted">
             <MapPin className="w-5 h-5" aria-hidden="true" />
           </div>
-          <p className="text-sm font-semibold text-slate-900">Enter your trip details to see options</p>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-sm font-semibold text-navy">Enter your trip details to see options</p>
+          <p className="text-xs text-muted leading-relaxed">
             Pick where you're going (or tap the map to drop a pin), when you'll arrive and your
             permit, then press Find parking. Search a lot by name or tap any P to check it.
           </p>
@@ -95,7 +95,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between text-xs text-slate-500 font-medium px-1">
+        <div className="flex items-center justify-between text-xs text-muted font-medium px-1">
           <span>Finding best matches...</span>
           <span className="text-[11px] animate-pulse">Calculating walking routes</span>
         </div>
@@ -127,21 +127,21 @@ export const ResultsList: React.FC<ResultsListProps> = ({
 
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between text-xs text-slate-700 font-medium px-1">
+      <div className="flex items-center justify-between text-xs text-ink font-medium px-1">
         <span>Recommended for your arrival</span>
         <RecentSearches history={searchHistory} onRestore={onRestoreSearch} />
       </div>
 
       {/* University holiday: fee waived, category rules unconfirmed */}
       {arrival && holidayNotice(arrival) && (
-        <div role="note" className="px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+        <div role="note" className="px-3 py-2 rounded-xl bg-[#D98A00]/15 text-[12px] font-medium text-[#835300]">
           {holidayNotice(arrival)}
         </div>
       )}
 
       {/* Results no longer match the form: say so and grey them out */}
       {isStale && (
-        <div role="status" className="px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+        <div role="status" className="px-3 py-2 rounded-xl bg-[#D98A00]/15 text-[12px] font-medium text-[#835300]">
           Trip details changed. Press Update results to refresh these options.
         </div>
       )}
@@ -180,7 +180,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
         })}
       </div>
 
-      <p className="px-1 text-[11px] text-slate-500 leading-snug">
+      <p className="px-1 text-[11px] text-muted leading-snug">
         Open-space numbers are a time-of-day estimate from sample data, not live counts. Walk times are
         straight-line estimates. Always check posted signs and UCSD Transportation before you park.
       </p>
@@ -193,11 +193,11 @@ export const ResultsList: React.FC<ResultsListProps> = ({
             previousVisibleRef.current = visibleCount;
             setVisibleCount((n) => Math.min(recommendations.length, n + LOAD_MORE_STEP));
           }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/45 border border-white/60 hover:bg-white/70 text-[13px] font-semibold text-slate-800 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white border border-line hover:bg-white text-[13px] font-semibold text-navy transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ChevronDown className="w-4 h-4" aria-hidden="true" />
           Show {Math.min(LOAD_MORE_STEP, recommendations.length - visibleCount)} more
-          <span className="font-normal text-slate-500">
+          <span className="font-normal text-muted">
             ({recommendations.length - visibleCount} left)
           </span>
         </button>
