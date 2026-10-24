@@ -281,39 +281,33 @@ body {
 .ps-rank-first { background: var(--color-sun); color: var(--color-navy); }
 .ps-rank-backup { background: #fff; color: var(--color-navy); box-shadow: 0 0 0 1px var(--color-line); }
 
-/* Surface lots: a smaller disc than parking structures, so structures stand out */
-.ps-lot .ps-glyph {
-  width: 18px;
-  height: 18px;
-  font-size: 9px;
-  line-height: 14px;
-  border-width: 1.5px;
-}
-.ps-lot .ps-glyph .ps-avail { width: 7px; height: 7px; right: -2px; top: -2px; border-width: 1px; }
-.ps-lot .ps-label { top: 13px; font-size: 11px; }
-
-/* Smaller pins as the map zooms out, so they stop piling up. Sizes and label offsets
-   here must match DISC_RADIUS / LABEL_OFFSET in MapContainer. Ranked and selected pins
-   always stay full size (rules below come last on purpose). */
-.ps-zoom-mid .ps-glyph { width: 20px; height: 20px; font-size: 10px; line-height: 16px; }
-.ps-zoom-mid .ps-label { top: 14px; }
-.ps-zoom-mid .ps-lot .ps-glyph { width: 12px; height: 12px; font-size: 0; border-width: 1.5px; }
-.ps-zoom-mid .ps-lot .ps-label { top: 10px; }
-.ps-zoom-mid .ps-lot .ps-glyph .ps-avail { display: none; }
-.ps-zoom-far .ps-glyph { width: 14px; height: 14px; font-size: 0; border-width: 1.5px; }
-.ps-zoom-far .ps-glyph .ps-avail { width: 7px; height: 7px; right: -3px; top: -3px; border-width: 1px; }
-.ps-zoom-far .ps-label { top: 11px; }
-.ps-zoom-far .ps-lot .ps-glyph { width: 8px; height: 8px; border-width: 1px; }
-.ps-zoom-far .ps-lot .ps-label { top: 8px; }
-.ps-zoom-far .ps-lot .ps-glyph .ps-avail { display: none; }
-.ps-zoom-mid .parksmart-marker.ps-ranked .ps-glyph,
-.ps-zoom-far .parksmart-marker.ps-ranked .ps-glyph { width: 24px; height: 24px; font-size: 12px; line-height: 20px; border-width: 2px; }
-.ps-zoom-mid .parksmart-marker.ps-ranked .ps-glyph .ps-avail,
-.ps-zoom-far .parksmart-marker.ps-ranked .ps-glyph .ps-avail { display: block; width: 10px; height: 10px; right: -3px; top: -3px; border-width: 2px; }
-.ps-zoom-mid .parksmart-marker.ps-ranked .ps-label,
-.ps-zoom-far .parksmart-marker.ps-ranked .ps-label { top: 16px; }
-.ps-zoom-mid .parksmart-marker.ps-selected .ps-label,
-.ps-zoom-far .parksmart-marker.ps-selected .ps-label { top: 8px; }
+/* Pin sizes. Disc sizes and label offsets here must match DISC_RADIUS / LABEL_OFFSET in
+   MapContainer. The availability dot is never hidden: it is the point of the pin. */
+.ps-glyph { width: 26px; height: 26px; font-size: 13px; line-height: 22px; }
+.ps-glyph .ps-avail { width: 11px; height: 11px; right: -4px; top: -4px; border-width: 2px; }
+.ps-label { top: 17px; }
+/* Surface lots are a step smaller than structures */
+.ps-lot .ps-glyph { width: 20px; height: 20px; font-size: 10px; line-height: 16px; border-width: 1.5px; }
+.ps-lot .ps-glyph .ps-avail { width: 9px; height: 9px; right: -3px; top: -3px; border-width: 1.5px; }
+.ps-lot .ps-label { top: 14px; font-size: 11px; }
+/* Zoomed out: smaller discs, names only where they fit (see labelLayout) */
+.ps-zoom-mid .ps-glyph { width: 22px; height: 22px; font-size: 11px; line-height: 18px; }
+.ps-zoom-mid .ps-glyph .ps-avail { width: 10px; height: 10px; }
+.ps-zoom-mid .ps-label { top: 15px; }
+.ps-zoom-mid .ps-lot .ps-glyph { width: 16px; height: 16px; font-size: 0; }
+.ps-zoom-mid .ps-lot .ps-glyph .ps-avail { width: 8px; height: 8px; }
+.ps-zoom-mid .ps-lot .ps-label { top: 12px; }
+.ps-zoom-far .ps-glyph { width: 18px; height: 18px; font-size: 0; border-width: 1.5px; }
+.ps-zoom-far .ps-glyph .ps-avail { width: 9px; height: 9px; border-width: 1.5px; }
+.ps-zoom-far .ps-label { top: 13px; }
+.ps-zoom-far .ps-lot .ps-glyph { width: 12px; height: 12px; border-width: 1px; }
+.ps-zoom-far .ps-lot .ps-glyph .ps-avail { width: 8px; height: 8px; }
+.ps-zoom-far .ps-lot .ps-label { top: 10px; }
+/* Ranked and selected pins always stay full size (these come last on purpose) */
+.parksmart-marker.ps-ranked .ps-glyph { width: 26px; height: 26px; font-size: 13px; line-height: 22px; border-width: 2px; }
+.parksmart-marker.ps-ranked .ps-glyph .ps-avail { width: 11px; height: 11px; right: -4px; top: -4px; border-width: 2px; }
+.parksmart-marker.ps-ranked .ps-label { top: 17px; }
+.parksmart-marker.ps-selected .ps-label { top: 8px; }
 
 /* Time scrubber slider: iOS-style track with a filled portion and a white knob */
 .ps-scrubber {
