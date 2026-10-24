@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
+import { Clock, MapPin } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
 // but does not copy the worker file, so the default worker URL 404s and the map
@@ -23,6 +24,7 @@ import { ParkingLot, CampusDestination } from '../types.ts';
 import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt } from '../utils/availabilityModel.ts';
 import { preloadLotAerial } from '../utils/lotAerial.ts';
+import { layoutPins, PinItem, Rect } from '../utils/labelLayout.ts';
 
 // Must run before the first map is created.
 maplibregl.setWorkerUrl(maplibreWorkerUrl);
@@ -45,8 +47,34 @@ function escapeHtml(text: string): string {
 /** Height of the bottom strip covered by the lot detail card (card + aerial photo + margins). */
 const DETAIL_CARD_INSET_PX = 520;
 
-/** Zoom at which every pin shows its name (below it, only ranked/selected/hovered pins do). */
-const SHOW_ALL_LABELS_ZOOM = 16;
+/**
+ * Pin sizes step down as the map zooms out (see .ps-zoom-far / .ps-zoom-mid in index.css),
+ * and labelLayout decides which names and surface lots still fit at each zoom.
+ */
+const ZOOM_FAR = 14.6;
+const ZOOM_MID = 15.6;
+type ZoomTier = 'far' | 'mid' | 'near';
+function zoomTier(zoom: number): ZoomTier {
+  return zoom < ZOOM_FAR ? 'far' : zoom < ZOOM_MID ? 'mid' : 'near';
+}
+/** Disc radius and label start (px below the pin center) per tier; must match index.css. */
+const DISC_RADIUS: Record<ZoomTier, { structure: number; lot: number }> = {
+  far: { structure: 7, lot: 4 },
+  mid: { structure: 10, lot: 6 },
+  near: { structure: 12, lot: 9 },
+};
+const LABEL_OFFSET: Record<ZoomTier, { structure: number; lot: number }> = {
+  far: { structure: 11, lot: 8 },
+  mid: { structure: 14, lot: 10 },
+  near: { structure: 16, lot: 13 },
+};
+const RANKED_RADIUS = 12;
+const SELECTED_LABEL_OFFSET = 8;
+const SELECTED_RADIUS = 21;
+/** Distance from the selected pin's point up to the center of its balloon head. */
+const SELECTED_BODY_SHIFT = 27;
+const PIN_PRIORITY = { selected: 100, first: 90, backup: 80, third: 70, structure: 10, lot: 0 };
+const TAG_WIDTH: Record<string, number> = { first: 84, backup: 56, third: 28 };
 
 /** Pin drop-in timing; must match the .pin-drop duration in index.css. */
 const PIN_DROP_DURATION_MS = 420;
@@ -74,6 +102,9 @@ class ReactMountControl implements maplibregl.IControl {
   }
 }
 
+/** Shared look of the single-button map controls (Time, Drop pin). */
+const CONTROL_BUTTON = 'ps-control-btn';
+
 const BASEMAP_OPTIONS: Array<{ mode: BasemapMode; label: string }> = [
   { mode: 'map', label: 'Map' },
   { mode: 'satellite', label: 'Satellite' },
@@ -85,8 +116,15 @@ interface MapContainerProps {
   selectedDestination: CampusDestination | null;
   onSelectLot: (locationId: string) => void;
   onClearSelection: () => void;
-  /** Tapping empty map offers "Park near here"; accepting sets a dropped-pin destination. */
-  onDropPin: (latitude: number, longitude: number) => void;
+  /**
+   * Called when the map is clicked while "Drop pin" is on. Returns whether the spot was
+   * accepted (false when it is off campus, so the tool stays on for another try).
+   */
+  onDropPin: (latitude: number, longitude: number) => boolean;
+  /** Time tool: the toggle sits in the map's control row and its panel opens beneath it. */
+  isTimeOpen: boolean;
+  onTimeToggle: () => void;
+  timePanel: React.ReactNode;
   /** Whether the left planner panel is showing; controls how much map is covered. */
   isPanelOpen: boolean;
   /** Whether the lot detail card is showing at the bottom of the map. */
@@ -108,6 +146,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onSelectLot,
   onClearSelection,
   onDropPin,
+  isTimeOpen,
+  onTimeToggle,
+  timePanel,
   isPanelOpen,
   isDetailOpen,
   rankedLotIds,
@@ -119,9 +160,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const lotMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
   const destinationMarkerRef = useRef<maplibregl.Marker | null>(null);
-  const dropPopupRef = useRef<maplibregl.Popup | null>(null);
   const onDropPinRef = useRef(onDropPin);
   onDropPinRef.current = onDropPin;
+  const lotsRef = useRef(lots);
+  lotsRef.current = lots;
+  const destinationRef = useRef(selectedDestination);
+  destinationRef.current = selectedDestination;
+  // Drop pin tool: off by default; while on, the next map click sets the destination
+  const [isPinMode, setIsPinMode] = useState(false);
+  const isPinModeRef = useRef(false);
+  isPinModeRef.current = isPinMode;
+  const [pinMessage, setPinMessage] = useState<string | null>(null);
   const hasSelectionRef = useRef(false);
   hasSelectionRef.current = selectedLocationId !== null || isDetailOpen;
   const isLoadedRef = useRef<boolean>(false);
@@ -155,6 +204,80 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       };
   const paddingRef = useRef(padding);
   paddingRef.current = padding;
+
+  // Declutter: size pins for the zoom, then hide crowded surface lots and names that would
+  // overlap something more important. Runs on zoom/resize and whenever pins change.
+  const applyLayoutRef = useRef<() => void>(() => {});
+  applyLayoutRef.current = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const tier = zoomTier(map.getZoom());
+    const container = map.getContainer();
+    container.classList.toggle('ps-zoom-far', tier === 'far');
+    container.classList.toggle('ps-zoom-mid', tier === 'mid');
+
+    const items: PinItem[] = [];
+    for (const lot of lotsRef.current) {
+      const marker = lotMarkersRef.current.get(lot.locationId);
+      if (!marker) continue;
+      const el = marker.getElement();
+      const rank = el.dataset.rank || '';
+      const isSelected = el.dataset.selected === '1';
+      const isLot = lot.kind === 'lot';
+      const point = map.project(marker.getLngLat());
+      // The selected balloon rises above its point, so treat its body as the disc
+      const shiftUp = isSelected ? SELECTED_BODY_SHIFT : 0;
+      const nameW = pinLabel(lot.name).length * (isSelected ? 7.6 : 6.8) + 6;
+      const tagW = TAG_WIDTH[rank] ?? 0;
+      items.push({
+        id: lot.locationId,
+        cx: point.x,
+        cy: point.y - shiftUp,
+        radius: isSelected ? SELECTED_RADIUS : rank ? RANKED_RADIUS : isLot ? DISC_RADIUS[tier].lot : DISC_RADIUS[tier].structure,
+        labelW: Math.max(nameW, tagW),
+        labelH: (isSelected ? 17 : 15) + (tagW > 0 ? 19 : 0),
+        labelOffset: isSelected ? SELECTED_LABEL_OFFSET + shiftUp : isLot && !rank ? LABEL_OFFSET[tier].lot : LABEL_OFFSET[tier].structure,
+        tagW,
+        tagH: 15,
+        priority: isSelected
+          ? PIN_PRIORITY.selected
+          : rank === 'first' || rank === 'backup' || rank === 'third'
+          ? PIN_PRIORITY[rank]
+          : isLot
+          ? PIN_PRIORITY.lot
+          : PIN_PRIORITY.structure,
+        pinned: isSelected || rank !== '',
+        droppable: isLot,
+        forceName: isSelected,
+      });
+    }
+
+    // The destination's name pill hangs above its point; names should not sit under it
+    const obstacles: Rect[] = [];
+    const destination = destinationRef.current;
+    if (destination) {
+      const p = map.project([destination.longitude, destination.latitude]);
+      const w = Math.min(260, destination.name.length * 7 + 44);
+      obstacles.push({ x: p.x - w / 2, y: p.y - 46, w, h: 46 });
+    }
+
+    const { hidden, labels, above } = layoutPins(items, obstacles);
+    for (const lot of lotsRef.current) {
+      const el = lotMarkersRef.current.get(lot.locationId)?.getElement();
+      if (!el) continue;
+      el.classList.toggle('ps-hidden', hidden.has(lot.locationId));
+      el.dataset.label = labels.get(lot.locationId) ?? 'none';
+      el.classList.toggle('ps-label-above', above.has(lot.locationId));
+    }
+  };
+  const layoutFrameRef = useRef<number | null>(null);
+  const scheduleLayout = useCallback(() => {
+    if (layoutFrameRef.current !== null) return;
+    layoutFrameRef.current = requestAnimationFrame(() => {
+      layoutFrameRef.current = null;
+      applyLayoutRef.current();
+    });
+  }, []);
 
   // Helper to frame all lots plus the destination with panel offset padding
   const frameAllPoints = (map: maplibregl.Map, animate = true) => {
@@ -212,11 +335,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       'bottom-right'
     );
 
-    // Show every pin's name only when zoomed in enough that they don't collide
-    const updateLabelVisibility = () =>
-      map.getContainer().classList.toggle('ps-show-labels', map.getZoom() >= SHOW_ALL_LABELS_ZOOM);
-    map.on('zoom', updateLabelVisibility);
-    updateLabelVisibility();
+    map.on('zoom', scheduleLayout);
+    map.on('resize', scheduleLayout);
+    scheduleLayout();
 
     map.once('idle', () => setIsMapReady(true));
     const readyTimer = window.setTimeout(() => setIsMapReady(true), 6000);
@@ -225,47 +346,38 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('load', () => {
       isLoadedRef.current = true;
       frameAllPoints(map, false);
+      scheduleLayout();
     });
 
-    // Clicking the map background: first click closes an open lot; otherwise it offers
-    // "Park near here" at that spot, for places that are not in the destination list
+    // Clicking the map background. With Drop pin on, the click sets the destination.
+    // Otherwise it just closes an open lot card (nothing pops up on a plain click).
     map.on('click', (e) => {
       const target = e.originalEvent.target as HTMLElement;
-      if (target.closest('.parksmart-marker, .maplibregl-popup')) return;
-      dropPopupRef.current?.remove();
-      if (hasSelectionRef.current) {
-        onClearSelection();
+      if (target.closest('.parksmart-marker')) return;
+      if (isPinModeRef.current) {
+        const accepted = onDropPinRef.current(e.lngLat.lat, e.lngLat.lng);
+        if (accepted) {
+          setIsPinMode(false);
+          setPinMessage(null);
+        } else {
+          setPinMessage('That spot is off campus. Try again on campus.');
+        }
         return;
       }
-      const { lat, lng } = e.lngLat;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'ps-drop-button';
-      button.innerHTML = '<span class="ps-drop-dot"></span>Park near here';
-      button.addEventListener('click', () => {
-        dropPopupRef.current?.remove();
-        onDropPinRef.current(lat, lng);
-      });
-      dropPopupRef.current = new maplibregl.Popup({
-        closeButton: false,
-        className: 'ps-drop-popup',
-        offset: 10,
-        maxWidth: 'none',
-      })
-        .setLngLat(e.lngLat)
-        .setDOMContent(button)
-        .addTo(map);
+      if (hasSelectionRef.current) onClearSelection();
     });
 
     mapRef.current = map;
 
     return () => {
       window.clearTimeout(readyTimer);
+      if (layoutFrameRef.current !== null) cancelAnimationFrame(layoutFrameRef.current);
+      layoutFrameRef.current = null;
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;
     };
-  }, [onClearSelection]);
+  }, [onClearSelection, scheduleLayout]);
 
   // Update or render destination marker
   useEffect(() => {
@@ -291,8 +403,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         <div class="w-3 h-3 rounded-full bg-[#FFCD00] border-2 border-[#182B49] shadow"></div>
       `;
 
-      // Above ordinary pins (1), level with ranked ones (2), below the selected pin (3)
-      el.style.zIndex = '1';
+      // Under every pin (they are 1 to 4), so a pin disc is never hidden behind its name pill
+      el.style.zIndex = '0';
 
       const marker = new maplibregl.Marker({
         element: el,
@@ -303,7 +415,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       destinationMarkerRef.current = marker;
     }
-  }, [selectedDestination]);
+    scheduleLayout();
+  }, [selectedDestination, scheduleLayout]);
 
   // When the user picks a different destination, show the whole picture again.
   // (Only on destination changes, never on lot select/deselect.)
@@ -313,7 +426,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const destinationId = selectedDestination?.id;
     if (destinationId === lastDestinationIdRef.current) return;
     lastDestinationIdRef.current = destinationId;
-    dropPopupRef.current?.remove();
     // A dropped pin is already where the user is looking; only reframe for picked places
     if (map && isLoadedRef.current && selectedDestination && !selectedDestination.isPin) frameAllPoints(map, true);
   }, [selectedDestination]);
@@ -405,6 +517,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       el.classList.toggle('ps-first', rank === 'first');
       el.classList.toggle('ps-backup', rank === 'backup');
       el.classList.toggle('ps-lot', lot.kind === 'lot');
+      el.dataset.rank = rank ?? '';
+      el.dataset.selected = isSelected ? '1' : '0';
 
       // Rebuild the pin's HTML only when its selected state or rank actually changed
       // (usually 1 or 2 pins per click, not all of them).
@@ -444,7 +558,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         </div>
       `;
     });
-  }, [lots, selectedLocationId, onSelectLot, basemap, rankedLotIds]);
+    scheduleLayout();
+  }, [lots, selectedLocationId, onSelectLot, basemap, rankedLotIds, scheduleLayout]);
 
   // Time scrubber: recolor each pin's availability dot in place (no pin rebuilds)
   useEffect(() => {
@@ -453,6 +568,26 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       if (dot) dot.style.background = availabilityStatus(availabilityAt(lot, availabilityTime)).color;
     }
   }, [availabilityTime, lots]);
+
+  // Drop pin tool: crosshair cursor while on, Esc turns it off, and the hint clears itself
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map) map.getCanvas().style.cursor = isPinMode ? 'crosshair' : '';
+    if (!isPinMode) {
+      setPinMessage(null);
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsPinMode(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isPinMode]);
+  useEffect(() => {
+    if (!pinMessage) return;
+    const timer = window.setTimeout(() => setPinMessage(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [pinMessage]);
 
   // Swap basemap when the toggle changes. DOM markers are unaffected by setStyle.
   useEffect(() => {
@@ -515,36 +650,74 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         </div>
       </div>
 
-      {/* Map / Satellite toggle (iOS segmented control), mounted inside the map's
-          top-right control row. Height matches a zoom button (34px incl. border). */}
+      {/* Map controls, mounted inside the map's top-right control row (left of zoom):
+          row 1 is Time + Map/Satellite, row 2 is Drop pin right under Map/Satellite.
+          Every button is 34px tall so the rows line up. */}
       {basemapControlEl &&
         createPortal(
-          <div
-            role="radiogroup"
-            aria-label="Map style"
-            className="flex h-[34px] p-[2px] rounded-[10px] bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)]"
-          >
-            {BASEMAP_OPTIONS.map(({ mode, label }) => (
+          <div className="relative flex flex-col items-end gap-2">
+            <div className="flex items-start gap-2">
               <button
-                key={mode}
                 type="button"
-                role="radio"
-                aria-checked={basemap === mode}
-                onClick={() => setBasemap(mode)}
-                className={`relative h-[28px] px-3 text-xs font-semibold rounded-[10px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer ${
-                  basemap === mode ? 'text-white' : 'text-muted hover:text-navy'
-                }`}
+                aria-pressed={isTimeOpen}
+                aria-expanded={isTimeOpen}
+                onClick={onTimeToggle}
+                className={CONTROL_BUTTON}
+                data-tone="navy"
               >
-                {basemap === mode && (
-                  <motion.span
-                    layoutId="basemap-thumb"
-                    className="absolute inset-0 rounded-[8px] bg-navy"
-                    transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                  />
-                )}
-                <span className="relative">{label}</span>
+                <Clock className="w-4 h-4" aria-hidden="true" />
+                Time
               </button>
-            ))}
+              <div
+                role="radiogroup"
+                aria-label="Map style"
+                className="flex h-[34px] p-[2px] rounded-[10px] bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)]"
+              >
+                {BASEMAP_OPTIONS.map(({ mode, label }) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={basemap === mode}
+                    onClick={() => setBasemap(mode)}
+                    className={`relative h-[28px] px-3 text-xs font-semibold rounded-[8px] transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer ${
+                      basemap === mode ? 'text-white' : 'text-muted hover:text-navy'
+                    }`}
+                  >
+                    {basemap === mode && (
+                      <motion.span
+                        layoutId="basemap-thumb"
+                        className="absolute inset-0 rounded-[8px] bg-navy"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <span className="relative">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              aria-pressed={isPinMode}
+              onClick={() => setIsPinMode((on) => !on)}
+              className={CONTROL_BUTTON}
+              data-tone="sun"
+            >
+              <MapPin className="w-4 h-4" aria-hidden="true" />
+              {isPinMode ? 'Tap the map' : 'Drop pin'}
+            </button>
+
+            {pinMessage && (
+              <p
+                role="status"
+                className="absolute right-0 top-[calc(100%+8px)] w-[220px] px-3 py-2 rounded-lg bg-white border border-line shadow-[0_4px_12px_rgba(24,43,73,0.16)] text-[12px] font-medium text-[#835300]"
+              >
+                {pinMessage}
+              </p>
+            )}
+
+            {isTimeOpen && <div className="absolute right-0 top-[calc(100%+8px)]">{timePanel}</div>}
           </div>,
           basemapControlEl
         )}

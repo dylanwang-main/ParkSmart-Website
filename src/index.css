@@ -149,7 +149,7 @@ body {
 .ps-label {
   position: absolute;
   left: 0;
-  top: 15px;
+  top: 16px;
   translate: -50% 0;
   white-space: nowrap;
   font-size: 12px;
@@ -241,10 +241,13 @@ body {
   .ps-glyph { transition: none; }
 }
 
-/* Pin names: hidden at overview zoom to prevent collisions; shown for ranked,
-   selected, hovered or focused pins, and for every pin once zoomed in. */
-.ps-label { display: none; }
-.ps-show-labels .ps-label,
+/* Pin names: labelLayout (MapContainer) sets data-label="full" on pins whose name fits
+   without covering anything more important, and "tag" for ranked pins that only have room
+   for their First choice / Backup tag. Selected, hovered and focused pins always show. */
+.ps-label,
+.ps-name { display: none; }
+.parksmart-marker[data-label="full"] .ps-label,
+.parksmart-marker[data-label="tag"] .ps-label,
 .ps-ranked .ps-label,
 .ps-selected .ps-label,
 .parksmart-marker:hover .ps-label,
@@ -253,6 +256,16 @@ body {
   flex-direction: column;
   align-items: center;
 }
+.parksmart-marker[data-label="full"] .ps-name,
+.ps-selected .ps-name,
+.parksmart-marker:hover .ps-name,
+.parksmart-marker:focus-visible .ps-name { display: block; }
+
+/* Crowded surface lots step aside until there is room for them */
+.ps-hidden { visibility: hidden; pointer-events: none; }
+
+/* A ranked label that would cover something sits above its disc instead */
+.parksmart-marker.ps-label-above .ps-label { top: auto !important; bottom: 15px; }
 
 /* "First choice" / "Backup" tag under a ranked pin's name, matching the panel badges */
 .ps-rank {
@@ -277,7 +290,30 @@ body {
   border-width: 1.5px;
 }
 .ps-lot .ps-glyph .ps-avail { width: 7px; height: 7px; right: -2px; top: -2px; border-width: 1px; }
-.ps-lot .ps-label { top: 12px; font-size: 11px; }
+.ps-lot .ps-label { top: 13px; font-size: 11px; }
+
+/* Smaller pins as the map zooms out, so they stop piling up. Sizes and label offsets
+   here must match DISC_RADIUS / LABEL_OFFSET in MapContainer. Ranked and selected pins
+   always stay full size (rules below come last on purpose). */
+.ps-zoom-mid .ps-glyph { width: 20px; height: 20px; font-size: 10px; line-height: 16px; }
+.ps-zoom-mid .ps-label { top: 14px; }
+.ps-zoom-mid .ps-lot .ps-glyph { width: 12px; height: 12px; font-size: 0; border-width: 1.5px; }
+.ps-zoom-mid .ps-lot .ps-label { top: 10px; }
+.ps-zoom-mid .ps-lot .ps-glyph .ps-avail { display: none; }
+.ps-zoom-far .ps-glyph { width: 14px; height: 14px; font-size: 0; border-width: 1.5px; }
+.ps-zoom-far .ps-glyph .ps-avail { width: 7px; height: 7px; right: -3px; top: -3px; border-width: 1px; }
+.ps-zoom-far .ps-label { top: 11px; }
+.ps-zoom-far .ps-lot .ps-glyph { width: 8px; height: 8px; border-width: 1px; }
+.ps-zoom-far .ps-lot .ps-label { top: 8px; }
+.ps-zoom-far .ps-lot .ps-glyph .ps-avail { display: none; }
+.ps-zoom-mid .parksmart-marker.ps-ranked .ps-glyph,
+.ps-zoom-far .parksmart-marker.ps-ranked .ps-glyph { width: 24px; height: 24px; font-size: 12px; line-height: 20px; border-width: 2px; }
+.ps-zoom-mid .parksmart-marker.ps-ranked .ps-glyph .ps-avail,
+.ps-zoom-far .parksmart-marker.ps-ranked .ps-glyph .ps-avail { display: block; width: 10px; height: 10px; right: -3px; top: -3px; border-width: 2px; }
+.ps-zoom-mid .parksmart-marker.ps-ranked .ps-label,
+.ps-zoom-far .parksmart-marker.ps-ranked .ps-label { top: 16px; }
+.ps-zoom-mid .parksmart-marker.ps-selected .ps-label,
+.ps-zoom-far .parksmart-marker.ps-selected .ps-label { top: 8px; }
 
 /* Time scrubber slider: iOS-style track with a filled portion and a white knob */
 .ps-scrubber {
@@ -313,50 +349,6 @@ body {
 
 /* Availability dots recolor smoothly while scrubbing */
 .ps-avail { transition: background-color 200ms linear; }
-
-/* "Park near here" popup shown when tapping empty map */
-.ps-drop-popup .maplibregl-popup-content {
-  padding: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.ps-drop-popup .maplibregl-popup-tip { display: none; }
-.ps-drop-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px 8px 10px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid var(--color-line);
-  box-shadow: 0 1px 2px rgba(24, 43, 73, 0.1), 0 6px 18px rgba(24, 43, 73, 0.18);
-  font-weight: 600;
-  font-size: 13px;
-  line-height: 1;
-  font-family: inherit;
-  color: var(--color-navy);
-  cursor: pointer;
-  white-space: nowrap;
-  animation: ps-drop-in 160ms ease-out;
-  transition: transform 120ms ease;
-}
-.ps-drop-button:hover { background: var(--color-paper); }
-.ps-drop-button:active { transform: scale(0.97); }
-.ps-drop-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-navy);
-  border: 2px solid #fff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-@keyframes ps-drop-in {
-  from { opacity: 0; transform: translateY(4px) scale(0.96); }
-  to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ps-drop-button { animation: none; }
-}
 
 /* Lot card aerial photo */
 .ps-aerial-shimmer {
@@ -399,9 +391,40 @@ body {
   .ps-aerial-shimmer, .ps-aerial-pin::after { animation: none; }
 }
 
-/* Ranked pins sit in the busiest part of the map, so at overview zoom they show only their
-   "First choice" / "Backup" tag. Full names appear when zoomed in, hovered or selected
-   (names collided with each other and with the destination label). */
-.maplibregl-map:not(.ps-show-labels) .ps-ranked:not(.ps-selected):not(:hover):not(:focus-visible) .ps-name {
-  display: none;
+
+/* Single-button map controls (Time, Drop pin). Plain CSS, not utilities: MapLibre's own
+   unlayered `.maplibregl-ctrl button` rules would otherwise beat Tailwind's layered ones. */
+.maplibregl-ctrl button.ps-control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background-color: #fff;
+  color: var(--color-navy);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(24, 43, 73, 0.08), 0 4px 12px rgba(24, 43, 73, 0.1);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.maplibregl-ctrl button.ps-control-btn:not(:disabled):hover { background-color: var(--color-paper); }
+.maplibregl-ctrl button.ps-control-btn:focus-visible { outline: 2px solid rgba(0, 98, 155, 0.5); outline-offset: 1px; }
+.maplibregl-ctrl button.ps-control-btn[aria-pressed="true"][data-tone="navy"],
+.maplibregl-ctrl button.ps-control-btn[aria-pressed="true"][data-tone="navy"]:not(:disabled):hover {
+  background-color: var(--color-navy);
+  border-color: var(--color-navy);
+  color: #fff;
+}
+.maplibregl-ctrl button.ps-control-btn[aria-pressed="true"][data-tone="sun"],
+.maplibregl-ctrl button.ps-control-btn[aria-pressed="true"][data-tone="sun"]:not(:disabled):hover {
+  background-color: var(--color-sun);
+  border-color: var(--color-gold);
+  color: var(--color-navy);
 }

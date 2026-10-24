@@ -7,10 +7,10 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { CalendarClock, CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
+import { AvailabilityMeter } from './AvailabilityMeter.tsx';
 import { LotAerial } from './LotAerial.tsx';
 import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
-import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt, tightFrom } from '../utils/availabilityModel.ts';
 import { accessLabel, formatAccessTime, lotAccess, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
@@ -24,6 +24,8 @@ interface LotDetailCardProps {
   availabilityTime: Date;
   /** Null until the user picks a destination; the walk row is hidden then. */
   destination: CampusDestination | null;
+  /** "First choice", "Backup" or "#3" when this lot is one of the current results. */
+  rankLabel?: string | null;
   isConfirmed: boolean;
   onConfirm: () => void;
   /** Moves the arrival to a time when this permit can use the lot. */
@@ -42,6 +44,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   arrival,
   availabilityTime,
   destination,
+  rankLabel = null,
   isConfirmed,
   onConfirm,
   onPlanFor,
@@ -51,7 +54,6 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   const tight = tightFrom(lot, availabilityTime);
   const isWeekend = availabilityTime.getDay() === 0 || availabilityTime.getDay() === 6;
   const timeLabel = availabilityTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const status = availabilityStatus(percent);
   // Hours are checked at the arrival time in the form (falls back to now)
   const when = arrival ?? new Date();
   const access = lotAccess(userPermit, lot.spaceCategories, when);
@@ -80,8 +82,17 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="font-serif text-[21px] font-semibold leading-tight tracking-[-0.005em] text-navy">{lot.name}</h2>
-          <p className="text-xs text-muted mt-0.5">
-            {lot.kind === 'lot' ? 'Surface lot' : 'Parking structure'}
+          <p className="text-xs text-muted mt-0.5 flex items-center gap-1.5">
+            {rankLabel && (
+              <span
+                className={`px-2 py-0.5 rounded text-[12px] font-semibold ${
+                  rankLabel === 'First choice' ? 'bg-sun text-navy' : 'bg-paper text-navy border border-line'
+                }`}
+              >
+                {rankLabel}
+              </span>
+            )}
+            <span>{lot.kind === 'lot' ? 'Surface lot' : 'Parking structure'}</span>
           </p>
         </div>
         <button
@@ -94,32 +105,9 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
         </button>
       </div>
 
-      {/* Availability */}
+      {/* Availability: the same readout the result cards show */}
       <div className="mt-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="font-serif text-[40px] font-semibold leading-none text-navy tabular-nums">
-              {percent}%
-            </div>
-            <div className="text-xs text-muted mt-1">of spaces estimated open at {timeLabel}</div>
-          </div>
-          <span
-            className="px-2.5 py-1 rounded-md text-[13px] font-semibold"
-            style={{ color: status.textColor, backgroundColor: `${status.color}26` }}
-          >
-            {status.label}
-          </span>
-        </div>
-        <div className="mt-3 h-2 rounded-full bg-paper overflow-hidden">
-          <motion.div
-            key={lot.locationId}
-            className="h-full rounded-full"
-            style={{ backgroundColor: status.color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${percent}%` }}
-            transition={{ duration: 0.45, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </div>
+        <AvailabilityMeter percent={percent} timeLabel={timeLabel} size="lg" />
         {/* Campus-specific insight from the (sample) daily pattern */}
         <p className="mt-2 text-[12px] text-muted">
           {tight

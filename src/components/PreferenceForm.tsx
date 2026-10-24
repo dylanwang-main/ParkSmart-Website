@@ -327,13 +327,13 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
               ))}
               {flatOptions.length === 0 && (
                 <li className="px-3 py-3 text-xs text-muted text-center">
-                  No matches. Tip: tap the map to drop a pin anywhere.
+                  No matches. Tip: use Drop pin on the map to pick any spot.
                 </li>
               )}
             </ul>
             {!query && (
               <p className="px-3 pt-1.5 pb-0.5 text-[11px] text-muted border-t border-line mt-1">
-                Tap the star to save a place. Not listed? Tap the map to drop a pin.
+                Tap the star to save a place. Not listed? Use Drop pin on the map.
               </p>
             )}
           </div>

@@ -6,9 +6,10 @@
 import React from 'react';
 import { Footprints, CheckCircle2, Clock } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
-import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 import { availabilityStatus } from '../utils/availability.ts';
+import { availabilityAt } from '../utils/availabilityModel.ts';
+import { AvailabilityMeter } from './AvailabilityMeter.tsx';
 import { accessLabel, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface RecommendationCardProps {
@@ -17,6 +18,8 @@ interface RecommendationCardProps {
   userPermit: PermitType;
   /** Arrival time the results were searched with. */
   arrival: Date | null;
+  /** Time the availability number describes (same source the map's lot card uses). */
+  availabilityTime: Date;
   /** Destination the walk time is measured to. */
   destinationName: string;
   /** Results no longer match the form; disables confirming. */
@@ -35,6 +38,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   recommendation,
   userPermit,
   arrival,
+  availabilityTime,
   destinationName,
   isStale,
   isSelected,
@@ -44,7 +48,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 }) => {
   const { badgeLabel, lot, reason, access } = recommendation;
   const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
-  const status = availabilityStatus(lot.estimatedAvailabilityPercent);
+  const percent = availabilityAt(lot, availabilityTime);
+  const status = availabilityStatus(percent);
+  const timeLabel = availabilityTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 
   // The first choice is the one bold moment: a solid navy card. The rest stay quiet and white.
   const hero = badgeLabel === 'First choice';
@@ -105,26 +111,9 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </span>
       </div>
 
-      {/* Availability */}
+      {/* Availability: the same readout the map's lot card shows */}
       <div className="mt-3.5">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className={`font-serif font-semibold tabular-nums leading-none ${hero ? 'text-[34px] text-sun' : 'text-[26px] text-navy'}`}>
-            {lot.estimatedAvailabilityPercent}%
-            <span className={`ml-1.5 font-sans text-[13px] font-medium ${muted}`}>open</span>
-          </span>
-          <span className="text-[13px] font-semibold" style={{ color: hero ? '#fff' : status.textColor }}>
-            {status.label}
-          </span>
-        </div>
-        <div className={`mt-2 w-full h-1.5 rounded-full overflow-hidden ${hero ? 'bg-white/20' : 'bg-line'}`}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ backgroundColor: status.color }}
-            initial={{ width: 0 }}
-            animate={{ width: `${lot.estimatedAvailabilityPercent}%` }}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </div>
+        <AvailabilityMeter percent={percent} timeLabel={timeLabel} tone={hero ? 'dark' : 'light'} size={hero ? 'lg' : 'md'} />
       </div>
 
       {/* One-line reasoning */}

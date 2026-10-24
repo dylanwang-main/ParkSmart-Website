@@ -34,6 +34,8 @@ interface ResultsListProps {
   usualTripCard?: React.ReactNode;
   /** True when trip details changed since the search; results are greyed out. */
   isStale: boolean;
+  /** Time every availability number describes (follows the arrival time unless the Time tool is used). */
+  availabilityTime: Date;
   confirmedLotId: string | null;
   onConfirmLot: (locationId: string) => void;
   selectedLocationId: string | null;
@@ -56,6 +58,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   showIntroPrompt,
   usualTripCard,
   isStale,
+  availabilityTime,
   confirmedLotId,
   onConfirmLot,
   selectedLocationId,
@@ -84,7 +87,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           </div>
           <p className="text-sm font-semibold text-navy">Enter your trip details to see options</p>
           <p className="text-xs text-muted leading-relaxed">
-            Pick where you're going (or tap the map to drop a pin), when you'll arrive and your
+            Pick where you're going (or use Drop pin on the map), when you'll arrive and your
             permit, then press Find parking. Search a lot by name or tap any P to check it.
           </p>
         </div>
@@ -168,6 +171,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 recommendation={rec}
                 userPermit={searchedRequest!.permitType}
                 arrival={arrival}
+                availabilityTime={availabilityTime}
                 destinationName={destinationName}
                 isStale={isStale}
                 isConfirmed={confirmedLotId === rec.lot.locationId}
