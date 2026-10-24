@@ -200,17 +200,33 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   hasSelectionRef.current = selectedLocationId !== null || isDetailOpen;
   const isLoadedRef = useRef<boolean>(false);
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
+  // Placeholder shown until the first tiles have drawn (or a few seconds pass)
+  const [isMapReady, setIsMapReady] = useState(false);
   const [basemapControlEl, setBasemapControlEl] = useState<HTMLElement | null>(null);
 
   // Map padding: reserve the panel's width on the left only while it is open.
   // Clamped to half the window so a narrow window can't produce an impossible camera.
   const viewportWidth = typeof window === 'undefined' ? 1440 : window.innerWidth;
-  const padding = {
-    ...MAP_PADDING,
-    // While the lot card is open, treat the strip it covers as hidden too
-    bottom: isDetailOpen ? DETAIL_CARD_INSET_PX : MAP_PADDING.bottom,
-    left: isPanelOpen ? Math.min(MAP_PADDING.left, viewportWidth / 2) : MAP_PADDING.right,
-  };
+  const viewportHeight = typeof window === 'undefined' ? 800 : window.innerHeight;
+  // Phone: the planner is a bottom sheet over the lower half, so reserve the bottom, not the left
+  const isNarrow = viewportWidth < 640;
+  const padding = isNarrow
+    ? {
+        top: 40,
+        right: 24,
+        left: 24,
+        bottom: isDetailOpen
+          ? Math.min(DETAIL_CARD_INSET_PX, viewportHeight * 0.6)
+          : isPanelOpen
+          ? viewportHeight * 0.5 + 60
+          : 100,
+      }
+    : {
+        ...MAP_PADDING,
+        // While the lot card is open, treat the strip it covers as hidden too
+        bottom: isDetailOpen ? DETAIL_CARD_INSET_PX : MAP_PADDING.bottom,
+        left: isPanelOpen ? Math.min(MAP_PADDING.left, viewportWidth / 2) : MAP_PADDING.right,
+      };
   const paddingRef = useRef(padding);
   paddingRef.current = padding;
 
@@ -276,6 +292,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     map.on('zoom', updateLabelVisibility);
     updateLabelVisibility();
 
+    map.once('idle', () => setIsMapReady(true));
+    const readyTimer = window.setTimeout(() => setIsMapReady(true), 6000);
+
     // On initial map style load, fit bounds to all lots plus the destination
     map.on('load', () => {
       isLoadedRef.current = true;
@@ -315,6 +334,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     mapRef.current = map;
 
     return () => {
+      window.clearTimeout(readyTimer);
       map.remove();
       mapRef.current = null;
       isLoadedRef.current = false;
@@ -473,7 +493,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           : rank === 'third'
           ? '<span class="ps-rank ps-rank-backup">#3</span>'
           : '';
-      const label = `<span class="ps-label">${pinLabel(lot.name)}${rankTag}</span>`;
+      const label = `<span class="ps-label"><span class="ps-name">${pinLabel(lot.name)}</span>${rankTag}</span>`;
 
       // If the pin is rebuilt while its drop-in is still playing, offset the delay by the
       // time already elapsed; a negative delay resumes the animation part-way through.
@@ -637,6 +657,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         className="absolute inset-0 w-full h-full bg-[#f8f9fa] z-0 focus:outline-none"
         aria-label="Interactive UCSD Campus Parking Map"
       />
+
+      {/* Placeholder while map tiles load, so the first seconds are not a blank screen */}
+      <div
+        aria-hidden={isMapReady}
+        className={`absolute inset-0 z-[1] flex items-center justify-center bg-slate-100 pointer-events-none transition-opacity duration-500 ${
+          isMapReady ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div role="status" className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+          {isMapReady ? '' : 'Loading map...'}
+        </div>
+      </div>
 
       {/* Map / Satellite toggle (iOS segmented control), mounted inside the map's
           top-right control row. Height matches a zoom button (34px incl. border). */}

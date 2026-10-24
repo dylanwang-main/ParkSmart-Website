@@ -66,6 +66,19 @@ function getCurrentTimeString(): string {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
+/** True on phone-width screens, where the planner becomes a bottom sheet instead of a left panel. */
+function useIsMobile(): boolean {
+  const query = '(max-width: 639px)';
+  const [isMobile, setIsMobile] = useState<boolean>(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const media = window.matchMedia(query);
+    const update = () => setIsMobile(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  return isMobile;
+}
+
 /** The state simulator is for developers: shown in dev builds, or in production with ?dev in the URL. */
 const showDevTools = import.meta.env.DEV || new URLSearchParams(window.location.search).has('dev');
 
@@ -148,9 +161,21 @@ export default function App() {
 
   // Side panel open/closed (hamburger toggle)
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
+  const isMobile = useIsMobile();
 
   // 5. Dev State Simulator
   const [devState, setDevState] = useState<DevSimulationState>('normal');
+
+  // Phone: the lot card and route sheet need the space, so tuck the planner away while they are open
+  useEffect(() => {
+    if (isMobile && (isDetailOpen || routeLotId !== null)) setIsPanelOpen(false);
+  }, [isMobile, isDetailOpen, routeLotId]);
+
+  // Phone: the sheet is short, so bring the results into view after each search
+  useEffect(() => {
+    if (!isMobile || searchedRequest === null || isLoading) return;
+    document.getElementById('planner-results')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [isMobile, searchedRequest, isLoading]);
 
   // Compute recommendations from current formInputs
   const runPlanner = useCallback(
@@ -425,8 +450,15 @@ export default function App() {
 
       {/* Time scrubber: top-left of the visible map, beside the panel */}
       <div
-        className="absolute top-4 z-20 transition-[left] duration-300 ease-out"
-        style={{ left: isPanelOpen ? PANEL_OFFSET_PX : 76 }}
+        className={`absolute top-4 z-20 transition-[left] duration-300 ease-out ${
+          isMobile && (isDetailOpen || routeLot !== null) ? 'hidden' : ''
+        }`}
+        style={
+          isMobile
+            ? // Phone: a full-width strip just above the bottom sheet (or above the map corner when it is hidden)
+              { left: 12, right: 12, top: 'auto', bottom: isPanelOpen ? 'calc(50% + 12px)' : 40 }
+            : { left: isPanelOpen ? PANEL_OFFSET_PX : 76 }
+        }
       >
         <TimeScrubber
           day={previewTime}
@@ -446,7 +478,9 @@ export default function App() {
         aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
         aria-expanded={isPanelOpen}
         aria-controls="planner-panel"
-        className={`absolute top-[34px] left-7 z-30 w-9 h-9 rounded-xl flex items-center justify-center text-slate-800 transition-all duration-300 hover:bg-black/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+        className={`absolute top-[34px] left-7 max-sm:left-6 ${
+          isPanelOpen ? 'max-sm:top-[calc(50%+18px)]' : 'max-sm:top-4 max-sm:left-4'
+        } z-30 w-9 h-9 rounded-xl flex items-center justify-center text-slate-800 transition-all duration-300 hover:bg-black/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
           isPanelOpen
             ? ''
             : 'bg-white/55 backdrop-blur-xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/15 hover:bg-white/70'
@@ -461,10 +495,10 @@ export default function App() {
         aria-label="Parking planner controls and recommendations"
         aria-hidden={!isPanelOpen}
         inert={!isPanelOpen}
-        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
+        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] max-sm:top-1/2 max-sm:bottom-9 max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:max-w-none z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
           isPanelOpen
             ? 'translate-x-0 pointer-events-auto'
-            : '-translate-x-[calc(100%+2rem)] pointer-events-none'
+            : '-translate-x-[calc(100%+2rem)] max-sm:translate-x-0 max-sm:translate-y-[calc(100%+3rem)] pointer-events-none'
         }`}
       >
         <motion.div
@@ -551,7 +585,7 @@ export default function App() {
             </div>
 
             {/* Results Section */}
-            <section aria-labelledby="planner-results-title">
+            <section id="planner-results" aria-labelledby="planner-results-title">
               <h2 id="planner-results-title" className="sr-only">
                 Recommended Parking
               </h2>
@@ -597,8 +631,8 @@ export default function App() {
       {/* Dev Simulator Toggle (Tucked into bottom right corner) */}
       {/* Lot detail card: centered in the visible map area (beside the panel when it is open) */}
       <div
-        className="absolute bottom-6 z-20 -translate-x-1/2 transition-[left] duration-300 ease-out pointer-events-none"
-        style={{ left: isPanelOpen ? `calc(${PANEL_OFFSET_PX}px + (100% - ${PANEL_OFFSET_PX}px) / 2)` : '50%' }}
+        className="absolute bottom-6 max-sm:bottom-10 z-20 -translate-x-1/2 transition-[left] duration-300 ease-out pointer-events-none"
+        style={{ left: isPanelOpen && !isMobile ? `calc(${PANEL_OFFSET_PX}px + (100% - ${PANEL_OFFSET_PX}px) / 2)` : '50%' }}
       >
         <AnimatePresence mode="wait">
           {isDetailOpen && selectedLot && (

@@ -76,7 +76,7 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
   const fillPercent = ((minutes - SCRUB_MIN) / (SCRUB_MAX - SCRUB_MIN)) * 100;
 
   return (
-    <div className="flex items-center gap-3 pl-1.5 pr-3 py-1.5 rounded-2xl bg-white/60 backdrop-blur-xl backdrop-saturate-150 border border-white/60 shadow-lg shadow-black/15 text-slate-900">
+    <div className="flex items-center gap-3 max-sm:w-full pl-1.5 pr-3 py-1.5 rounded-2xl bg-white/60 backdrop-blur-xl backdrop-saturate-150 border border-white/60 shadow-lg shadow-black/15 text-slate-900">
       <button
         type="button"
         onClick={() => onPlayingChange(!isPlaying)}
@@ -86,7 +86,7 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
         {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-px" />}
       </button>
 
-      <div className="w-[110px] shrink-0 leading-tight whitespace-nowrap">
+      <div className="w-[110px] max-sm:w-[100px] shrink-0 leading-tight whitespace-nowrap">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Campus at</div>
         <div className="text-[13px] font-bold tabular-nums">
           {weekday} {formatMinutes(minutes)}
@@ -105,7 +105,7 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
         }}
         aria-label="Preview time of day"
         aria-valuetext={`${weekday} ${formatMinutes(minutes)}`}
-        className="ps-scrubber w-[220px]"
+        className="ps-scrubber w-[220px] max-sm:w-auto max-sm:flex-1 max-sm:min-w-0"
         style={{ '--fill': `${fillPercent}%` } as React.CSSProperties}
       />
 
