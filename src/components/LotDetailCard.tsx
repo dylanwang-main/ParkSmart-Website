@@ -26,7 +26,6 @@ interface LotDetailCardProps {
   destination: CampusDestination | null;
   isConfirmed: boolean;
   onConfirm: () => void;
-  onStartRoute: () => void;
   /** Moves the arrival to a time when this permit can use the lot. */
   onPlanFor: (date: Date) => void;
   onClose: () => void;
@@ -45,7 +44,6 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   destination,
   isConfirmed,
   onConfirm,
-  onStartRoute,
   onPlanFor,
   onClose,
 }) => {
@@ -70,19 +68,19 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       transition={{ duration: 0.14, ease: 'easeOut' }}
       role="dialog"
       aria-label={`${lot.name} details`}
-      className="w-[340px] max-w-[calc(100vw-2rem)] p-4 rounded-[24px] bg-white/70 backdrop-blur-xl backdrop-saturate-[1.8] border border-white/60 shadow-2xl shadow-black/25 text-slate-900"
+      className="w-[340px] max-w-[calc(100vw-2rem)] p-4 rounded-2xl bg-white border border-line shadow-[0_12px_32px_rgba(24,43,73,0.22)] text-navy"
     >
       {/* Aerial photo of the lot (USGS NAIP), keyed so switching lots restarts the fade */}
       <LotAerial key={lot.locationId} lot={lot} />
 
       {/* Header: glyph, name, close */}
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-full bg-[#007aff] border-2 border-white text-white font-extrabold text-lg flex items-center justify-center shadow-md shadow-black/20">
+        <div className="shrink-0 w-10 h-10 rounded-full bg-navy border-2 border-white text-white font-serif font-semibold text-xl flex items-center justify-center shadow-[0_2px_6px_rgba(24,43,73,0.3)]">
           P
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-[15px] font-bold leading-tight tracking-tight truncate">{lot.name}</h2>
-          <p className="text-xs text-slate-600 mt-0.5">
+          <h2 className="font-serif text-[21px] font-semibold leading-tight tracking-[-0.005em] text-navy">{lot.name}</h2>
+          <p className="text-xs text-muted mt-0.5">
             {lot.kind === 'lot' ? 'Surface lot' : 'Parking structure'}
           </p>
         </div>
@@ -90,7 +88,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           type="button"
           onClick={onClose}
           aria-label="Close lot details"
-          className="shrink-0 w-7 h-7 rounded-full bg-black/[0.07] hover:bg-black/[0.12] text-slate-600 flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+          className="shrink-0 w-7 h-7 rounded-full bg-paper hover:bg-line text-muted flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -100,19 +98,19 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       <div className="mt-4">
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-[34px] font-bold leading-none tracking-tight tabular-nums">
+            <div className="font-serif text-[40px] font-semibold leading-none text-navy tabular-nums">
               {percent}%
             </div>
-            <div className="text-xs text-slate-600 mt-1">of spaces estimated open at {timeLabel}</div>
+            <div className="text-xs text-muted mt-1">of spaces estimated open at {timeLabel}</div>
           </div>
           <span
-            className="px-2.5 py-1 rounded-full text-xs font-semibold"
+            className="px-2.5 py-1 rounded-md text-[13px] font-semibold"
             style={{ color: status.textColor, backgroundColor: `${status.color}26` }}
           >
             {status.label}
           </span>
         </div>
-        <div className="mt-3 h-2 rounded-full bg-black/[0.07] overflow-hidden">
+        <div className="mt-3 h-2 rounded-full bg-paper overflow-hidden">
           <motion.div
             key={lot.locationId}
             className="h-full rounded-full"
@@ -123,7 +121,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           />
         </div>
         {/* Campus-specific insight from the (sample) daily pattern */}
-        <p className="mt-2 text-[12px] text-slate-600">
+        <p className="mt-2 text-[12px] text-muted">
           {tight
             ? `Usually gets tight from ${tight.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} on ${isWeekend ? 'weekends' : 'weekdays'}.`
             : `Usually stays open all day on ${isWeekend ? 'weekends' : 'weekdays'}.`}
@@ -131,14 +129,14 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
       </div>
 
       {/* Facts */}
-      <div className="mt-4 rounded-2xl bg-black/[0.04] divide-y divide-black/5 text-[13px]">
+      <div className="mt-4 rounded-2xl bg-paper divide-y divide-line text-[13px]">
         <div className="flex items-center gap-2 px-3 py-2.5">
           {access.status === 'always' ? (
-            <CheckCircle2 className="w-4 h-4 text-[#34c759] shrink-0" aria-hidden="true" />
+            <CheckCircle2 className="w-4 h-4 text-[#1E8E5A] shrink-0" aria-hidden="true" />
           ) : permitWorks ? (
-            <Clock className="w-4 h-4 text-[#34c759] shrink-0" aria-hidden="true" />
+            <Clock className="w-4 h-4 text-[#1E8E5A] shrink-0" aria-hidden="true" />
           ) : (
-            <XCircle className="w-4 h-4 text-[#ff3b30] shrink-0" aria-hidden="true" />
+            <XCircle className="w-4 h-4 text-[#C0392B] shrink-0" aria-hidden="true" />
           )}
           <span className="font-medium">{accessLabel(access, userPermit, when, lot.spaceCategories)}</span>
           <div className="ml-auto flex gap-1" aria-label={`Space types: ${lot.spaceCategories.join(', ')}`}>
@@ -147,8 +145,8 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
                 key={category}
                 className={`px-1.5 rounded font-mono text-[10px] leading-4 ${
                   usable.includes(category)
-                    ? 'bg-slate-900 text-white font-bold'
-                    : 'bg-black/5 text-slate-400 line-through decoration-slate-400/60'
+                    ? 'bg-navy text-white font-bold'
+                    : 'bg-white border border-line text-muted line-through'
                 }`}
               >
                 {category}
@@ -157,22 +155,22 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           </div>
         </div>
         {relyOnUnverifiedDAccess(userPermit, lot.spaceCategories, when) && (
-          <div className="flex items-start gap-2 px-3 py-2.5 text-[#8a4b00]">
+          <div className="flex items-start gap-2 px-3 py-2.5 text-[#835300]">
             <span>Needs verification: this relies on D stalls, and UCSD's Sept 18, 2026 D restriction may change who can use them.</span>
           </div>
         )}
         {lot.accessNote && (
-          <div className="flex items-start gap-2 px-3 py-2.5 text-[#8a4b00]">
+          <div className="flex items-start gap-2 px-3 py-2.5 text-[#835300]">
             <Info className="w-4 h-4 shrink-0 mt-px" aria-hidden="true" />
             <span>{lot.accessNote}</span>
           </div>
         )}
         {destination && walkMinutes !== null && (
           <div className="flex items-center gap-2 px-3 py-2.5">
-            <Footprints className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
+            <Footprints className="w-4 h-4 text-muted shrink-0" aria-hidden="true" />
             <span>
               <span className="font-medium">{walkMinutes} min walk</span>
-              <span className="text-slate-600"> to {destination.name}</span>
+              <span className="text-muted"> to {destination.name}</span>
             </span>
           </div>
         )}
@@ -184,26 +182,26 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             tone="primary"
             isConfirmed={isConfirmed}
             onConfirm={onConfirm}
-            onStartRoute={onStartRoute}
+            lot={lot}
           />
         ) : access.status === 'from' ? (
           // Not usable at this time, but later today/this week: offer to plan for then
           <button
             type="button"
             onClick={() => onPlanFor(access.from)}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-navy hover:bg-navy-2 text-white text-[13px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer"
           >
             <CalendarClock className="w-4 h-4" aria-hidden="true" />
             Plan for {formatAccessTime(access.from, when)} instead
           </button>
         ) : (
-          <p className="py-2.5 rounded-xl bg-black/[0.05] text-center text-[13px] font-medium text-slate-600">
+          <p className="py-2.5 rounded-xl bg-paper text-center text-[13px] font-medium text-muted">
             Your {userPermit} permit can't park here. Try another permit or lot.
           </p>
         )}
       </div>
 
-      <p className="mt-2 text-[11px] text-slate-500 text-center">
+      <p className="mt-2 text-[11px] text-muted text-center">
         Sample estimate, not live availability
       </p>
     </motion.div>

@@ -8,20 +8,8 @@ import { Footprints, CheckCircle2, Clock } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
 import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
-import { AvailabilityLevel, availabilityStatus } from '../utils/availability.ts';
+import { availabilityStatus } from '../utils/availability.ts';
 import { accessLabel, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
-
-const BADGE_CLASS: Record<AvailabilityLevel, string> = {
-  plenty: 'text-emerald-700 bg-emerald-50 border-emerald-200',
-  filling: 'text-amber-700 bg-amber-50 border-amber-200',
-  nearlyFull: 'text-rose-700 bg-rose-50 border-rose-200',
-};
-
-const BAR_CLASS: Record<AvailabilityLevel, string> = {
-  plenty: 'bg-emerald-500',
-  filling: 'bg-amber-500',
-  nearlyFull: 'bg-rose-500',
-};
 
 interface RecommendationCardProps {
   recommendation: ParkingRecommendation;
@@ -37,7 +25,6 @@ interface RecommendationCardProps {
   isConfirmed: boolean;
   onSelect: () => void;
   onConfirm: () => void;
-  onStartRoute: () => void;
 }
 
 /**
@@ -54,17 +41,15 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   isConfirmed,
   onSelect,
   onConfirm,
-  onStartRoute,
 }) => {
   const { badgeLabel, lot, reason, access } = recommendation;
   const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
+  const status = availabilityStatus(lot.estimatedAvailabilityPercent);
 
-  // Badge and bar colors come from the shared availability buckets
-  const level = availabilityStatus(lot.estimatedAvailabilityPercent).level;
-  const badgeClass = BADGE_CLASS[level];
-  const barClass = BAR_CLASS[level];
-
-  const isFirstChoice = badgeLabel === 'First choice';
+  // The first choice is the one bold moment: a solid navy card. The rest stay quiet and white.
+  const hero = badgeLabel === 'First choice';
+  const muted = hero ? 'text-white/70' : 'text-muted';
+  const strong = hero ? 'text-white' : 'text-navy';
 
   return (
     // Clicking anywhere on the card highlights the lot on the map; keyboard users use
@@ -72,72 +57,69 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
     <article
       onClick={onSelect}
       aria-label={`${badgeLabel}: ${lot.name}`}
-      className={`group relative p-3.5 rounded-2xl transition-all duration-200 cursor-pointer text-left border select-none ${
+      // The left edge carries the availability color, so a list scans at a glance
+      style={{ borderLeftColor: status.color }}
+      className={`relative p-4 rounded-lg border border-l-[5px] transition-[box-shadow,transform] duration-150 cursor-pointer text-left select-none ${
+        hero ? 'bg-navy border-navy text-white' : 'bg-white border-line'
+      } ${
         isSelected
-          ? 'bg-white/85 border-white shadow-lg shadow-black/10 ring-1 ring-slate-900/15 -translate-y-0.5'
-          : 'bg-white/40 border-white/50 hover:bg-white/65 hover:shadow-md hover:shadow-black/5 hover:-translate-y-0.5'
+          ? 'ring-2 ring-sky shadow-[0_6px_18px_rgba(24,43,73,0.18)]'
+          : 'shadow-[0_1px_2px_rgba(24,43,73,0.06)] hover:shadow-[0_6px_18px_rgba(24,43,73,0.14)]'
       }`}
     >
-      {/* Top Header: Badge label */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold tracking-wide uppercase ${
-              isFirstChoice
-                ? 'bg-slate-900 text-white'
-                : recommendation.rank === 2
-                ? 'bg-black/[0.07] text-slate-700'
-                : 'bg-black/[0.04] text-slate-500'
-            }`}
-          >
-            {badgeLabel}
+      {/* Rank and selection */}
+      <div className="flex items-center gap-2 mb-1.5">
+        <span
+          className={`px-2 py-0.5 rounded text-[12px] font-semibold ${
+            hero ? 'bg-sun text-navy' : 'bg-paper text-navy border border-line'
+          }`}
+        >
+          {badgeLabel}
+        </span>
+        {isSelected && (
+          <span className={`flex items-center gap-1 text-[12px] font-medium ${muted}`}>
+            <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+            Selected
           </span>
-          {isSelected && (
-            <span className="flex items-center gap-1 text-[11px] font-medium text-slate-600">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Selected</span>
-            </span>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* Lot Title & Walk Time */}
-      <div className="flex items-baseline justify-between gap-2 mb-2">
-        <h3 className="text-base font-bold text-slate-900">
-          <button
-            type="button"
-            aria-pressed={isSelected}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelect();
-            }}
-            className="text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
-          >
-            {lot.name}
-          </button>
-        </h3>
-      </div>
-      <div className="-mt-1 mb-2 flex items-center gap-1 text-slate-600 text-xs">
-        <Footprints className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+      {/* Lot name and walk time */}
+      <h3 className={`font-serif font-semibold leading-tight tracking-[-0.005em] ${hero ? 'text-[24px]' : 'text-[19px]'} ${strong}`}>
+        <button
+          type="button"
+          aria-pressed={isSelected}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect();
+          }}
+          className="text-left rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-sun cursor-pointer"
+        >
+          {lot.name}
+        </button>
+      </h3>
+      <div className={`mt-1 flex items-center gap-1.5 text-[13px] ${muted}`}>
+        <Footprints className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
         <span>
-          <span className="font-semibold">{lot.walkingMinutes} min walk</span> to {destinationName}
+          <span className={`font-semibold ${strong}`}>{lot.walkingMinutes} min walk</span> to {destinationName}
         </span>
       </div>
 
-      {/* Availability Meter */}
-      <div className="mb-2.5">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span className="text-slate-500 font-medium">Estimated availability</span>
-          <span
-            className={`font-semibold px-1.5 py-0.2 rounded border text-[11px] ${badgeClass}`}
-          >
-            {lot.estimatedAvailabilityPercent}% · {availabilityStatus(lot.estimatedAvailabilityPercent).label}
+      {/* Availability */}
+      <div className="mt-3.5">
+        <div className="flex items-baseline justify-between gap-2">
+          <span className={`font-serif font-semibold tabular-nums leading-none ${hero ? 'text-[34px] text-sun' : 'text-[26px] text-navy'}`}>
+            {lot.estimatedAvailabilityPercent}%
+            <span className={`ml-1.5 font-sans text-[13px] font-medium ${muted}`}>open</span>
+          </span>
+          <span className="text-[13px] font-semibold" style={{ color: hero ? '#fff' : status.textColor }}>
+            {status.label}
           </span>
         </div>
-        {/* Subtle color bar with filled indicator */}
-        <div className="w-full h-1.5 bg-black/[0.07] rounded-full overflow-hidden">
+        <div className={`mt-2 w-full h-1.5 rounded-full overflow-hidden ${hero ? 'bg-white/20' : 'bg-line'}`}>
           <motion.div
-            className={`h-full rounded-full ${barClass}`}
+            className="h-full rounded-full"
+            style={{ backgroundColor: status.color }}
             initial={{ width: 0 }}
             animate={{ width: `${lot.estimatedAvailabilityPercent}%` }}
             transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
@@ -145,21 +127,19 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
       </div>
 
-      {/* One-line Reasoning */}
-      <div className="text-xs text-slate-600 leading-relaxed font-normal bg-black/[0.03] p-2 rounded-lg mb-2">
-        {reason}
-      </div>
+      {/* One-line reasoning */}
+      <p className={`mt-3 text-[13px] leading-relaxed ${hero ? 'text-white/90' : 'text-ink'}`}>{reason}</p>
 
       {/* Non-D permits that get in only through D stalls: the Sept 18 D restriction is unresolved */}
       {arrival && relyOnUnverifiedDAccess(userPermit, lot.spaceCategories, arrival) && (
-        <p className="text-[11px] font-medium text-[#8a4b00]">
+        <p className={`mt-2 text-[12px] font-medium ${hero ? 'text-sun' : 'text-[#835300]'}`}>
           Needs verification: this relies on D stalls, and UCSD's Sept 18, 2026 D restriction may change who can use them.
         </p>
       )}
 
       {/* Parking hours for this permit, and which stall types it can use */}
-      <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-black/5 text-[11px]">
-        <span className="flex items-center gap-1 font-medium text-emerald-700">
+      <div className={`mt-3 flex items-center justify-between gap-2 pt-2.5 border-t text-[12px] ${hero ? 'border-white/20' : 'border-line'}`}>
+        <span className={`flex items-center gap-1.5 font-medium ${hero ? 'text-white' : 'text-[#136B42]'}`}>
           {access.status === 'always' ? (
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           ) : (
@@ -167,15 +147,19 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           )}
           {arrival ? accessLabel(access, userPermit, arrival, lot.spaceCategories) : ''}
         </span>
-        <div className="flex items-center gap-1" aria-label={`Space types here: ${lot.spaceCategories.join(', ')}. Usable now: ${usable.join(', ')}`}>
+        <div className="flex items-center gap-1 shrink-0" aria-label={`Space types here: ${lot.spaceCategories.join(', ')}. Usable now: ${usable.join(', ')}`}>
           {lot.spaceCategories.map((category) => (
             <span
               key={category}
               title={usable.includes(category) ? `You can use ${category} spaces` : `${category} spaces not valid for you at this time`}
-              className={`px-1.5 py-0.2 rounded font-mono text-[10px] ${
+              className={`px-1.5 rounded text-[11px] leading-[18px] font-semibold ${
                 usable.includes(category)
-                  ? 'bg-slate-900 text-white font-bold'
-                  : 'bg-black/5 text-slate-400 font-medium line-through decoration-slate-400/60'
+                  ? hero
+                    ? 'bg-sun text-navy'
+                    : 'bg-navy text-white'
+                  : hero
+                  ? 'bg-white/10 text-white/50 line-through'
+                  : 'bg-paper text-muted line-through'
               }`}
             >
               {category}
@@ -184,14 +168,14 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
       </div>
 
-      {/* Confirm, then start the route (location is only requested at that point) */}
-      <div className="mt-3">
+      {/* Confirm, then open directions in Google Maps */}
+      <div className="mt-3.5">
         <SpotActions
-          tone="subtle"
+          tone={hero ? 'onDark' : 'subtle'}
           isConfirmed={isConfirmed}
           disabled={isStale}
           onConfirm={onConfirm}
-          onStartRoute={onStartRoute}
+          lot={lot}
         />
       </div>
     </article>

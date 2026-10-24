@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
-/* Subtle custom scrollbar for the frosted glass panel */
+/* Design tokens. Navy and gold are sampled from the UC San Diego wordmark. */
+@theme {
+  --font-sans: 'Instrument Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
+  --color-navy: #182B49;
+  --color-navy-2: #24406B;
+  --color-gold: #C69214;
+  --color-sun: #FFCD00;
+  --color-sky: #00629B;
+  --color-paper: #F3F5F9;
+  --color-line: #DCE2EC;
+  --color-ink: #1B2433;
+  --color-muted: #566277;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+}
+
+/* Subtle custom scrollbar for the planner panel */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -36,20 +56,17 @@
 }
 
 .maplibregl-ctrl-group {
-  /* Frosted glass to match the planner panel */
-  background: rgba(255, 255, 255, 0.55) !important;
-  backdrop-filter: blur(24px) saturate(1.5) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.12) !important;
+  background: #fff !important;
+  border: 1px solid var(--color-line) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 2px rgba(24, 43, 73, 0.08), 0 4px 12px rgba(24, 43, 73, 0.1) !important;
   overflow: hidden;
 }
 
 .maplibregl-ctrl-group button {
   width: 32px !important;
   height: 32px !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-bottom: 1px solid var(--color-line) !important;
 }
 
 .maplibregl-ctrl-group button:last-child {
@@ -71,46 +88,14 @@
   animation: pin-drop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* One-time light sweep across the ParkSmart logo tile */
-@keyframes logo-sheen {
-  0% { transform: translateX(-120%) skewX(-20deg); }
-  100% { transform: translateX(220%) skewX(-20deg); }
-}
-.logo-sheen::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 45%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
-  animation: logo-sheen 1100ms 450ms ease-out both;
-}
-
-/* Light sweep on the primary button while hovered */
-.btn-shine::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 40%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
-  transform: translateX(-150%) skewX(-20deg);
-  pointer-events: none;
-}
-.btn-shine:hover::after {
-  animation: logo-sheen 750ms ease-out;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .pin-drop,
-  .logo-sheen::after,
-  .btn-shine:hover::after {
+  .pin-drop {
     animation: none !important;
   }
 }
 
 /* ------------------------------------------------------------------ */
-/* Parking pins, styled after Apple Maps.                             */
+/* Parking pins: navy discs; gold for first choice, white for backup. */
 /* The marker element is a 0x0 point anchored on the coordinate;      */
 /* children are positioned around that point.                         */
 /* ------------------------------------------------------------------ */
@@ -118,8 +103,8 @@
   width: 0;
   height: 0;
   cursor: pointer;
-  --ps-blue: #007aff; /* iOS system blue, Apple Maps' parking color */
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --ps-blue: #182B49; /* UCSD navy */
+  font-family: var(--font-sans);
 }
 .parksmart-marker:focus-visible { outline: none; }
 
@@ -139,22 +124,26 @@
   font-weight: 800;
   line-height: 20px;
   text-align: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 1px 3px rgba(24, 43, 73, 0.5);
   transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .parksmart-marker:hover .ps-glyph,
 .parksmart-marker:focus-visible .ps-glyph { scale: 1.15; }
 
-/* Availability badge in the corner (green / amber / red, iOS system colors) */
+/* Availability badge in the corner (green / amber / red) */
 .ps-avail {
   position: absolute;
   right: -3px;
   top: -3px;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 9999px;
-  border: 1.5px solid #fff;
+  border: 2px solid #fff;
 }
+
+/* Rank shows in the disc itself: gold for first choice, white for backup */
+.ps-first .ps-glyph { background: var(--color-sun); color: var(--color-navy); border-color: var(--color-navy); }
+.ps-backup .ps-glyph { background: #fff; color: var(--color-navy); border-color: var(--color-navy); }
 
 /* Name label with a halo so it reads on both satellite and map */
 .ps-label {
@@ -193,7 +182,7 @@
   width: 40px;
   height: 40px;
   border-radius: 9999px;
-  background: linear-gradient(180deg, #3d9bff 0%, var(--ps-blue) 100%);
+  background: var(--ps-blue);
   border: 2.5px solid #fff;
   color: #fff;
   font-size: 18px;
@@ -276,8 +265,8 @@
   text-transform: uppercase;
   text-shadow: none;
 }
-.ps-rank-first { background: #0f172a; color: #fff; }
-.ps-rank-backup { background: rgba(255, 255, 255, 0.92); color: #334155; }
+.ps-rank-first { background: var(--color-sun); color: var(--color-navy); }
+.ps-rank-backup { background: #fff; color: var(--color-navy); box-shadow: 0 0 0 1px var(--color-line); }
 
 /* Surface lots: a smaller disc than parking structures, so structures stand out */
 .ps-lot .ps-glyph {
@@ -290,40 +279,13 @@
 .ps-lot .ps-glyph .ps-avail { width: 7px; height: 7px; right: -2px; top: -2px; border-width: 1px; }
 .ps-lot .ps-label { top: 12px; font-size: 11px; }
 
-/* "You are here" dot (iOS style): blue dot, white ring, soft pulsing halo */
-.ps-user {
-  width: 18px;
-  height: 18px;
-  border-radius: 9999px;
-  background: #007aff;
-  border: 3px solid #fff;
-  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.35);
-  z-index: 5;
-}
-.ps-user::after {
-  content: '';
-  position: absolute;
-  inset: -12px;
-  border-radius: 9999px;
-  background: rgba(0, 122, 255, 0.22);
-  animation: ps-user-halo 2.4s ease-out infinite;
-  z-index: -1;
-}
-@keyframes ps-user-halo {
-  0% { scale: 0.4; opacity: 1; }
-  100% { scale: 1.2; opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ps-user::after { animation: none; opacity: 0.6; }
-}
-
 /* Time scrubber slider: iOS-style track with a filled portion and a white knob */
 .ps-scrubber {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
   border-radius: 9999px;
-  background: linear-gradient(to right, #0f172a var(--fill), rgba(0, 0, 0, 0.12) var(--fill));
+  background: linear-gradient(to right, var(--color-navy) var(--fill), var(--color-line) var(--fill));
   cursor: pointer;
   outline: none;
 }
@@ -333,21 +295,21 @@
   width: 20px;
   height: 20px;
   border-radius: 9999px;
-  background: #fff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  background: var(--color-sun);
+  border: 2px solid var(--color-navy);
+  box-shadow: 0 1px 3px rgba(24, 43, 73, 0.35);
   transition: scale 150ms ease;
 }
 .ps-scrubber::-moz-range-thumb {
   width: 20px;
   height: 20px;
   border-radius: 9999px;
-  background: #fff;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  background: var(--color-sun);
+  border: 2px solid var(--color-navy);
+  box-shadow: 0 1px 3px rgba(24, 43, 73, 0.35);
 }
 .ps-scrubber:active::-webkit-slider-thumb { scale: 1.15; }
-.ps-scrubber:focus-visible { box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.25); }
+.ps-scrubber:focus-visible { box-shadow: 0 0 0 3px rgba(0, 98, 155, 0.35); }
 
 /* Availability dots recolor smoothly while scrubbing */
 .ps-avail { transition: background-color 200ms linear; }
@@ -364,29 +326,27 @@
   align-items: center;
   gap: 8px;
   padding: 8px 14px 8px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  backdrop-filter: blur(20px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--color-line);
+  box-shadow: 0 1px 2px rgba(24, 43, 73, 0.1), 0 6px 18px rgba(24, 43, 73, 0.18);
   font-weight: 600;
   font-size: 13px;
   line-height: 1;
   font-family: inherit;
-  color: #0f172a;
+  color: var(--color-navy);
   cursor: pointer;
   white-space: nowrap;
   animation: ps-drop-in 160ms ease-out;
   transition: transform 120ms ease;
 }
-.ps-drop-button:hover { background: rgba(255, 255, 255, 0.88); }
+.ps-drop-button:hover { background: var(--color-paper); }
 .ps-drop-button:active { transform: scale(0.97); }
 .ps-drop-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #0f172a;
+  background: var(--color-navy);
   border: 2px solid #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }

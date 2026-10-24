@@ -68,11 +68,9 @@ Not modeled yet (open questions in the research doc): A 24/7, reserved, accessib
 
 ---
 
-## Starting a Route
+## Directions
 
-Location is requested **only** when the user taps **Start route** (after **Select this spot**), with a short explanation first. If they decline or it fails, they can type a starting point instead. Once shared, a blue "you are here" dot appears and the map frames the user and the lot. The route then draws itself (drive line, then dotted walk line) with distances counting up, and **Share my spot** sends a short message via the share sheet or clipboard. Lines are straight-line curves until the routing API is connected.
-
----
+After **Select this spot**, **Open in Google Maps** opens turn-by-turn driving directions to that lot in Google Maps (the app on phones), starting from the person's current location. It uses a plain Google Maps link: free, no API key, and ParkSmart never asks for or stores the user's location.
 
 ## Scoring Formula
 

@@ -12,7 +12,6 @@ import { ResultsList } from './components/ResultsList.tsx';
 import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
-import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
@@ -21,7 +20,7 @@ import { getArrivalError } from './utils/arrival.ts';
 import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
 import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
-import { SAMPLE_LOTS, estimateWalkingTime, getSampleRecommendations } from './data/sampleRecommendations.ts';
+import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
@@ -133,16 +132,6 @@ export default function App() {
   // Lot the user confirmed with "Select this spot" (routing will hook in here later)
   const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
-  // Route being started ("Start route"); location is only requested inside this flow
-  const [routeLotId, setRouteLotId] = useState<string | null>(null);
-  const [routeStart, setRouteStart] = useState<RouteStart | null>(null);
-  // Bumped when a route start is chosen, to replay the route-drawing animation
-  const [routeRevealKey, setRouteRevealKey] = useState<number>(0);
-  const handleRouteStart = useCallback((start: RouteStart) => {
-    setRouteStart(start);
-    setRouteRevealKey((k) => k + 1);
-  }, []);
-
   // Lot detail card (opened by clicking a pin on the map)
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
@@ -166,15 +155,23 @@ export default function App() {
   // 5. Dev State Simulator
   const [devState, setDevState] = useState<DevSimulationState>('normal');
 
-  // Phone: the lot card and route sheet need the space, so tuck the planner away while they are open
+  // Phone: the lot card needs the space, so tuck the planner away while they are open
   useEffect(() => {
-    if (isMobile && (isDetailOpen || routeLotId !== null)) setIsPanelOpen(false);
-  }, [isMobile, isDetailOpen, routeLotId]);
+    if (isMobile && isDetailOpen) setIsPanelOpen(false);
+  }, [isMobile, isDetailOpen]);
 
   // Phone: the sheet is short, so bring the results into view after each search
   useEffect(() => {
     if (!isMobile || searchedRequest === null || isLoading) return;
-    document.getElementById('planner-results')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    // Scroll only the sheet's own list (scrollIntoView can also shift the page behind it)
+    const results = document.getElementById('planner-results');
+    const box = document.getElementById('planner-scroll');
+    if (results && box) {
+      box.scrollTo({
+        top: box.scrollTop + results.getBoundingClientRect().top - box.getBoundingClientRect().top - 8,
+        behavior: 'smooth',
+      });
+    }
   }, [isMobile, searchedRequest, isLoading]);
 
   // Compute recommendations from current formInputs
@@ -186,8 +183,6 @@ export default function App() {
       setIsLoading(true);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
       setConfirmedLotId(null);
-      setRouteLotId(null);
-      setRouteStart(null);
 
       const finish = () => {
         const response = getSampleRecommendations(inputs);
@@ -283,7 +278,6 @@ export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setRouteLotId(null);
         setIsDetailOpen(false);
         setSelectedLocationId(null);
       }
@@ -315,7 +309,6 @@ export default function App() {
   // A parking lot picked in the search box: select its pin and open its card.
   // It does not become the destination.
   const handleSelectParking = useCallback((locationId: string) => {
-    setRouteLotId(null);
     setSelectedLocationId(locationId);
     setIsDetailOpen(true);
   }, []);
@@ -401,22 +394,6 @@ export default function App() {
     setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
   }, []);
 
-  // "Start route": show the route sheet in the bottom slot (replacing the lot card)
-  const handleStartRoute = useCallback((locationId: string) => {
-    setSelectedLocationId(locationId);
-    setIsDetailOpen(false);
-    setRouteStart(null);
-    setRouteLotId(locationId);
-  }, []);
-  const handleCloseRoute = useCallback(() => {
-    setRouteLotId(null);
-    setRouteStart(null);
-  }, []);
-  const routeLot = useMemo(
-    () => SAMPLE_LOTS.find((lot) => lot.locationId === routeLotId) ?? null,
-    [routeLotId]
-  );
-
   // Derive active rendering state based on normal computation or dev simulator
   const activeIsLoading = devState === 'loading' || isLoading;
   const activeIsError = devState === 'error';
@@ -429,7 +406,7 @@ export default function App() {
   return (
     // reducedMotion="user" turns off Motion animations for people who ask their OS for less motion
     <MotionConfig reducedMotion="user">
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-100 font-sans text-slate-900 select-none">
+    <div className="relative w-screen h-screen overflow-hidden bg-slate-100 font-sans text-navy select-none">
       {/* Full-Screen MapLibre GL Map */}
       <MapContainer
         lots={SAMPLE_LOTS}
@@ -439,19 +416,15 @@ export default function App() {
         onClearSelection={handleClearSelection}
         onDropPin={handleDropPin}
         isPanelOpen={isPanelOpen}
-        isDetailOpen={isDetailOpen || routeLot !== null}
+        isDetailOpen={isDetailOpen}
         rankedLotIds={rankedLotIds}
-        userLocation={routeStart?.kind === 'location' ? routeStart : null}
-        routeLot={routeLot}
         availabilityTime={previewTime}
-        routeRevealKey={routeRevealKey}
-        hasDriveLeg={routeStart?.kind === 'location'}
       />
 
       {/* Time scrubber: top-left of the visible map, beside the panel */}
       <div
         className={`absolute top-4 z-20 transition-[left] duration-300 ease-out ${
-          isMobile && (isDetailOpen || routeLot !== null) ? 'hidden' : ''
+          isMobile && isDetailOpen ? 'hidden' : ''
         }`}
         style={
           isMobile
@@ -478,81 +451,55 @@ export default function App() {
         aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
         aria-expanded={isPanelOpen}
         aria-controls="planner-panel"
-        className={`absolute top-[34px] left-7 max-sm:left-6 ${
-          isPanelOpen ? 'max-sm:top-[calc(50%+18px)]' : 'max-sm:top-4 max-sm:left-4'
-        } z-30 w-9 h-9 rounded-xl flex items-center justify-center text-slate-800 transition-all duration-300 hover:bg-black/5 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer ${
+        className={`absolute top-[22px] left-4 max-sm:left-6 ${
+          isPanelOpen ? 'max-sm:top-[calc(50%+16px)]' : 'top-4 max-sm:left-4'
+        } z-30 w-9 h-9 rounded-[10px] flex items-center justify-center text-navy transition-colors duration-200 hover:bg-paper active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
           isPanelOpen
             ? ''
-            : 'bg-white/55 backdrop-blur-xl backdrop-saturate-150 border border-white/50 shadow-lg shadow-black/15 hover:bg-white/70'
+            : 'bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)]'
         }`}
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
       </button>
 
-      {/* Left Floating Frosted-Glass Panel (approx 380px wide), slides out when hidden */}
+      {/* Planner: a solid sheet on the left edge (a bottom sheet on phones), slides out when hidden */}
       <aside
         id="planner-panel"
         aria-label="Parking planner controls and recommendations"
         aria-hidden={!isPanelOpen}
         inert={!isPanelOpen}
-        className={`absolute top-4 left-4 bottom-4 w-[380px] max-w-[calc(100vw-2rem)] max-sm:top-1/2 max-sm:bottom-9 max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:max-w-none z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
+        className={`absolute top-0 left-0 bottom-0 w-[388px] max-w-full max-sm:top-1/2 max-sm:bottom-9 max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:max-w-none z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
           isPanelOpen
             ? 'translate-x-0 pointer-events-auto'
-            : '-translate-x-[calc(100%+2rem)] max-sm:translate-x-0 max-sm:translate-y-[calc(100%+3rem)] pointer-events-none'
+            : '-translate-x-full max-sm:translate-x-0 max-sm:translate-y-[calc(100%+3rem)] pointer-events-none'
         }`}
       >
-        <motion.div
-          initial={{ opacity: 0, x: -24, scale: 0.98 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-1 flex flex-col bg-white/45 backdrop-blur-xl backdrop-saturate-[1.8] rounded-[28px] border border-white/50 shadow-2xl shadow-black/25 overflow-hidden ring-1 ring-black/5">
-          {/* Panel Header */}
-          {/* Left padding leaves room for the hamburger button that sits on top */}
-          <header className="pl-[60px] pr-5 pt-5 pb-3 border-b border-black/5 shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <motion.div
-                className="flex items-center gap-2"
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <motion.div
-                  className="logo-sheen relative overflow-hidden w-8 h-8 rounded-xl bg-gradient-to-br from-slate-700 to-slate-950 flex items-center justify-center text-white font-black text-base shadow-md shadow-black/20"
-                  initial={{ scale: 0.6, rotate: -12 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ type: 'spring', stiffness: 380, damping: 18, delay: 0.1 }}
-                  whileHover={{ scale: 1.08, rotate: -4 }}
+        <div className="flex-1 flex flex-col bg-white border-r border-line max-sm:border max-sm:rounded-2xl shadow-[4px_0_24px_rgba(24,43,73,0.12)] max-sm:shadow-[0_4px_24px_rgba(24,43,73,0.2)] overflow-hidden">
+          {/* Panel header. Left padding leaves room for the hamburger button that sits on top. */}
+          <header className="pl-[60px] pr-5 pt-[18px] pb-3.5 border-b-2 border-gold shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  aria-hidden="true"
+                  className="w-8 h-8 rounded-lg bg-navy flex items-center justify-center text-sun font-serif font-semibold text-[19px] leading-none"
                 >
                   P
-                </motion.div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
+                </div>
+                <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none">
                   ParkSmart
                 </h1>
-              </motion.div>
+              </div>
 
-              {/* Campus badge: UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
-              <motion.img
-                src={ucsdLogo}
-                alt="UC San Diego"
-                className="h-[20px] w-auto block"
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.45, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              />
+              {/* UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
+              <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block" />
             </div>
-            {/* One-line intro so first-time visitors know what this is for */}
-            <motion.p
-              className="mt-2 text-[13px] text-slate-700 leading-snug"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.35 }}
-            >
+            <p className="mt-2 text-[13px] text-muted leading-snug">
               Find where to park before you arrive.
-            </motion.p>
+            </p>
           </header>
 
           {/* Internally Scrollable Body */}
-          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 overscroll-contain focus:outline-none">
+          <div id="planner-scroll" className="flex-1 overflow-y-auto px-5 py-4 space-y-4 overscroll-contain focus:outline-none">
             {/* Preference Form Section */}
             <section aria-labelledby="planner-preferences-title">
               <h2 id="planner-preferences-title" className="sr-only">
@@ -571,17 +518,16 @@ export default function App() {
                 onSelectParking={handleSelectParking}
               />
               {pinNotice && (
-                <p role="status" className="mt-3 px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+                <p role="status" className="mt-3 px-3 py-2 rounded-lg bg-[#D98A00]/12 border border-[#D98A00]/30 text-[12px] font-medium text-[#835300]">
                   {pinNotice}
                 </p>
               )}
             </section>
 
             {/* Subtle Divider */}
-            <div className="flex items-center gap-3 py-1 text-[10px] uppercase tracking-widest text-slate-500">
-              <div className="flex-1 border-t border-black/10" />
+            <div className="flex items-center gap-3 py-0.5 text-[13px] font-semibold text-navy">
               <span>Results</span>
-              <div className="flex-1 border-t border-black/10" />
+              <div className="flex-1 border-t border-line" />
             </div>
 
             {/* Results Section */}
@@ -612,7 +558,6 @@ export default function App() {
                 isStale={isStale}
                 confirmedLotId={confirmedLotId}
                 onConfirmLot={handleConfirmLot}
-                onStartRoute={handleStartRoute}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
@@ -622,10 +567,10 @@ export default function App() {
           </div>
 
           {/* Panel Footer Note */}
-          <footer className="px-5 py-2.5 bg-white/20 border-t border-black/5 text-[11px] text-slate-500 flex items-center justify-center shrink-0">
+          <footer className="px-5 py-2.5 bg-paper border-t border-line text-[11px] text-muted leading-snug shrink-0">
             <span>Sample data. Estimates only. Unofficial student project, not affiliated with UC San Diego.</span>
           </footer>
-        </motion.div>
+        </div>
       </aside>
 
       {/* Dev Simulator Toggle (Tucked into bottom right corner) */}
@@ -655,7 +600,6 @@ export default function App() {
                 destination={currentDestination}
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
-                onStartRoute={() => handleStartRoute(selectedLot.locationId)}
                 onPlanFor={(date) =>
                   handleFormChange({
                     arrivalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
@@ -663,25 +607,6 @@ export default function App() {
                   })
                 }
                 onClose={handleClearSelection}
-              />
-            </motion.div>
-          )}
-          {routeLot && (
-            <motion.div
-              key={`route-${routeLot.locationId}`}
-              className="pointer-events-auto"
-              initial={{ y: 20, scale: 0.97 }}
-              animate={{ y: 0, scale: 1 }}
-              exit={{ y: 12, scale: 0.98 }}
-              transition={{ type: 'spring', stiffness: 600, damping: 38 }}
-            >
-              <RouteStartSheet
-                lot={routeLot}
-                destinationName={currentDestination?.name ?? 'your destination'}
-                walkMinutes={estimateWalkingTime(routeLot, currentDestination?.id ?? '')}
-                start={routeStart}
-                onStart={handleRouteStart}
-                onClose={handleCloseRoute}
               />
             </motion.div>
           )}

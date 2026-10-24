@@ -19,7 +19,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   message = 'Unable to calculate parking options right now.',
 }) => {
   return (
-    <div className="p-5 text-center bg-rose-50/70 backdrop-blur-sm rounded-2xl border border-rose-200/80 shadow-xs space-y-3">
+    <div className="p-5 text-center bg-rose-50/70 rounded-2xl border border-rose-200/80 shadow-xs space-y-3">
       <div className="w-10 h-10 mx-auto rounded-full bg-rose-100 flex items-center justify-center text-rose-500">
         <AlertCircle className="w-5 h-5" />
       </div>

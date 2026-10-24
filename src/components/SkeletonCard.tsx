@@ -10,7 +10,7 @@ import React from 'react';
  */
 export const SkeletonCard: React.FC = () => {
   return (
-    <div className="p-3.5 rounded-2xl bg-white/40 border border-white/50 animate-pulse">
+    <div className="p-3.5 rounded-2xl bg-white border border-line animate-pulse">
       {/* Header tags */}
       <div className="flex items-center justify-between mb-3">
         <div className="h-5 w-20 bg-slate-200/70 rounded-full" />

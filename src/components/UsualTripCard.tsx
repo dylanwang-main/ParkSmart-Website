@@ -40,19 +40,19 @@ export const UsualTripCard: React.FC<UsualTripCardProps> = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="p-4 rounded-2xl bg-white/70 border border-white shadow-lg shadow-black/10"
+      className="p-4 rounded-2xl bg-white border border-line shadow-[0_4px_12px_rgba(24,43,73,0.1)]"
     >
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
+      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-muted">
         <Repeat className="w-3.5 h-3.5" aria-hidden="true" /> Your usual
       </div>
-      <p className="mt-1.5 text-[15px] font-bold leading-snug text-slate-900">
+      <p className="mt-1.5 text-[15px] font-bold leading-snug text-navy">
         Heading to {destinationName}, {whenLabel}?
       </p>
 
       {topPick && status ? (
         <>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="text-sm font-semibold text-slate-900 truncate">{topPick.lot.name}</span>
+            <span className="text-sm font-semibold text-navy truncate">{topPick.lot.name}</span>
             <span
               className="shrink-0 px-2 py-0.5 rounded-full text-[12px] font-semibold"
               style={{ color: status.textColor, backgroundColor: `${status.color}26` }}
@@ -60,25 +60,25 @@ export const UsualTripCard: React.FC<UsualTripCardProps> = ({
               {topPick.lot.estimatedAvailabilityPercent}% · {status.label}
             </span>
           </div>
-          <p className="mt-1.5 text-[12px] text-slate-600">
+          <p className="mt-1.5 text-[12px] text-muted">
             {tightAt ? `It usually gets tight around ${tightAt}. Arrive before then.` : 'It usually stays open all day.'}
           </p>
         </>
       ) : (
-        <p className="mt-2 text-[12px] text-slate-600">Nothing fits your permit at that time. Try another time.</p>
+        <p className="mt-2 text-[12px] text-muted">Nothing fits your permit at that time. Try another time.</p>
       )}
 
       <button
         type="button"
         onClick={onShowOptions}
-        className="mt-3 w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-semibold transition-colors cursor-pointer"
+        className="mt-3 w-full py-2.5 rounded-xl bg-navy hover:bg-navy-2 text-white text-[13px] font-semibold transition-colors cursor-pointer"
       >
         Show my options
       </button>
       <button
         type="button"
         onClick={onForget}
-        className="mt-1.5 w-full py-1 text-[11px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer"
+        className="mt-1.5 w-full py-1 text-[11px] font-medium text-muted hover:text-navy cursor-pointer"
       >
         Forget my usual (saved only on this device)
       </button>

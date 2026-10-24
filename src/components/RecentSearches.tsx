@@ -61,7 +61,7 @@ export const RecentSearches: React.FC<RecentSearchesProps> = ({ history, onResto
         onClick={() => setIsOpen((open) => !open)}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        className="flex items-center gap-1 px-2 py-1 -my-1 rounded-lg text-[11px] font-semibold text-slate-700 hover:bg-black/[0.06] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/30 cursor-pointer"
+        className="flex items-center gap-1 px-2 py-1 -my-1 rounded-lg text-[11px] font-semibold text-ink hover:bg-paper transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/40 cursor-pointer"
       >
         <History className="w-3.5 h-3.5" aria-hidden="true" />
         Recent
@@ -80,9 +80,9 @@ export const RecentSearches: React.FC<RecentSearchesProps> = ({ history, onResto
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="absolute right-0 top-full mt-1.5 w-64 p-1.5 rounded-xl bg-white/95 backdrop-blur-xl backdrop-saturate-150 border border-white/60 shadow-xl shadow-black/20 z-40 origin-top-right"
+            className="absolute right-0 top-full mt-1.5 w-64 p-1.5 rounded-xl bg-white border border-line shadow-[0_12px_32px_rgba(24,43,73,0.18)] z-40 origin-top-right"
           >
-            <li role="presentation" className="px-2.5 pt-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <li role="presentation" className="px-2.5 pt-1 pb-1.5 text-[12px] font-semibold text-muted">
               Earlier searches
             </li>
             {history.map((request, i) => (
@@ -94,17 +94,17 @@ export const RecentSearches: React.FC<RecentSearchesProps> = ({ history, onResto
                     setIsOpen(false);
                     onRestore(request);
                   }}
-                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-black/[0.06] focus:outline-none focus-visible:bg-black/[0.06] cursor-pointer group"
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left hover:bg-paper focus:outline-none focus-visible:bg-paper cursor-pointer group"
                 >
                   <RotateCcw
-                    className={`w-3.5 h-3.5 shrink-0 ${i === 0 ? 'text-slate-700' : 'text-slate-400'} group-hover:text-slate-800`}
+                    className={`w-3.5 h-3.5 shrink-0 ${i === 0 ? 'text-ink' : 'text-muted'} group-hover:text-navy`}
                     aria-hidden="true"
                   />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold text-slate-900 truncate">
+                    <span className="block text-xs font-semibold text-navy truncate">
                       {getDestination(request.destinationId).name}
                     </span>
-                    <span className="block text-[11px] text-slate-500">
+                    <span className="block text-[11px] text-muted">
                       {whenLabel(request)} · {request.permitType} permit
                     </span>
                   </span>

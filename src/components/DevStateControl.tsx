@@ -32,15 +32,15 @@ export const DevStateControl: React.FC<DevStateControlProps> = ({
   return (
     <div className="fixed bottom-10 right-4 z-30 font-sans text-xs">
       {isOpen ? (
-        <div className="p-3 bg-white/60 backdrop-blur-xl backdrop-saturate-150 rounded-2xl border border-white/50 shadow-xl shadow-black/15 w-60 animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="p-3 bg-white rounded-2xl border border-line shadow-[0_12px_32px_rgba(24,43,73,0.16)] w-60 animate-in fade-in slide-in-from-bottom-2 duration-150">
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-            <div className="flex items-center gap-1.5 font-semibold text-slate-800">
-              <Sliders className="w-3.5 h-3.5 text-slate-900" />
+            <div className="flex items-center gap-1.5 font-semibold text-navy">
+              <Sliders className="w-3.5 h-3.5 text-navy" />
               <span>Dev: simulate state</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-slate-600 px-1 py-0.5 rounded text-[11px]"
+              className="text-muted hover:text-muted px-1 py-0.5 rounded text-[11px]"
             >
               Close
             </button>
@@ -57,15 +57,15 @@ export const DevStateControl: React.FC<DevStateControlProps> = ({
                   }}
                   className={`w-full text-left px-2.5 py-1.5 rounded-lg flex items-center justify-between transition-colors ${
                     isSelected
-                      ? 'bg-black/5 text-slate-900 font-semibold border border-black/10'
-                      : 'hover:bg-black/5 text-slate-700'
+                      ? 'bg-paper text-navy font-semibold border border-line'
+                      : 'hover:bg-paper text-ink'
                   }`}
                 >
                   <div>
                     <div className="capitalize">{s.label}</div>
-                    <div className="text-[10px] text-slate-400 font-normal">{s.desc}</div>
+                    <div className="text-[10px] text-muted font-normal">{s.desc}</div>
                   </div>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-slate-900 shrink-0 ml-1" />}
+                  {isSelected && <Check className="w-3.5 h-3.5 text-navy shrink-0 ml-1" />}
                 </button>
               );
             })}
@@ -75,9 +75,9 @@ export const DevStateControl: React.FC<DevStateControlProps> = ({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/55 backdrop-blur-xl border border-white/50 text-slate-700 hover:text-slate-900 shadow-sm hover:shadow transition-all font-medium text-xs cursor-pointer group"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-line text-ink hover:text-navy shadow-sm hover:shadow transition-all font-medium text-xs cursor-pointer group"
         >
-          <Sliders className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-900 transition-colors" />
+          <Sliders className="w-3.5 h-3.5 text-muted group-hover:text-navy transition-colors" />
           <span>Dev: simulate state ({currentState})</span>
         </button>
       )}
