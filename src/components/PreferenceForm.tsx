@@ -8,6 +8,7 @@ import { Search, ChevronDown, Check, MapPin, Star, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { PERMIT_OPTIONS } from '../constants.ts';
 import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
+import { maxArrivalDate } from '../utils/arrival.ts';
 import { ALL_PARKING } from '../data/parkingLots.ts';
 import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
 
@@ -315,6 +316,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             <input
               id="arrival-date"
               type="date"
+              max={maxArrivalDate()}
               value={formData.arrivalDate}
               onChange={(e) => onChange({ arrivalDate: e.target.value })}
               aria-invalid={arrivalError !== null}

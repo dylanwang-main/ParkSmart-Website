@@ -61,6 +61,9 @@ const WALK_COUNT_MS = 900;
 /** How long to wait for the browser's location before falling back to manual entry. */
 const LOCATION_TIMEOUT_MS = 10_000;
 
+/** Shortest starting-point text accepted (there is no address lookup yet, so this only blocks accidents). */
+const MIN_START_LENGTH = 3;
+
 type Step = 'ask' | 'locating' | 'manual';
 
 /**
@@ -131,7 +134,7 @@ export const RouteStartSheet: React.FC<RouteStartSheetProps> = ({
   const submitManual = (e: React.FormEvent) => {
     e.preventDefault();
     const label = manualText.trim();
-    if (label) onStart({ kind: 'manual', label });
+    if (label.length >= MIN_START_LENGTH) onStart({ kind: 'manual', label });
   };
 
   return (
@@ -232,9 +235,12 @@ export const RouteStartSheet: React.FC<RouteStartSheetProps> = ({
             placeholder="Address, neighborhood or freeway exit"
             className="w-full px-3 py-2.5 rounded-xl bg-white/70 border border-white/70 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/15"
           />
+          <p className="text-[11px] text-slate-500">
+            Addresses are not looked up yet, so this is only used as a label on your route summary.
+          </p>
           <button
             type="submit"
-            disabled={!manualText.trim()}
+            disabled={manualText.trim().length < MIN_START_LENGTH}
             className="w-full py-2.5 rounded-xl bg-[#007aff] hover:bg-[#0067d6] text-white text-[13px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
           >
             Use this starting point

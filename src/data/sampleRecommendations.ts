@@ -60,6 +60,9 @@ export function estimateWalkingTime(lot: ParkingLot, destinationId: string): num
   return Math.max(3, calculatedMinutes);
 }
 
+/** Lots farther than this walk from the destination are not recommended (benchmark in SCORING_WEIGHTS). */
+export const MAX_RECOMMENDED_WALK_MINUTES = SCORING_WEIGHTS.MAX_WALK_BENCHMARK_MINUTES;
+
 /** Short name for reasons, e.g. "Gilman" from "Gilman Parking Structure". */
 function shortName(lot: ParkingLot): string {
   return lot.name.replace(' Parking Structure', '');
@@ -186,6 +189,7 @@ export function getSampleRecommendations(
     const access = lotAccess(request.permitType, lot.spaceCategories, arrival);
     if (access.status !== 'always' && access.status !== 'until') return [];
     const walkingMinutes = estimateWalkingTime(lot, request.destinationId);
+    if (walkingMinutes > MAX_RECOMMENDED_WALK_MINUTES) return []; // too far to be a useful pick
     // Availability expected at the arrival time (sample time-of-day model)
     const estimatedAvailabilityPercent = availabilityAt(lot, arrival);
     return [{

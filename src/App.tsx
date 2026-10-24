@@ -14,7 +14,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { RouteStart, RouteStartSheet } from './components/RouteStartSheet.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
-import { ANIMATION_TIMINGS } from './constants.ts';
+import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
 import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
 import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
@@ -46,12 +46,15 @@ const PANEL_OFFSET_PX = 404;
 /**
  * Returns today's date formatted as YYYY-MM-DD in local time.
  */
-function getTodayDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
+function toDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getTodayDateString(): string {
+  return toDateString(new Date());
 }
 
 /**
@@ -61,6 +64,9 @@ function getCurrentTimeString(): string {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
+
+/** The state simulator is for developers: shown in dev builds, or in production with ?dev in the URL. */
+const showDevTools = import.meta.env.DEV || new URLSearchParams(window.location.search).has('dev');
 
 /** "HH:MM" to minutes after midnight, clamped to the scrubber's range. */
 function minutesOf(time: string): number {
@@ -174,7 +180,9 @@ export default function App() {
         // Pre-select the First Choice recommendation lot by default
         setSelectedLocationId(response.recommendations[0]?.lot.locationId ?? null);
 
-        // Remember this trip as "your usual" (this browser only)
+        // Remember this trip as "your usual" (this browser only). A dropped pin is a
+        // one-off spot, not a place to offer again, so it is not saved.
+        if (findDestination(inputs.destinationId)?.isPin) return;
         const usual: UsualTrip = {
           destinationId: inputs.destinationId,
           permitType: inputs.permitType,
@@ -197,6 +205,7 @@ export default function App() {
 
   // Handle preference form changes
   const handleFormChange = (changes: Partial<ParkingPlannerRequest>) => {
+    if (changes.destinationId !== undefined) setPinNotice(null);
     setFormInputs((prev) => ({
       ...prev,
       ...changes,
@@ -286,7 +295,13 @@ export default function App() {
   }, []);
 
   // "Park near here" on the map: use that spot as the destination
+  const [pinNotice, setPinNotice] = useState<string | null>(null);
   const handleDropPin = useCallback((latitude: number, longitude: number) => {
+    if (!isOnCampus(latitude, longitude)) {
+      setPinNotice('That spot is off campus. Drop the pin on the UCSD campus, or pick a building.');
+      return;
+    }
+    setPinNotice(null);
     setFormInputs((prev) => ({ ...prev, destinationId: makePinDestinationId(latitude, longitude) }));
   }, []);
 
@@ -313,10 +328,13 @@ export default function App() {
     const tight = topPick ? tightFrom(topPick.lot, arrival) : null;
     const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const isToday = request.arrivalDate === getTodayDateString();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const isTomorrow = request.arrivalDate === toDateString(tomorrow);
     return {
       request,
       destinationName: getDestination(request.destinationId).name,
-      whenLabel: `${isToday ? 'today' : arrival.toLocaleDateString('en-US', { weekday: 'long' })} at ${fmt(arrival)}`,
+      whenLabel: `${isToday ? 'today' : isTomorrow ? 'tomorrow' : arrival.toLocaleDateString('en-US', { weekday: 'long' })} at ${fmt(arrival)}`,
       topPick,
       tightAt: tight ? fmt(tight) : null,
     };
@@ -517,6 +535,11 @@ export default function App() {
                 submitLabel={isStale ? 'Update results' : 'Find parking'}
                 onSelectParking={handleSelectParking}
               />
+              {pinNotice && (
+                <p role="status" className="mt-3 px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+                  {pinNotice}
+                </p>
+              )}
             </section>
 
             {/* Subtle Divider */}
@@ -565,7 +588,7 @@ export default function App() {
 
           {/* Panel Footer Note */}
           <footer className="px-5 py-2.5 bg-white/20 border-t border-black/5 text-[11px] text-slate-500 flex items-center justify-center shrink-0">
-            <span>Sample data</span>
+            <span>Sample data. Estimates only, not live availability.</span>
           </footer>
         </motion.div>
       </aside>
@@ -630,10 +653,12 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      <DevStateControl
-        currentState={devState}
-        onStateChange={(state) => setDevState(state)}
-      />
+      {showDevTools && (
+        <DevStateControl
+          currentState={devState}
+          onStateChange={(state) => setDevState(state)}
+        />
+      )}
     </div>
     </MotionConfig>
   );

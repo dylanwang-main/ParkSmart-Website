@@ -9,7 +9,7 @@ import { SpotActions } from './SpotActions.tsx';
 import { motion } from 'motion/react';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 import { AvailabilityLevel, availabilityStatus } from '../utils/availability.ts';
-import { accessLabel, usableCategories } from '../utils/permitRules.ts';
+import { accessLabel, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
 const BADGE_CLASS: Record<AvailabilityLevel, string> = {
   plenty: 'text-emerald-700 bg-emerald-50 border-emerald-200',
@@ -150,6 +150,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         {reason}
       </div>
 
+      {/* Non-D permits that get in only through D stalls: the Sept 18 D restriction is unresolved */}
+      {arrival && relyOnUnverifiedDAccess(userPermit, lot.spaceCategories, arrival) && (
+        <p className="text-[11px] font-medium text-[#8a4b00]">
+          Needs verification: this relies on D stalls, and UCSD's Sept 18, 2026 D restriction may change who can use them.
+        </p>
+      )}
+
       {/* Parking hours for this permit, and which stall types it can use */}
       <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-black/5 text-[11px]">
         <span className="flex items-center gap-1 font-medium text-emerald-700">
@@ -158,7 +165,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           ) : (
             <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           )}
-          {arrival ? accessLabel(access, userPermit, arrival) : ''}
+          {arrival ? accessLabel(access, userPermit, arrival, lot.spaceCategories) : ''}
         </span>
         <div className="flex items-center gap-1" aria-label={`Space types here: ${lot.spaceCategories.join(', ')}. Usable now: ${usable.join(', ')}`}>
           {lot.spaceCategories.map((category) => (

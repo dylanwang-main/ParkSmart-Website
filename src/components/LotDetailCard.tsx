@@ -12,7 +12,7 @@ import { CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
 import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt, tightFrom } from '../utils/availabilityModel.ts';
-import { accessLabel, formatAccessTime, lotAccess, usableCategories } from '../utils/permitRules.ts';
+import { accessLabel, formatAccessTime, lotAccess, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface LotDetailCardProps {
   lot: ParkingLot;
@@ -140,7 +140,7 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           ) : (
             <XCircle className="w-4 h-4 text-[#ff3b30] shrink-0" aria-hidden="true" />
           )}
-          <span className="font-medium">{accessLabel(access, userPermit, when)}</span>
+          <span className="font-medium">{accessLabel(access, userPermit, when, lot.spaceCategories)}</span>
           <div className="ml-auto flex gap-1" aria-label={`Space types: ${lot.spaceCategories.join(', ')}`}>
             {lot.spaceCategories.map((category) => (
               <span
@@ -156,6 +156,11 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
             ))}
           </div>
         </div>
+        {relyOnUnverifiedDAccess(userPermit, lot.spaceCategories, when) && (
+          <div className="flex items-start gap-2 px-3 py-2.5 text-[#8a4b00]">
+            <span>Needs verification: this relies on D stalls, and UCSD's Sept 18, 2026 D restriction may change who can use them.</span>
+          </div>
+        )}
         {lot.accessNote && (
           <div className="flex items-start gap-2 px-3 py-2.5 text-[#8a4b00]">
             <Info className="w-4 h-4 shrink-0 mt-px" aria-hidden="true" />

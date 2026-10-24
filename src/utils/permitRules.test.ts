@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { accessLabel, canPark, lotAccess, parseArrival } from './permitRules.ts';
+import { accessLabel, canPark, holidayNotice, lotAccess, parseArrival, relyOnUnverifiedDAccess } from './permitRules.ts';
 
 // Oct 20, 2026 is a Tuesday; Oct 21 a Wednesday; Oct 24 a Saturday.
 const at = (date: string, time: string) => parseArrival(date, time)!;
@@ -67,5 +67,22 @@ describe('parseArrival', () => {
     expect(parseArrival('', '10:00')).toBeNull();
     expect(parseArrival('2026-10-21', '')).toBeNull();
     expect(parseArrival('not-a-date', '10:00')).toBeNull();
+  });
+});
+
+describe('stall-specific wording and verification flags', () => {
+  const tue = at('2026-10-20', '12:00');
+  it('names the stalls that are open 24/7', () => {
+    const access = lotAccess('S', ['A', 'D'], tue);
+    expect(accessLabel(access, 'S', tue, ['A', 'D'])).toBe('Open 24/7 in D stalls with your S permit');
+  });
+  it('flags non-D permits that rely only on D stalls', () => {
+    expect(relyOnUnverifiedDAccess('S', ['A', 'D'], tue)).toBe(true);
+    expect(relyOnUnverifiedDAccess('S', ['A', 'S'], tue)).toBe(false);
+    expect(relyOnUnverifiedDAccess('D', ['D'], tue)).toBe(false);
+  });
+  it('shows a notice on university holidays only', () => {
+    expect(holidayNotice(at('2026-11-26', '12:00'))).toMatch(/Thanksgiving/);
+    expect(holidayNotice(at('2026-10-20', '12:00'))).toBeNull();
   });
 });

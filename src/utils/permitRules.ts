@@ -125,11 +125,24 @@ export function formatAccessTime(date: Date, reference: Date): string {
   return sameDay ? time : `${date.toLocaleDateString('en-US', { weekday: 'short' })} ${time}`;
 }
 
-/** Short human-readable label, e.g. "Open 24/7 with your S permit" or "Valid until 8:00 AM". */
-export function accessLabel(access: LotAccess, permit: PermitType, arrival: Date): string {
+/**
+ * Short human-readable label, e.g. "Open 24/7 in D stalls with your S permit" or
+ * "Valid until 8:00 AM". Pass the lot's stall categories so a 24/7 label names the
+ * stalls that are open (a permit is rarely valid in every stall of a structure).
+ */
+export function accessLabel(
+  access: LotAccess,
+  permit: PermitType,
+  arrival: Date,
+  categories?: SpaceCategory[]
+): string {
   switch (access.status) {
-    case 'always':
-      return `Open 24/7 with your ${permit} permit`;
+    case 'always': {
+      const open = (categories ?? []).filter((category) => RULES[permit][category]?.kind === 'always');
+      return open.length > 0
+        ? `Open 24/7 in ${open.join(', ')} stalls with your ${permit} permit`
+        : `Open 24/7 with your ${permit} permit`;
+    }
     case 'until':
       return `Valid until ${formatAccessTime(access.until, arrival)}`;
     case 'from':
@@ -144,4 +157,37 @@ export function parseArrival(date: string, time: string): Date | null {
   if (!date || !time) return null;
   const parsed = new Date(`${date}T${time}`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * True when a non-D permit gets into a structure only through its D stalls. The team's
+ * research (v1.2) lists the Sept 18, 2026 D restriction's effect on other permits as an
+ * open question, so the app shows these picks as "needs verification" instead of certain.
+ */
+export function relyOnUnverifiedDAccess(permit: PermitType, categories: SpaceCategory[], arrival: Date): boolean {
+  if (permit === 'D') return false;
+  const usable = usableCategories(permit, categories, arrival);
+  return usable.length > 0 && usable.every((category) => category === 'D');
+}
+
+/** University holidays in the fall term (month is 1-12). Category rules on these days are unconfirmed. */
+const HOLIDAYS: ReadonlyArray<{ month: number; day: number; name: string }> = [
+  { month: 11, day: 11, name: "Veterans Day" },
+  { month: 11, day: 26, name: 'Thanksgiving' },
+  { month: 11, day: 27, name: 'the day after Thanksgiving' },
+  { month: 12, day: 24, name: 'Christmas Eve' },
+  { month: 12, day: 25, name: 'Christmas Day' },
+  { month: 12, day: 31, name: "New Year's Eve" },
+  { month: 1, day: 1, name: "New Year's Day" },
+];
+
+/**
+ * Notice for a university holiday, or null. The research doc (v1.2) says the parking fee
+ * is waived on these days but could not confirm how stall categories are enforced, so
+ * the results still use the normal weekday rules.
+ */
+export function holidayNotice(date: Date): string | null {
+  const holiday = HOLIDAYS.find((h) => h.month === date.getMonth() + 1 && h.day === date.getDate());
+  if (!holiday) return null;
+  return `${holiday.name} is a university holiday. Parking fees are waived, but we could not confirm the stall category rules, so these results use normal weekday rules. Check UCSD Transportation.`;
 }

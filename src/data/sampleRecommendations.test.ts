@@ -12,6 +12,7 @@ import {
   calculateParkingScore,
   compareReasons,
   getSampleRecommendations,
+  MAX_RECOMMENDED_WALK_MINUTES,
 } from './sampleRecommendations.ts';
 import { lotAccess, parseArrival } from '../utils/permitRules.ts';
 
@@ -143,5 +144,12 @@ describe('compareReasons', () => {
       first: 'Only structure your permit can use at this time, 9 min walk',
       backup: null,
     });
+  });
+});
+
+describe('walk cutoff', () => {
+  it('never recommends a lot beyond the max walk', () => {
+    const recs = getSampleRecommendations(makeRequest('S')).recommendations;
+    for (const rec of recs) expect(rec.lot.walkingMinutes).toBeLessThanOrEqual(MAX_RECOMMENDED_WALK_MINUTES);
   });
 });
