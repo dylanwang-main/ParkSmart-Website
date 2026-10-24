@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { SCORING_WEIGHTS } from '../constants.ts';
 import { DEFAULT_DESTINATION_ID } from './destinations.ts';
+import { availabilityAt } from '../utils/availabilityModel.ts';
 import { ParkingPlannerRequest, PermitType } from '../types.ts';
 import {
   SAMPLE_LOTS,
@@ -151,5 +152,18 @@ describe('walk cutoff', () => {
   it('never recommends a lot beyond the max walk', () => {
     const recs = getSampleRecommendations(makeRequest('S')).recommendations;
     for (const rec of recs) expect(rec.lot.walkingMinutes).toBeLessThanOrEqual(MAX_RECOMMENDED_WALK_MINUTES);
+  });
+});
+
+describe('recommendation availability matches the map card', () => {
+  it('the percent on a recommendation equals the model applied to the original lot at the arrival time', () => {
+    const request = { destinationId: DEFAULT_DESTINATION_ID, arrivalDate: '2026-10-26', arrivalTime: '14:15', permitType: 'S' as const };
+    const arrival = new Date(2026, 9, 26, 14, 15);
+    const { recommendations } = getSampleRecommendations(request);
+    expect(recommendations.length).toBeGreaterThan(0);
+    for (const rec of recommendations) {
+      const base = SAMPLE_LOTS.find((l) => l.locationId === rec.lot.locationId)!;
+      expect(availabilityAt(base, arrival)).toBe(rec.lot.estimatedAvailabilityPercent);
+    }
   });
 });

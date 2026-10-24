@@ -337,6 +337,12 @@ export default function App() {
     return true;
   }, []);
 
+  // Turning Drop pin off removes the dropped pin
+  const handleClearPin = useCallback(() => {
+    setPinNotice(null);
+    setFormInputs((prev) => (findDestination(prev.destinationId)?.isPin ? { ...prev, destinationId: '' } : prev));
+  }, []);
+
   // Re-run an earlier search from "Recent"
   const handleRestoreSearch = (request: ParkingPlannerRequest) => {
     setFormInputs(request);
@@ -428,6 +434,8 @@ export default function App() {
         onSelectLot={handleSelectLotFromMap}
         onClearSelection={handleClearSelection}
         onDropPin={handleDropPin}
+        hasDroppedPin={currentDestination?.isPin === true}
+        onClearPin={handleClearPin}
         isTimeOpen={isTimeOpen}
         onTimeToggle={handleTimeToggle}
         timePanel={

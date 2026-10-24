@@ -9,6 +9,7 @@ import { SpotActions } from './SpotActions.tsx';
 import { ParkingRecommendation, PermitType } from '../types.ts';
 import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt } from '../utils/availabilityModel.ts';
+import { SAMPLE_LOTS } from '../data/sampleRecommendations.ts';
 import { AvailabilityMeter } from './AvailabilityMeter.tsx';
 import { accessLabel, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
@@ -48,7 +49,11 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 }) => {
   const { badgeLabel, lot, reason, access } = recommendation;
   const usable = arrival ? usableCategories(userPermit, lot.spaceCategories, arrival) : [];
-  const percent = availabilityAt(lot, availabilityTime);
+  // The model needs the lot's original sample numbers. The lot on a recommendation has its
+  // availability already overwritten with the arrival-time value, so reading it here gave a
+  // different answer than the map card (83% vs 80% at the same time).
+  const baseLot = SAMPLE_LOTS.find((l) => l.locationId === lot.locationId) ?? lot;
+  const percent = availabilityAt(baseLot, availabilityTime);
   const status = availabilityStatus(percent);
   const timeLabel = availabilityTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 

@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Clock, MapPin } from 'lucide-react';
+import { Clock, MapPin, MapPinOff } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
 // MapLibre draws tiles in a background Web Worker. Vite bundles the main library
 // but does not copy the worker file, so the default worker URL 404s and the map
@@ -59,16 +59,17 @@ function zoomTier(zoom: number): ZoomTier {
 }
 /** Disc radius and label start (px below the pin center) per tier; must match index.css. */
 const DISC_RADIUS: Record<ZoomTier, { structure: number; lot: number }> = {
-  far: { structure: 7, lot: 4 },
-  mid: { structure: 10, lot: 6 },
-  near: { structure: 12, lot: 9 },
+  far: { structure: 9, lot: 6 },
+  mid: { structure: 11, lot: 8 },
+  near: { structure: 13, lot: 10 },
 };
 const LABEL_OFFSET: Record<ZoomTier, { structure: number; lot: number }> = {
-  far: { structure: 11, lot: 8 },
-  mid: { structure: 14, lot: 10 },
-  near: { structure: 16, lot: 13 },
+  far: { structure: 13, lot: 10 },
+  mid: { structure: 15, lot: 12 },
+  near: { structure: 17, lot: 14 },
 };
-const RANKED_RADIUS = 12;
+const RANKED_RADIUS = 13;
+const RANKED_LABEL_OFFSET = 17;
 const SELECTED_LABEL_OFFSET = 8;
 const SELECTED_RADIUS = 21;
 /** Distance from the selected pin's point up to the center of its balloon head. */
@@ -121,6 +122,9 @@ interface MapContainerProps {
    * accepted (false when it is off campus, so the tool stays on for another try).
    */
   onDropPin: (latitude: number, longitude: number) => boolean;
+  /** A dropped pin is currently the destination; the Drop pin button then removes it. */
+  hasDroppedPin: boolean;
+  onClearPin: () => void;
   /** Time tool: the toggle sits in the map's control row and its panel opens beneath it. */
   isTimeOpen: boolean;
   onTimeToggle: () => void;
@@ -146,6 +150,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   onSelectLot,
   onClearSelection,
   onDropPin,
+  hasDroppedPin,
+  onClearPin,
   isTimeOpen,
   onTimeToggle,
   timePanel,
@@ -236,7 +242,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         radius: isSelected ? SELECTED_RADIUS : rank ? RANKED_RADIUS : isLot ? DISC_RADIUS[tier].lot : DISC_RADIUS[tier].structure,
         labelW: Math.max(nameW, tagW),
         labelH: (isSelected ? 17 : 15) + (tagW > 0 ? 19 : 0),
-        labelOffset: isSelected ? SELECTED_LABEL_OFFSET + shiftUp : isLot && !rank ? LABEL_OFFSET[tier].lot : LABEL_OFFSET[tier].structure,
+        labelOffset: isSelected
+          ? SELECTED_LABEL_OFFSET + shiftUp
+          : rank
+          ? RANKED_LABEL_OFFSET
+          : isLot
+          ? LABEL_OFFSET[tier].lot
+          : LABEL_OFFSET[tier].structure,
         tagW,
         tagH: 15,
         priority: isSelected
@@ -699,13 +711,24 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
             <button
               type="button"
-              aria-pressed={isPinMode}
-              onClick={() => setIsPinMode((on) => !on)}
+              aria-pressed={isPinMode || hasDroppedPin}
+              onClick={() => {
+                if (hasDroppedPin) {
+                  onClearPin();
+                  setIsPinMode(false);
+                } else {
+                  setIsPinMode((on) => !on);
+                }
+              }}
               className={CONTROL_BUTTON}
               data-tone="sun"
             >
-              <MapPin className="w-4 h-4" aria-hidden="true" />
-              {isPinMode ? 'Tap the map' : 'Drop pin'}
+              {hasDroppedPin ? (
+                <MapPinOff className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <MapPin className="w-4 h-4" aria-hidden="true" />
+              )}
+              {hasDroppedPin ? 'Remove pin' : isPinMode ? 'Tap the map' : 'Drop pin'}
             </button>
 
             {pinMessage && (
@@ -717,7 +740,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
               </p>
             )}
 
-            {isTimeOpen && <div className="absolute right-0 top-[calc(100%+8px)]">{timePanel}</div>}
+            {/* Desktop: opens to the left of the Time button, level with the buttons.
+                Phone: no room beside it, so it drops below. */}
+            {isTimeOpen && (
+              <div className="absolute max-sm:right-0 max-sm:top-[calc(100%+8px)] sm:right-full sm:mr-2 sm:top-0">
+                {timePanel}
+              </div>
+            )}
           </div>,
           basemapControlEl
         )}
