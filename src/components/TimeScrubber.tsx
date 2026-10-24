@@ -6,9 +6,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Pause, Play } from 'lucide-react';
 
-/** Scrubber range, in minutes after midnight (5:00 AM to 11:00 PM). */
-export const SCRUB_MIN = 5 * 60;
-export const SCRUB_MAX = 23 * 60;
+/** Scrubber range, in minutes after midnight (12:00 AM to 11:45 PM), so any arrival time shows truthfully. */
+export const SCRUB_MIN = 0;
+export const SCRUB_MAX = 23 * 60 + 45;
 const SCRUB_STEP = 15;
 /** Play sweeps the whole range in this long. */
 const PLAY_DURATION_MS = 8000;

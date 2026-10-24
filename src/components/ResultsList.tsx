@@ -8,7 +8,7 @@ import { motion } from 'motion/react';
 import { ChevronDown, MapPin } from 'lucide-react';
 import { ParkingPlannerRequest, ParkingRecommendation } from '../types.ts';
 import { getDestination } from '../data/destinations.ts';
-import { parseArrival } from '../utils/permitRules.ts';
+import { holidayNotice, parseArrival } from '../utils/permitRules.ts';
 import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
@@ -118,7 +118,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   if (recommendations.length === 0) {
     return (
       <div className="pt-2">
-        <EmptyState onResetFilters={onResetFilters} />
+        <EmptyState onResetFilters={onResetFilters} permitType={searchedRequest?.permitType} />
       </div>
     );
   }
@@ -133,6 +133,13 @@ export const ResultsList: React.FC<ResultsListProps> = ({
         <span>Recommended for your arrival</span>
         <RecentSearches history={searchHistory} onRestore={onRestoreSearch} />
       </div>
+
+      {/* University holiday: fee waived, category rules unconfirmed */}
+      {arrival && holidayNotice(arrival) && (
+        <div role="note" className="px-3 py-2 rounded-xl bg-[#ff9f0a]/15 text-[12px] font-medium text-[#8a4b00]">
+          {holidayNotice(arrival)}
+        </div>
+      )}
 
       {/* Results no longer match the form: say so and grey them out */}
       {isStale && (
@@ -175,6 +182,11 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           );
         })}
       </div>
+
+      <p className="px-1 text-[11px] text-slate-500 leading-snug">
+        Open-space numbers are a time-of-day estimate from sample data, not live counts. Walk times are
+        straight-line estimates. Always check posted signs and UCSD Transportation before you park.
+      </p>
 
       {visibleCount < recommendations.length && (
         <button

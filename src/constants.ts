@@ -42,6 +42,23 @@ export const SATELLITE_STYLE = {
 /**
  * UCSD Campus Map Center, Zoom & Framing Padding Settings
  */
+/** Rough box around the UCSD main campus; dropped pins outside it are rejected. */
+export const CAMPUS_BOUNDS = {
+  south: 32.862,
+  north: 32.906,
+  west: -117.262,
+  east: -117.205,
+} as const;
+
+export function isOnCampus(latitude: number, longitude: number): boolean {
+  return (
+    latitude >= CAMPUS_BOUNDS.south &&
+    latitude <= CAMPUS_BOUNDS.north &&
+    longitude >= CAMPUS_BOUNDS.west &&
+    longitude <= CAMPUS_BOUNDS.east
+  );
+}
+
 export const MAP_CONFIG = {
   // Center near University of California San Diego central campus (Library Walk / Price Center)
   DEFAULT_CENTER: [-117.2374, 32.8812] as [number, number],
