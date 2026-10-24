@@ -34,9 +34,10 @@ export function formatMinutes(minutes: number): string {
 }
 
 /**
- * Timeline for previewing how full campus gets through the day. Dragging or playing it
- * recolors every pin live (see MapContainer's availabilityTime). It never changes the
- * search on its own; "Use this time" copies the time into the form.
+ * Timeline for previewing how full campus gets through the day. It opens from the Time
+ * button in the map's control row. Dragging or playing it recolors every pin and updates
+ * every availability number live (see MapContainer's availabilityTime). It never changes
+ * the search on its own; "Use this time" copies the time into the form.
  */
 export const TimeScrubber: React.FC<TimeScrubberProps> = ({
   day,
@@ -76,21 +77,33 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
   const fillPercent = ((minutes - SCRUB_MIN) / (SCRUB_MAX - SCRUB_MIN)) * 100;
 
   return (
-    <div className="flex items-center gap-3 max-sm:w-full pl-1.5 pr-3 py-1.5 rounded-xl bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)] text-navy">
-      <button
-        type="button"
-        onClick={() => onPlayingChange(!isPlaying)}
-        aria-label={isPlaying ? 'Pause timeline' : 'Play timeline: watch campus fill up'}
-        className="shrink-0 w-9 h-9 rounded-full bg-navy text-white flex items-center justify-center hover:bg-navy-2 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer"
-      >
-        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-px" />}
-      </button>
+    <div className="w-[300px] max-w-[calc(100vw-84px)] p-3 rounded-xl bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_8px_24px_rgba(24,43,73,0.16)] text-navy">
+      <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={() => onPlayingChange(!isPlaying)}
+          aria-label={isPlaying ? 'Pause timeline' : 'Play timeline: watch campus fill up'}
+          className="shrink-0 w-9 h-9 rounded-full bg-navy text-white flex items-center justify-center hover:bg-navy-2 active:scale-95 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer"
+        >
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 translate-x-px" />}
+        </button>
 
-      <div className="w-[110px] max-sm:w-[100px] shrink-0 leading-tight whitespace-nowrap">
-        <div className="text-[12px] font-medium text-muted">Campus at</div>
-        <div className="text-[13px] font-bold tabular-nums">
-          {weekday} {formatMinutes(minutes)}
+        <div className="flex-1 min-w-0 leading-tight whitespace-nowrap">
+          <div className="text-[12px] font-medium text-muted">Campus at</div>
+          <div className="text-[14px] font-bold tabular-nums">
+            {weekday} {formatMinutes(minutes)}
+          </div>
         </div>
+
+        {differsFromArrival && !isPlaying && (
+          <button
+            type="button"
+            onClick={onUseTime}
+            className="shrink-0 px-2.5 py-1.5 rounded-lg bg-paper border border-line hover:bg-line/60 text-[12px] font-semibold text-navy transition-colors cursor-pointer"
+          >
+            Use this time
+          </button>
+        )}
       </div>
 
       <input
@@ -105,19 +118,9 @@ export const TimeScrubber: React.FC<TimeScrubberProps> = ({
         }}
         aria-label="Preview time of day"
         aria-valuetext={`${weekday} ${formatMinutes(minutes)}`}
-        className="ps-scrubber w-[220px] max-sm:w-auto max-sm:flex-1 max-sm:min-w-0"
+        className="ps-scrubber block w-full mt-3"
         style={{ '--fill': `${fillPercent}%` } as React.CSSProperties}
       />
-
-      {differsFromArrival && !isPlaying && (
-        <button
-          type="button"
-          onClick={onUseTime}
-          className="shrink-0 px-2.5 py-1 rounded-lg bg-paper border border-line hover:bg-line/60 text-[12px] font-semibold text-navy transition-colors cursor-pointer"
-        >
-          Use this time
-        </button>
-      )}
     </div>
   );
 };

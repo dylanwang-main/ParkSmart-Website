@@ -139,9 +139,21 @@ export default function App() {
   // Follows the arrival time until the user scrubs.
   const [previewMinutes, setPreviewMinutes] = useState<number>(() => minutesOf(formInputs.arrivalTime));
   const [isTimelinePlaying, setIsTimelinePlaying] = useState<boolean>(false);
+  // The Time tool is a toggle in the map's controls; closing it snaps the map and every
+  // number back to the arrival time, so nothing keeps showing a time you can no longer see.
+  const [isTimeOpen, setIsTimeOpen] = useState<boolean>(false);
   useEffect(() => {
     setPreviewMinutes(minutesOf(formInputs.arrivalTime));
   }, [formInputs.arrivalTime]);
+  const handleTimeToggle = useCallback(() => {
+    setIsTimeOpen((open) => {
+      if (open) setIsTimelinePlaying(false);
+      return !open;
+    });
+  }, []);
+  useEffect(() => {
+    if (!isTimeOpen) setPreviewMinutes(minutesOf(formInputs.arrivalTime));
+  }, [isTimeOpen, formInputs.arrivalTime]);
   const previewTime = useMemo(() => {
     const day = parseArrival(formInputs.arrivalDate, '00:00') ?? new Date();
     day.setHours(Math.floor(previewMinutes / 60), previewMinutes % 60, 0, 0);
@@ -313,15 +325,16 @@ export default function App() {
     setIsDetailOpen(true);
   }, []);
 
-  // "Park near here" on the map: use that spot as the destination
+  // "Drop pin" on the map: use the clicked spot as the destination
   const [pinNotice, setPinNotice] = useState<string | null>(null);
-  const handleDropPin = useCallback((latitude: number, longitude: number) => {
+  const handleDropPin = useCallback((latitude: number, longitude: number): boolean => {
     if (!isOnCampus(latitude, longitude)) {
       setPinNotice('That spot is off campus. Drop the pin on the UCSD campus, or pick a building.');
-      return;
+      return false;
     }
     setPinNotice(null);
     setFormInputs((prev) => ({ ...prev, destinationId: makePinDestinationId(latitude, longitude) }));
+    return true;
   }, []);
 
   // Re-run an earlier search from "Recent"
@@ -415,34 +428,24 @@ export default function App() {
         onSelectLot={handleSelectLotFromMap}
         onClearSelection={handleClearSelection}
         onDropPin={handleDropPin}
+        isTimeOpen={isTimeOpen}
+        onTimeToggle={handleTimeToggle}
+        timePanel={
+          <TimeScrubber
+            day={previewTime}
+            minutes={previewMinutes}
+            onMinutesChange={setPreviewMinutes}
+            isPlaying={isTimelinePlaying}
+            onPlayingChange={setIsTimelinePlaying}
+            differsFromArrival={previewMinutes !== minutesOf(formInputs.arrivalTime)}
+            onUseTime={() => handleFormChange({ arrivalTime: timeOf(previewMinutes) })}
+          />
+        }
         isPanelOpen={isPanelOpen}
         isDetailOpen={isDetailOpen}
         rankedLotIds={rankedLotIds}
         availabilityTime={previewTime}
       />
-
-      {/* Time scrubber: top-left of the visible map, beside the panel */}
-      <div
-        className={`absolute top-4 z-20 transition-[left] duration-300 ease-out ${
-          isMobile && isDetailOpen ? 'hidden' : ''
-        }`}
-        style={
-          isMobile
-            ? // Phone: a full-width strip just above the bottom sheet (or above the map corner when it is hidden)
-              { left: 12, right: 12, top: 'auto', bottom: isPanelOpen ? 'calc(50% + 12px)' : 40 }
-            : { left: isPanelOpen ? PANEL_OFFSET_PX : 76 }
-        }
-      >
-        <TimeScrubber
-          day={previewTime}
-          minutes={previewMinutes}
-          onMinutesChange={setPreviewMinutes}
-          isPlaying={isTimelinePlaying}
-          onPlayingChange={setIsTimelinePlaying}
-          differsFromArrival={previewMinutes !== minutesOf(formInputs.arrivalTime)}
-          onUseTime={() => handleFormChange({ arrivalTime: timeOf(previewMinutes) })}
-        />
-      </div>
 
       {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
       <button
@@ -451,8 +454,8 @@ export default function App() {
         aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
         aria-expanded={isPanelOpen}
         aria-controls="planner-panel"
-        className={`absolute top-[22px] left-4 max-sm:left-6 ${
-          isPanelOpen ? 'max-sm:top-[calc(50%+16px)]' : 'top-4 max-sm:left-4'
+        className={`absolute top-[22px] left-4 max-sm:left-[29px] ${
+          isPanelOpen ? 'max-sm:top-[calc(50%+23px)]' : 'top-4 max-sm:left-4'
         } z-30 w-9 h-9 rounded-[10px] flex items-center justify-center text-navy transition-colors duration-200 hover:bg-paper active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
           isPanelOpen
             ? ''
@@ -476,22 +479,23 @@ export default function App() {
       >
         <div className="flex-1 flex flex-col bg-white border-r border-line max-sm:border max-sm:rounded-2xl shadow-[4px_0_24px_rgba(24,43,73,0.12)] max-sm:shadow-[0_4px_24px_rgba(24,43,73,0.2)] overflow-hidden">
           {/* Panel header. Left padding leaves room for the hamburger button that sits on top. */}
-          <header className="pl-[60px] pr-5 pt-[18px] pb-3.5 border-b-2 border-gold shrink-0">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+          <header className="pl-[60px] pr-4 pt-[22px] pb-3.5 border-b-2 border-gold shrink-0">
+            {/* One 36px row, centered on the hamburger button that sits on top of its left end */}
+            <div className="flex items-center justify-between gap-3 h-9">
+              <div className="flex items-center gap-2 min-w-0">
                 <div
                   aria-hidden="true"
-                  className="w-8 h-8 rounded-lg bg-navy flex items-center justify-center text-sun font-serif font-semibold text-[19px] leading-none"
+                  className="w-9 h-9 rounded-lg bg-navy flex items-center justify-center text-sun font-serif font-semibold text-[20px] leading-none"
                 >
-                  P
+                  <span className="-translate-y-px">P</span>
                 </div>
-                <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none">
+                <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none -translate-y-px">
                   ParkSmart
                 </h1>
               </div>
 
               {/* UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
-              <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block" />
+              <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block shrink-0" />
             </div>
             <p className="mt-2 text-[13px] text-muted leading-snug">
               Find where to park before you arrive.
@@ -556,6 +560,7 @@ export default function App() {
                   )
                 }
                 isStale={isStale}
+                availabilityTime={previewTime}
                 confirmedLotId={confirmedLotId}
                 onConfirmLot={handleConfirmLot}
                 selectedLocationId={selectedLocationId}
@@ -598,6 +603,11 @@ export default function App() {
                 arrival={parseArrival(formInputs.arrivalDate, formInputs.arrivalTime)}
                 availabilityTime={previewTime}
                 destination={currentDestination}
+                rankLabel={
+                  isStale
+                    ? null
+                    : activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ?? null
+                }
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
                 onPlanFor={(date) =>
