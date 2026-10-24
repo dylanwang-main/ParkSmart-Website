@@ -9,6 +9,7 @@ import { motion } from 'motion/react';
 import { PERMIT_OPTIONS } from '../constants.ts';
 import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
 import { maxArrivalDate } from '../utils/arrival.ts';
+import { loadFavorites, toggleFavorite } from '../utils/favorites.ts';
 import { ALL_PARKING } from '../data/parkingLots.ts';
 import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
 
@@ -70,6 +71,8 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   const [isDestinationOpen, setIsDestinationOpen] = useState(false);
   const [destinationSearch, setDestinationSearch] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
+  // Starred places (this browser only), shown first in the dropdown
+  const [favorites, setFavorites] = useState<string[]>(() => loadFavorites());
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
 
@@ -79,22 +82,37 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
   // Before typing: popular places. While typing: matching places and parking, with
   // parking first when the query is clearly a lot ("Gilman", "P406")
+  const favoritePlaces = useMemo(
+    () =>
+      favorites
+        .map((id) => findDestination(id))
+        .filter((d): d is CampusDestination => d !== undefined && !d.isPin)
+        .map((d): Option => ({ kind: 'place', destination: d })),
+    [favorites]
+  );
   const { places, parking } = useMemo(() => {
     if (!query) {
-      return { places: POPULAR_DESTINATIONS.map((d): Option => ({ kind: 'place', destination: d })), parking: [] as Option[] };
+      return {
+        places: POPULAR_DESTINATIONS.filter((d) => !favorites.includes(d.id)).map((d): Option => ({ kind: 'place', destination: d })),
+        parking: [] as Option[],
+      };
     }
     return {
       places: searchDestinations(query).map((m): Option => ({ kind: 'place', destination: m.destination, matchedOn: m.matchedOn })),
       parking: searchParking(query).map((lot): Option => ({ kind: 'parking', lot })),
     };
-  }, [query]);
+  }, [query, favorites]);
   const parkingFirst =
     parking.length > 0 &&
     (places.length === 0 || (parking[0].kind === 'parking' && parking[0].lot.name.toLowerCase().startsWith(query.toLowerCase())));
   const sections: Array<{ label: string; options: Option[] }> = (
     parkingFirst
       ? [{ label: 'Parking', options: parking }, { label: 'Places', options: places }]
-      : [{ label: query ? 'Places' : 'Popular', options: places }, { label: 'Parking', options: parking }]
+      : [
+          ...(query ? [] : [{ label: 'Favorites', options: favoritePlaces }]),
+          { label: query ? 'Places' : 'Popular', options: places },
+          { label: 'Parking', options: parking },
+        ]
   ).filter((section) => section.options.length > 0);
   const flatOptions = sections.flatMap((section) => section.options);
 
@@ -260,11 +278,30 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
                           isCurrent ? 'text-slate-900' : 'text-slate-700'
                         } ${isActive ? 'bg-black/[0.06]' : ''}`}
                       >
-                        {!query && destination.popular !== undefined ? (
-                          <Star className="w-3.5 h-3.5 shrink-0 text-slate-400" aria-hidden="true" />
-                        ) : (
-                          <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" aria-hidden="true" />
-                        )}
+                        <button
+                          type="button"
+                          aria-pressed={favorites.includes(destination.id)}
+                          aria-label={
+                            favorites.includes(destination.id)
+                              ? `Remove ${destination.name} from favorites`
+                              : `Add ${destination.name} to favorites`
+                          }
+                          title={favorites.includes(destination.id) ? 'Remove from favorites' : 'Add to favorites'}
+                          // Keep focus in the search box and do not pick the place
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFavorites(toggleFavorite(destination.id));
+                          }}
+                          className="shrink-0 -ml-1 p-1 rounded-md hover:bg-black/[0.08] cursor-pointer"
+                        >
+                          <Star
+                            className={`w-3.5 h-3.5 ${
+                              favorites.includes(destination.id) ? 'fill-amber-400 text-amber-500' : 'text-slate-400'
+                            }`}
+                            aria-hidden="true"
+                          />
+                        </button>
                         <div className="min-w-0 flex-1">
                           <div className="font-semibold truncate">{destination.name}</div>
                           {matchedOn && !destination.codes?.includes(matchedOn) && (
@@ -296,7 +333,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             </ul>
             {!query && (
               <p className="px-3 pt-1.5 pb-0.5 text-[11px] text-slate-500 border-t border-black/5 mt-1">
-                Not listed? Tap the map to drop a pin.
+                Tap the star to save a place. Not listed? Tap the map to drop a pin.
               </p>
             )}
           </div>
