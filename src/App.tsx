@@ -496,15 +496,15 @@ export default function App() {
                 </h1>
               </motion.div>
 
-              {/* Campus badge: UC San Diego wordmark on white so the navy stays crisp over the glass panel */}
-              <motion.span
-                className="px-3 py-1.5 rounded-full bg-white/95 border border-white shadow-sm shadow-black/10 flex items-center"
+              {/* Campus badge: UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
+              <motion.img
+                src={ucsdLogo}
+                alt="UC San Diego"
+                className="h-[20px] w-auto block"
                 initial={{ opacity: 0, x: 8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <img src={ucsdLogo} alt="UC San Diego" className="h-[18px] w-auto block" />
-              </motion.span>
+              />
             </div>
             {/* One-line intro so first-time visitors know what this is for */}
             <motion.p
