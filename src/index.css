@@ -438,3 +438,10 @@
 @media (prefers-reduced-motion: reduce) {
   .ps-aerial-shimmer, .ps-aerial-pin::after { animation: none; }
 }
+
+/* Ranked pins sit in the busiest part of the map, so at overview zoom they show only their
+   "First choice" / "Backup" tag. Full names appear when zoomed in, hovered or selected
+   (names collided with each other and with the destination label). */
+.maplibregl-map:not(.ps-show-labels) .ps-ranked:not(.ps-selected):not(:hover):not(:focus-visible) .ps-name {
+  display: none;
+}
