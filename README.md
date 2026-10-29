@@ -4,6 +4,8 @@ A desktop-first web prototype for UCSD parking planning. This prototype uses sam
 
 > **Disclaimer**: This is a front-end only prototype using clearly labeled SAMPLE data. Nothing in it is a real prediction or live availability. It never claims guaranteed availability.
 
+> **Where to edit**: the source of truth is [dylanwang-main/ParkSmart-Website](https://github.com/dylanwang-main/ParkSmart-Website), synced with Google AI Studio. The `frontend/` folder in [yraclimaco/parksmart](https://github.com/yraclimaco/parksmart) is a one-way copy made with `scripts/sync_frontend.sh`. Do not edit website files there; the next sync overwrites them. Make the change in ParkSmart-Website, then sync.
+
 ---
 
 ## Tech Stack
@@ -82,34 +84,53 @@ Scoring is handled by `calculateParkingScore` in `src/data/sampleRecommendations
 
 ## Local Development & Setup
 
+Requires Node.js 20.19+ or 22.12+ (Vite 8) (tested with Node 26 and npm 11). Run these from
+the `frontend/` folder.
+
 ### 1. Install Dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
-### 2. Run the Development Server
+`npm ci` installs the exact versions in `package-lock.json`. Use `npm install`
+only when adding or upgrading a dependency, and commit the updated lockfile.
+
+### 2. Configure the Backend URL (optional)
+
+The website calls the FastAPI backend at `http://127.0.0.1:8000` by default.
+To use another backend, copy `.env.example` to `.env.local` and set
+`VITE_API_BASE_URL`. `.env.local` is ignored by Git. Every `VITE_` variable is
+bundled into the public site, so never put secrets in it.
+
+Start the backend from the repository root (see [the backend guide](../docs/backend.md)):
+
+```bash
+python -m uvicorn src.api.main:app --reload
+```
+
+### 3. Run the Development Server
 
 ```bash
 npm run dev
 ```
 
-Open your browser to `http://localhost:3000` (or the URL provided by Vite).
+Open `http://localhost:3000`. Port 3000 is on the backend's local CORS allowlist.
 
-### 3. Build for Production
+### 4. Build for Production
 
 ```bash
 npm run build
 ```
 
-### 4. Run Tests and Type Checks
+### 5. Run Tests and Type Checks
 
 ```bash
-npm test        # Vitest: scoring formula and permit filtering
+npm test        # Vitest
 npm run lint    # TypeScript type check
 ```
 
-Tests live next to the code they cover (`src/data/sampleRecommendations.test.ts`). Run both before opening a PR.
+Tests live next to the code they cover (for example `src/data/sampleRecommendations.test.ts`). Run both before opening a PR.
 
 ---
 
