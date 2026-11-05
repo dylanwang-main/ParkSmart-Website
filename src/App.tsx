@@ -604,7 +604,7 @@ export default function App() {
         aria-expanded={isPanelOpen}
         aria-controls="planner-panel"
         className={`sm:hidden absolute left-1/2 -translate-x-1/2 z-30 h-8 px-4 rounded-full bg-white border border-line text-navy flex items-center justify-center gap-1 text-[12px] font-semibold shadow-[0_2px_10px_rgba(24,43,73,0.18)] transition-[top,bottom] duration-300 ease-out motion-reduce:transition-none active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
-          isPanelOpen ? 'top-[calc(50%-16px)]' : 'top-[calc(100%-56px)]'
+          isPanelOpen ? 'top-[calc(50%-16px)]' : 'top-[calc(100%-80px)]'
         }`}
       >
         {isPanelOpen ? (
