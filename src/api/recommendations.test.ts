@@ -59,9 +59,13 @@ describe('toApiRequest', () => {
       },
       arrival_time: '2026-10-29T10:00:00',
       permit_type: 'S',
-      preference: 'balanced',
-      max_walk_minutes: null,
     });
+  });
+
+  it('leaves out default priority and walking limit so older backends still answer', () => {
+    const body = toApiRequest({ ...REQUEST, priority: 'balanced', maxWalkMinutes: null });
+    expect(body).not.toHaveProperty('preference');
+    expect(body).not.toHaveProperty('max_walk_minutes');
   });
 
   it('sends the chosen priority and walking limit', () => {

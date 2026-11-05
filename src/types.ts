@@ -125,7 +125,3 @@ export interface ParkingPlannerResponse {
   isSampleData: true;
 }
 
-/**
- * Developer state simulation options for verifying edge cases.
- */
-export type DevSimulationState = 'normal' | 'loading' | 'empty' | 'error';

@@ -71,9 +71,10 @@ export interface ApiRecommendationRequest {
   /** Local UCSD time without an offset, e.g. "2026-10-29T10:00:00". */
   arrival_time: string;
   permit_type: string;
-  preference: TripPriority;
-  /** null means the backend's default (20 minutes). */
-  max_walk_minutes: number | null;
+  /** Left out for the default ("balanced"). */
+  preference?: TripPriority;
+  /** Left out for the backend's default (20 minutes). */
+  max_walk_minutes?: number;
 }
 
 /** What the website does with a request: show results, or explain why it can't. */
@@ -99,8 +100,10 @@ export function toApiRequest(request: ParkingPlannerRequest): ApiRecommendationR
     },
     arrival_time: `${request.arrivalDate}T${request.arrivalTime}:00`,
     permit_type: request.permitType,
-    preference: request.priority ?? DEFAULT_PRIORITY,
-    max_walk_minutes: request.maxWalkMinutes ?? null,
+    // Sent only when changed from the defaults, so a backend without the
+    // preference feature (which rejects unknown fields) still answers
+    ...(request.priority && request.priority !== DEFAULT_PRIORITY ? { preference: request.priority } : {}),
+    ...(request.maxWalkMinutes != null ? { max_walk_minutes: request.maxWalkMinutes } : {}),
   };
 }
 

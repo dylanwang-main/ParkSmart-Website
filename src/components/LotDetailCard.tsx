@@ -77,15 +77,17 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
   const access = lotAccess(userPermit, lot.spaceCategories, when);
   const permitWorks = access.status === 'always' || access.status === 'until';
   const usable = usableCategories(userPermit, lot.spaceCategories, when);
-  // With the backend, only its walking time is shown (routed when available)
+  // With the backend, its walking time is shown for ranked lots (routed when
+  // available); other pins keep the website's straight-line estimate, labeled
+  const backendWalk = backendMode ? backendEstimate?.walkingMinutes ?? null : null;
   const walkMinutes = !destination
     ? null
-    : backendMode
-      ? backendEstimate?.walkingMinutes ?? null
-      : estimateWalkingTime(lot, destination.id);
-  const walkSource = backendMode && backendEstimate?.walkingSource
-    ? WALK_SOURCE_LABELS[backendEstimate.walkingSource] ?? null
-    : null;
+    : backendWalk ?? estimateWalkingTime(lot, destination.id);
+  const walkSource = !backendMode
+    ? null
+    : backendWalk !== null && backendEstimate?.walkingSource
+      ? WALK_SOURCE_LABELS[backendEstimate.walkingSource] ?? null
+      : 'straight-line estimate';
 
   return (
     <motion.div

@@ -149,7 +149,9 @@ export function calculateParkingScore(
   walkingMinutes: number,
   priority: TripPriority = DEFAULT_PRIORITY
 ): number {
-  const weights = PRIORITY_OPTIONS.find((option) => option.value === priority) ?? PRIORITY_OPTIONS[1];
+  const weights =
+    PRIORITY_OPTIONS.find((option) => option.value === priority) ??
+    PRIORITY_OPTIONS.find((option) => option.value === DEFAULT_PRIORITY)!;
   // Normalize walking convenience: 0 min = 100, 20+ min = 0
   const normalizedWalkConvenience = Math.max(
     0,

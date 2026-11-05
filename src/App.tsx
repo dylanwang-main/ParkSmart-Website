@@ -28,7 +28,6 @@ import type { ResultInfo } from './components/ResultsList.tsx';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
-  DevSimulationState,
 } from './types.ts';
 
 /** How many earlier searches "Recent" keeps for this visit. */
@@ -190,7 +189,6 @@ export default function App() {
   const isMobile = useIsMobile();
 
   // 5. Dev State Simulator
-  const [devState, setDevState] = useState<DevSimulationState>('normal');
 
   // Phone: the lot card needs the space, so tuck the planner away while they are open
   useEffect(() => {
@@ -315,9 +313,6 @@ export default function App() {
   // Handle Form Submission
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (devState !== 'normal') {
-      setDevState('normal');
-    }
     runPlanner();
   };
 
@@ -367,7 +362,6 @@ export default function App() {
 
   // Handle retry from error state
   const handleRetry = () => {
-    setDevState('normal');
     runPlanner();
   };
 
@@ -375,7 +369,6 @@ export default function App() {
   const handleResetFilters = () => {
     const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S' };
     setFormInputs(updated);
-    setDevState('normal');
     runPlanner(updated);
   };
 
@@ -413,7 +406,6 @@ export default function App() {
   // Re-run an earlier search from "Recent"
   const handleRestoreSearch = (request: ParkingPlannerRequest) => {
     setFormInputs(request);
-    setDevState('normal');
     runPlanner(request);
   };
 
@@ -477,13 +469,13 @@ export default function App() {
 
   // First choice / backup IDs for labeling pins (hidden while results are stale)
   const rankedLotIds = useMemo(() => {
-    if (isStale || devState !== 'normal') return { first: null, backup: null, third: null };
+    if (isStale) return { first: null, backup: null, third: null };
     return {
       first: recommendations[0]?.lot.locationId ?? null,
       backup: recommendations[1]?.lot.locationId ?? null,
       third: recommendations[2]?.lot.locationId ?? null,
     };
-  }, [recommendations, isStale, devState]);
+  }, [recommendations, isStale]);
 
   // Confirming a spot also selects it, so the highlighted card, the map pin and
   // the route always point at the same lot. Undoing keeps the selection.
@@ -516,20 +508,16 @@ export default function App() {
     );
   }, []);
 
-  // Derive active rendering state based on normal computation or dev simulator
-  const activeIsLoading = devState === 'loading' || isLoading;
-  const activeIsError = devState === 'error' || (devState === 'normal' && errorMessage !== null);
-  const activeRecommendations = useMemo(() => {
-    if (devState === 'empty') return [];
-    if (devState === 'error' || devState === 'loading') return [];
-    return recommendations;
-  }, [devState, recommendations]);
+  // Rendering state for the results list
+  const activeIsLoading = isLoading;
+  const activeIsError = errorMessage !== null;
+  const activeRecommendations = recommendations;
 
   // Routes follow the selected result (first choice after a search, or whichever card
   // or pin the user picks). Only real backend results have routes; stale results and
   // sample data do not.
   const routedRecommendation =
-    USE_API && !isStale && devState === 'normal'
+    USE_API && !isStale
       ? activeRecommendations.find((rec) => rec.lot.locationId === selectedLocationId) ?? null
       : null;
   const routedDestination = searchedRequest ? findDestination(searchedRequest.destinationId) ?? null : null;
@@ -701,7 +689,7 @@ export default function App() {
                 searchedRequest={searchedRequest}
                 searchHistory={searchHistory}
                 onRestoreSearch={handleRestoreSearch}
-                showIntroPrompt={searchedRequest === null && devState === 'normal'}
+                showIntroPrompt={searchedRequest === null}
                 usualTripCard={
                   usualPreview && (
                     <UsualTripCard
@@ -723,8 +711,8 @@ export default function App() {
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
                 onResetFilters={handleResetFilters}
-                errorMessage={devState === 'normal' ? errorMessage : null}
-                resultInfo={devState === 'normal' ? resultInfo : null}
+                errorMessage={errorMessage}
+                resultInfo={resultInfo}
                 directions={
                   routedRecommendation && routedDestination ? (
                     <DirectionsPanel
