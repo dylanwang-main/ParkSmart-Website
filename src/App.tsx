@@ -4,12 +4,11 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Menu } from 'lucide-react';
+import { ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
-import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
@@ -85,11 +84,9 @@ function useIsMobile(): boolean {
   return isMobile;
 }
 
-/** The state simulator is for developers: shown in dev builds, or in production with ?dev in the URL. */
 /** True when searches go to the backend; sample-only map features are then hidden. */
 const USE_API = RECOMMENDATION_SOURCE === 'api';
 
-const showDevTools = import.meta.env.DEV || new URLSearchParams(window.location.search).has('dev');
 
 /** "HH:MM" to minutes after midnight, clamped to the scrubber's range. */
 function minutesOf(time: string): number {
@@ -547,7 +544,7 @@ export default function App() {
   return (
     // reducedMotion="user" turns off Motion animations for people who ask their OS for less motion
     <MotionConfig reducedMotion="user">
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-100 font-sans text-navy select-none">
+    <div className="relative w-full h-screen h-[100dvh] overflow-hidden overscroll-none bg-slate-100 font-sans text-navy select-none">
       {/* Full-Screen MapLibre GL Map */}
       <MapContainer
         lots={SAMPLE_LOTS}
@@ -583,22 +580,41 @@ export default function App() {
         startPoint={routedRecommendation ? startPoint : null}
       />
 
-      {/* Hamburger toggle: stays in the top-left whether the panel is open or closed */}
+      {/* Desktop: hamburger toggle in the top-left whether the panel is open or closed */}
       <button
         type="button"
         onClick={() => setIsPanelOpen((open) => !open)}
         aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
         aria-expanded={isPanelOpen}
         aria-controls="planner-panel"
-        className={`absolute top-[22px] left-4 max-sm:left-[29px] ${
-          isPanelOpen ? 'max-sm:top-[calc(50%+23px)]' : 'top-4 max-sm:left-4'
-        } z-30 w-9 h-9 rounded-[10px] flex items-center justify-center text-navy transition-colors duration-200 hover:bg-paper active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
+        className={`max-sm:hidden absolute left-4 ${isPanelOpen ? 'top-[22px]' : 'top-4'} z-30 w-9 h-9 rounded-[10px] flex items-center justify-center text-navy transition-colors duration-200 hover:bg-paper active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
           isPanelOpen
             ? ''
             : 'bg-white border border-line shadow-[0_1px_2px_rgba(24,43,73,0.08),0_4px_12px_rgba(24,43,73,0.1)]'
         }`}
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
+      </button>
+
+      {/* Phones: an arrow tab on the sheet's top edge slides the planner down and back up */}
+      <button
+        type="button"
+        onClick={() => setIsPanelOpen((open) => !open)}
+        aria-label={isPanelOpen ? 'Hide planner panel' : 'Show planner panel'}
+        aria-expanded={isPanelOpen}
+        aria-controls="planner-panel"
+        className={`sm:hidden absolute left-1/2 -translate-x-1/2 z-30 h-8 px-4 rounded-full bg-white border border-line text-navy flex items-center justify-center gap-1 text-[12px] font-semibold shadow-[0_2px_10px_rgba(24,43,73,0.18)] transition-[top,bottom] duration-300 ease-out motion-reduce:transition-none active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50 cursor-pointer ${
+          isPanelOpen ? 'top-[calc(50%-16px)]' : 'top-[calc(100%-56px)]'
+        }`}
+      >
+        {isPanelOpen ? (
+          <ChevronDown className="w-5 h-5" aria-hidden="true" />
+        ) : (
+          <>
+            <ChevronUp className="w-5 h-5" aria-hidden="true" />
+            <span>Planner</span>
+          </>
+        )}
       </button>
 
       {/* Planner: a solid sheet on the left edge (a bottom sheet on phones), slides out when hidden */}
@@ -615,7 +631,7 @@ export default function App() {
       >
         <div className="flex-1 flex flex-col bg-white border-r border-line max-sm:border max-sm:rounded-2xl shadow-[4px_0_24px_rgba(24,43,73,0.12)] max-sm:shadow-[0_4px_24px_rgba(24,43,73,0.2)] overflow-hidden">
           {/* Panel header. Left padding leaves room for the hamburger button that sits on top. */}
-          <header className="pl-[60px] pr-4 pt-[22px] pb-3.5 border-b-2 border-gold shrink-0">
+          <header className="pl-[60px] max-sm:pl-4 pr-4 pt-[22px] pb-3.5 border-b-2 border-gold shrink-0">
             {/* One 36px row, centered on the hamburger button that sits on top of its left end */}
             <div className="flex items-center justify-between gap-3 h-9">
               <div className="flex items-center gap-2 min-w-0">
@@ -639,7 +655,10 @@ export default function App() {
           </header>
 
           {/* Internally Scrollable Body */}
-          <div id="planner-scroll" className="flex-1 overflow-y-auto px-5 py-4 space-y-4 overscroll-contain focus:outline-none">
+          <div
+            id="planner-scroll"
+            className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-4 overscroll-contain touch-pan-y focus:outline-none"
+          >
             {/* Preference Form Section */}
             <section aria-labelledby="planner-preferences-title">
               <h2 id="planner-preferences-title" className="sr-only">
@@ -799,12 +818,6 @@ export default function App() {
         </AnimatePresence>
       </div>
 
-      {showDevTools && (
-        <DevStateControl
-          currentState={devState}
-          onStateChange={(state) => setDevState(state)}
-        />
-      )}
     </div>
     </MotionConfig>
   );
