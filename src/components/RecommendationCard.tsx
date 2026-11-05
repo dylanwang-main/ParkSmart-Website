@@ -137,6 +137,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
 
       {/* One-line reasoning */}
       <p className={`mt-3 text-[13px] leading-relaxed ${hero ? 'text-white/90' : 'text-ink'}`}>{reason}</p>
+      {/* Why this pick suits the chosen priority (backend results only) */}
+      {fromBackend && estimate.fitReason && (
+        <p className={`mt-1.5 text-[12px] leading-snug ${hero ? 'text-white/75' : 'text-muted'}`}>
+          <span className="font-semibold">Why it fits: </span>
+          {estimate.fitReason}
+        </p>
+      )}
 
       {/* Non-D permits that get in only through D stalls: the Sept 18 D restriction is unresolved */}
       {fromBackend && (

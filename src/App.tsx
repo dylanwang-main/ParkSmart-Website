@@ -14,7 +14,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
-import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
+import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
 import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
 import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
@@ -22,7 +22,7 @@ import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { RECOMMENDATION_SOURCE } from './config.ts';
-import { fetchRecommendations } from './api/recommendations.ts';
+import { fetchRecommendations, toRankedOptions, type RankedOption } from './api/recommendations.ts';
 import { DirectionsPanel } from './components/DirectionsPanel.tsx';
 import { useRoutes } from './hooks/useRoutes.ts';
 import type { ResultInfo } from './components/ResultsList.tsx';
@@ -35,13 +35,15 @@ import {
 /** How many earlier searches "Recent" keeps for this visit. */
 const MAX_HISTORY = 5;
 
-/** Same destination, date, time and permit. */
+/** Same destination, date, time, permit, priority and walking limit. */
 function sameRequest(a: ParkingPlannerRequest, b: ParkingPlannerRequest): boolean {
   return (
     a.destinationId === b.destinationId &&
     a.arrivalDate === b.arrivalDate &&
     a.arrivalTime === b.arrivalTime &&
-    a.permitType === b.permitType
+    a.permitType === b.permitType &&
+    (a.priority ?? DEFAULT_PRIORITY) === (b.priority ?? DEFAULT_PRIORITY) &&
+    (a.maxWalkMinutes ?? null) === (b.maxWalkMinutes ?? null)
   );
 }
 
@@ -117,6 +119,8 @@ export default function App() {
     arrivalDate: getTodayDateString(),
     arrivalTime: getCurrentTimeString(),
     permitType: 'S',
+    priority: DEFAULT_PRIORITY,
+    maxWalkMinutes: null,
   }));
 
   // Earlier searches this visit, most recent first (the current one is not included).
@@ -135,6 +139,9 @@ export default function App() {
   // Backend results: where they came from, its status message and limitations, or
   // the error to show. Sample searches set source 'sample' and nothing else.
   const [resultInfo, setResultInfo] = useState<ResultInfo | null>(null);
+  // Backend ranking for every ranked location, so any ranked pin's card can show
+  // its estimate, walk and why it fits the chosen priority. Empty for sample data.
+  const [rankedOptions, setRankedOptions] = useState<Record<string, RankedOption>>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const requestRef = useRef<AbortController | null>(null);
 
@@ -218,9 +225,14 @@ export default function App() {
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
       setConfirmedLotId(null);
 
-      const finish = (results: ParkingRecommendation[], info: ResultInfo) => {
+      const finish = (
+        results: ParkingRecommendation[],
+        info: ResultInfo,
+        options: Record<string, RankedOption> = {}
+      ) => {
         setRecommendations(results);
         setResultInfo(info);
+        setRankedOptions(options);
         // Move the search being replaced into history (unless it is the same trip)
         const previous = searchedRequestRef.current;
         if (previous && !sameRequest(previous, inputs)) {
@@ -258,18 +270,23 @@ export default function App() {
             if (outcome.kind === 'error') {
               setRecommendations([]);
               setResultInfo(null);
+              setRankedOptions({});
               setErrorMessage(outcome.message);
               setIsLoading(false);
               return;
             }
             const { response } = outcome;
-            finish(outcome.recommendations, {
-              source: 'api',
-              status: response.status,
-              explanation: response.explanation,
-              limitations: response.limitations,
-              isExample: response.is_example,
-            });
+            finish(
+              outcome.recommendations,
+              {
+                source: 'api',
+                status: response.status,
+                explanation: response.explanation,
+                limitations: response.limitations,
+                isExample: response.is_example,
+              },
+              toRankedOptions(response)
+            );
           })
           .catch(() => {
             // Aborted by a newer search; that search owns the loading state.
@@ -434,8 +451,14 @@ export default function App() {
 
   const handleShowUsual = () => {
     if (!usualPreview) return;
-    setFormInputs(usualPreview.request);
-    runPlanner(usualPreview.request);
+    // The usual trip keeps whatever priority and walking limit are chosen now
+    const request = {
+      ...usualPreview.request,
+      priority: formInputs.priority,
+      maxWalkMinutes: formInputs.maxWalkMinutes,
+    };
+    setFormInputs(request);
+    runPlanner(request);
   };
   const handleForgetUsual = () => {
     forgetUsualTrip();
@@ -448,7 +471,9 @@ export default function App() {
     (searchedRequest.destinationId !== formInputs.destinationId ||
       searchedRequest.permitType !== formInputs.permitType ||
       searchedRequest.arrivalDate !== formInputs.arrivalDate ||
-      searchedRequest.arrivalTime !== formInputs.arrivalTime);
+      searchedRequest.arrivalTime !== formInputs.arrivalTime ||
+      (searchedRequest.priority ?? DEFAULT_PRIORITY) !== (formInputs.priority ?? DEFAULT_PRIORITY) ||
+      (searchedRequest.maxWalkMinutes ?? null) !== (formInputs.maxWalkMinutes ?? null));
 
   // Inline validation for the arrival date/time (empty or already passed)
   const arrivalError = getArrivalError(formInputs);
@@ -743,7 +768,9 @@ export default function App() {
                 rankLabel={
                   isStale
                     ? null
-                    : activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ?? null
+                    : rankedOptions[selectedLot.locationId]?.badgeLabel ??
+                      activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ??
+                      null
                 }
                 isConfirmed={confirmedLotId === selectedLot.locationId}
                 onConfirm={() => handleConfirmLot(selectedLot.locationId)}
@@ -751,7 +778,13 @@ export default function App() {
                 backendEstimate={
                   isStale
                     ? null
-                    : activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.estimate ?? null
+                    : rankedOptions[selectedLot.locationId]?.estimate ??
+                      activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.estimate ??
+                      null
+                }
+                priorityLabel={
+                  PRIORITY_OPTIONS.find((o) => o.value === (searchedRequest?.priority ?? DEFAULT_PRIORITY))?.label ??
+                  null
                 }
                 onPlanFor={(date) =>
                   handleFormChange({
