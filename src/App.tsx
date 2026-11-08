@@ -563,12 +563,12 @@ export default function App() {
           <header className="pl-[60px] max-sm:pl-4 pr-4 pt-[22px] pb-3.5 border-b-2 border-gold shrink-0">
             {/* One 36px row, centered on the hamburger button that sits on top of its left end */}
             <div className="flex items-center justify-between gap-3 h-9">
-              <a href="#/" aria-label="ParkSmart home" className="flex items-center gap-2 min-w-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50">
+              <div className="flex items-center gap-2 min-w-0">
                 <img src={parkSmartLogo} alt="" aria-hidden="true" className="w-9 h-9 block shrink-0" />
                 <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none">
                   ParkSmart
                 </h1>
-              </a>
+              </div>
 
               {/* UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
               <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block shrink-0" />
