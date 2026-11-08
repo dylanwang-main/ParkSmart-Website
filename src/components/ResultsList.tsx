@@ -13,6 +13,7 @@ import { RecommendationCard } from './RecommendationCard.tsx';
 import { SkeletonCard } from './SkeletonCard.tsx';
 import { EmptyState } from './EmptyState.tsx';
 import { ErrorState } from './ErrorState.tsx';
+import { VisitorPayNotice } from './VisitorPayNotice.tsx';
 import { RecentSearches } from './RecentSearches.tsx';
 import type { ApiStatus } from '../api/recommendations.ts';
 
@@ -181,6 +182,9 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           {holidayNotice(arrival)}
         </div>
       )}
+
+      {/* Visitors pay by the hour: shown apart from permit parking */}
+      {arrival && searchedRequest?.permitType === 'V' && <VisitorPayNotice arrival={arrival} />}
 
       {/* Results no longer match the form: say so and grey them out */}
       {isStale && (

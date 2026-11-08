@@ -8,6 +8,7 @@ import { motion } from 'motion/react';
 import { CalendarClock, CheckCircle2, Clock, Footprints, Info, X, XCircle } from 'lucide-react';
 import { SpotActions } from './SpotActions.tsx';
 import { AvailabilityMeter } from './AvailabilityMeter.tsx';
+import { FoundSpotPrompt } from './FoundSpotPrompt.tsx';
 import { LotAerial } from './LotAerial.tsx';
 import { BackendEstimate, CampusDestination, ParkingLot, PermitType } from '../types.ts';
 import { estimateWalkingTime } from '../data/sampleRecommendations.ts';
@@ -254,6 +255,10 @@ export const LotDetailCard: React.FC<LotDetailCardProps> = ({
           </p>
         )}
       </div>
+
+      {isConfirmed && (backendMode ? !!backendEstimate : permitWorks) && (
+        <FoundSpotPrompt locationId={lot.locationId} arrival={arrival} />
+      )}
 
       <p className="mt-2 text-[11px] text-muted text-center">
         {backendMode
