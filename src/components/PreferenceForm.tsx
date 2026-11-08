@@ -452,7 +452,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="block text-[13px] font-semibold text-ink">Prioritize</label>
-          <span className="text-[11px] text-muted text-right">
+          <span className="text-[11px] text-muted text-right whitespace-nowrap">
             {PRIORITY_OPTIONS.find((p) => p.value === priority)?.description}
           </span>
         </div>

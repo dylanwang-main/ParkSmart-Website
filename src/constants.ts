@@ -133,7 +133,7 @@ export const PRIORITY_OPTIONS: Array<{
   {
     value: 'more_availability',
     label: 'More space',
-    description: 'Parking that usually has more open spaces, even if farther',
+    description: 'More open spaces, even if it is farther',
     availabilityWeight: 0.85,
     walkingWeight: 0.15,
   },

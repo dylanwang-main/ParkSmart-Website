@@ -13,6 +13,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
+import parkSmartLogo from './assets/parksmart-logo.png';
 import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
 import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
@@ -623,12 +624,7 @@ export default function App() {
             {/* One 36px row, centered on the hamburger button that sits on top of its left end */}
             <div className="flex items-center justify-between gap-3 h-9">
               <div className="flex items-center gap-2 min-w-0">
-                <div
-                  aria-hidden="true"
-                  className="w-9 h-9 rounded-lg bg-navy flex items-center justify-center text-sun font-serif font-semibold text-[20px] leading-none"
-                >
-                  <span className="-translate-y-px">P</span>
-                </div>
+                <img src={parkSmartLogo} alt="" aria-hidden="true" className="w-9 h-9 rounded-lg block shrink-0" />
                 <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none -translate-y-px">
                   ParkSmart
                 </h1>
