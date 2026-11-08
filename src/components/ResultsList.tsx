@@ -44,8 +44,6 @@ interface ResultsListProps {
   onRestoreSearch: (request: ParkingPlannerRequest) => void;
   /** Show the "enter your trip details" prompt instead of results. */
   showIntroPrompt: boolean;
-  /** "Your usual" card, shown in place of the generic prompt when a trip is saved. */
-  usualTripCard?: React.ReactNode;
   /** True when trip details changed since the search; results are greyed out. */
   isStale: boolean;
   /** Time every availability number describes (follows the arrival time unless the Time tool is used). */
@@ -76,7 +74,6 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   searchHistory,
   onRestoreSearch,
   showIntroPrompt,
-  usualTripCard,
   isStale,
   availabilityTime,
   confirmedLotId,
@@ -97,10 +94,6 @@ export const ResultsList: React.FC<ResultsListProps> = ({
     setVisibleCount(INITIAL_VISIBLE);
     previousVisibleRef.current = INITIAL_VISIBLE;
   }, [recommendations]);
-
-  if (showIntroPrompt && !isLoading && usualTripCard) {
-    return <div className="pt-2">{usualTripCard}</div>;
-  }
 
   if (showIntroPrompt && !isLoading) {
     return (

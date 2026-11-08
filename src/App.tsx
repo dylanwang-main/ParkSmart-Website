@@ -10,15 +10,12 @@ import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
-import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import parkSmartLogo from './assets/parksmart-logo.png';
 import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
-import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
+import { findDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
-import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
-import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { RECOMMENDATION_SOURCE } from './config.ts';
@@ -109,7 +106,6 @@ export default function App() {
   // date and time start at right now.
   // "Your usual" only exists after a real search (saved in this browser only); it is
   // offered as a card, never prefilled into the form.
-  const [usualTrip, setUsualTrip] = useState<UsualTrip | null>(() => loadUsualTrip());
 
   const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() => ({
     destinationId: '',
@@ -242,17 +238,6 @@ export default function App() {
 
         // Pre-select the First Choice recommendation lot by default
         setSelectedLocationId(results[0]?.lot.locationId ?? null);
-
-        // Remember this trip as "your usual" (this browser only). A dropped pin is a
-        // one-off spot, not a place to offer again, so it is not saved.
-        if (findDestination(inputs.destinationId)?.isPin) return;
-        const usual: UsualTrip = {
-          destinationId: inputs.destinationId,
-          permitType: inputs.permitType,
-          arrivalTime: inputs.arrivalTime,
-        };
-        saveUsualTrip(usual);
-        setUsualTrip(usual);
       };
 
       if (USE_API) {
@@ -408,51 +393,6 @@ export default function App() {
   const handleRestoreSearch = (request: ParkingPlannerRequest) => {
     setFormInputs(request);
     runPlanner(request);
-  };
-
-  // Instant answer for the usual trip, shown before the first search
-  const usualPreview = useMemo(() => {
-    if (!usualTrip) return null;
-    const request: ParkingPlannerRequest = {
-      destinationId: usualTrip.destinationId,
-      permitType: usualTrip.permitType,
-      arrivalTime: usualTrip.arrivalTime,
-      arrivalDate: nextUsualDate(usualTrip.arrivalTime),
-    };
-    const arrival = parseArrival(request.arrivalDate, request.arrivalTime);
-    if (!arrival) return null;
-    if (!findDestination(request.destinationId)) return null;
-    // The instant answer comes from sample data, so it is skipped when using the backend
-    const topPick = USE_API ? null : getSampleRecommendations(request).recommendations[0] ?? null;
-    const tight = topPick ? tightFrom(topPick.lot, arrival) : null;
-    const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const isToday = request.arrivalDate === getTodayDateString();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isTomorrow = request.arrivalDate === toDateString(tomorrow);
-    return {
-      request,
-      destinationName: getDestination(request.destinationId).name,
-      whenLabel: `${isToday ? 'today' : isTomorrow ? 'tomorrow' : arrival.toLocaleDateString('en-US', { weekday: 'long' })} at ${fmt(arrival)}`,
-      topPick,
-      tightAt: tight ? fmt(tight) : null,
-    };
-  }, [usualTrip]);
-
-  const handleShowUsual = () => {
-    if (!usualPreview) return;
-    // The usual trip keeps whatever priority and walking limit are chosen now
-    const request = {
-      ...usualPreview.request,
-      priority: formInputs.priority,
-      maxWalkMinutes: formInputs.maxWalkMinutes,
-    };
-    setFormInputs(request);
-    runPlanner(request);
-  };
-  const handleForgetUsual = () => {
-    forgetUsualTrip();
-    setUsualTrip(null);
   };
 
   // Results go stale when any trip detail changes after the search that produced them
@@ -623,12 +563,12 @@ export default function App() {
           <header className="pl-[60px] max-sm:pl-4 pr-4 pt-[22px] pb-3.5 border-b-2 border-gold shrink-0">
             {/* One 36px row, centered on the hamburger button that sits on top of its left end */}
             <div className="flex items-center justify-between gap-3 h-9">
-              <div className="flex items-center gap-2 min-w-0">
-                <img src={parkSmartLogo} alt="" aria-hidden="true" className="w-9 h-9 rounded-lg block shrink-0" />
-                <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none -translate-y-px">
+              <a href="#/" aria-label="ParkSmart home" className="flex items-center gap-2 min-w-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-sky/50">
+                <img src={parkSmartLogo} alt="" aria-hidden="true" className="w-9 h-9 block shrink-0" />
+                <h1 className="font-serif text-[26px] font-semibold text-navy tracking-[-0.01em] leading-none">
                   ParkSmart
                 </h1>
-              </div>
+              </a>
 
               {/* UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
               <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block shrink-0" />
@@ -686,19 +626,6 @@ export default function App() {
                 searchHistory={searchHistory}
                 onRestoreSearch={handleRestoreSearch}
                 showIntroPrompt={searchedRequest === null}
-                usualTripCard={
-                  usualPreview && (
-                    <UsualTripCard
-                      destinationName={usualPreview.destinationName}
-                      whenLabel={usualPreview.whenLabel}
-                      topPick={usualPreview.topPick}
-                      tightAt={usualPreview.tightAt}
-                      showPreview={!USE_API}
-                      onShowOptions={handleShowUsual}
-                      onForget={handleForgetUsual}
-                    />
-                  )
-                }
                 isStale={isStale}
                 availabilityTime={previewTime}
                 confirmedLotId={confirmedLotId}
