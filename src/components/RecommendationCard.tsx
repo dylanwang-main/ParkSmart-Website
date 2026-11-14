@@ -11,8 +11,6 @@ import { availabilityStatus } from '../utils/availability.ts';
 import { availabilityAt } from '../utils/availabilityModel.ts';
 import { SAMPLE_LOTS } from '../data/sampleRecommendations.ts';
 import { AvailabilityMeter } from './AvailabilityMeter.tsx';
-import { FoundSpotPrompt } from './FoundSpotPrompt.tsx';
-import { formatRate, visitorPricingAt } from '../data/visitorRates.ts';
 import { accessLabel, relyOnUnverifiedDAccess, usableCategories } from '../utils/permitRules.ts';
 
 interface RecommendationCardProps {
@@ -138,12 +136,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         <AvailabilityMeter percent={percent} timeLabel={timeLabel} tone={hero ? 'dark' : 'light'} size={hero ? 'lg' : 'md'} />
       </div>
 
-      {userPermit === 'V' && arrival && (
-        <p className={`mt-3 text-[12px] font-semibold ${hero ? 'text-sun' : 'text-navy'}`}>
-          Visitor daily pay: {formatRate(visitorPricingAt(arrival))}
-        </p>
-      )}
-
       {/* One-line reasoning */}
       <p className={`mt-3 text-[13px] leading-relaxed ${hero ? 'text-white/90' : 'text-ink'}`}>{reason}</p>
       {/* Why this pick suits the chosen priority (backend results only) */}
@@ -208,7 +200,6 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           onConfirm={onConfirm}
           lot={lot}
         />
-        {isConfirmed && <FoundSpotPrompt locationId={lot.locationId} arrival={arrival} onDark={hero} />}
       </div>}
     </article>
   );
