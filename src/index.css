@@ -459,8 +459,14 @@ body {
   font-family: 'Overpass', ui-sans-serif, system-ui, -apple-system, sans-serif;
   background: var(--lp-paint-white);
   color: var(--lp-asphalt);
-  min-height: 100vh;
+  /* The page itself is locked (the planner is one fixed screen), so the landing
+     page is its own scroll container. */
+  height: 100vh;
+  height: 100dvh;
   overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: auto;
+  scroll-behavior: smooth;
   opacity: 1;
   transition: opacity 250ms ease;
 }

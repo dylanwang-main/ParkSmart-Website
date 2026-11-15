@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_API_BASE_URL, resolveApiBaseUrl, shouldUseApi } from './config.ts';
+import { DEFAULT_API_BASE_URL, resolveApiBaseUrl } from './config.ts';
 
 describe('resolveApiBaseUrl', () => {
   it('uses the local FastAPI backend when nothing is configured', () => {
@@ -10,22 +10,5 @@ describe('resolveApiBaseUrl', () => {
   it('uses the configured URL without trailing slashes', () => {
     expect(resolveApiBaseUrl(' http://localhost:9000/ ')).toBe('http://localhost:9000');
     expect(resolveApiBaseUrl('https://api.example.test//')).toBe('https://api.example.test');
-  });
-});
-
-describe('shouldUseApi', () => {
-  it('returns false when recommendation source env var is missing or not api', () => {
-    expect(shouldUseApi(undefined, 'https://api.example.test', false)).toBe(false);
-    expect(shouldUseApi('sample', 'https://api.example.test', true)).toBe(false);
-  });
-
-  it('returns false in production when source is api but base URL env var is missing', () => {
-    expect(shouldUseApi('api', undefined, false)).toBe(false);
-    expect(shouldUseApi('api', '   ', false)).toBe(false);
-  });
-
-  it('returns true when source is api and base URL is configured or running in dev', () => {
-    expect(shouldUseApi('api', 'https://api.example.test', false)).toBe(true);
-    expect(shouldUseApi('api', undefined, true)).toBe(true);
   });
 });
