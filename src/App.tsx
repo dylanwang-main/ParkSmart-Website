@@ -37,6 +37,11 @@ export default function App() {
     }, FADE_DURATION_MS);
   };
 
+  const handleBackToLanding = () => {
+    setIsExitingLanding(false);
+    setView('landing');
+  };
+
   if (view === 'landing') {
     return <LandingPage isExiting={isExitingLanding} onPlanClick={handleOpenPlanner} />;
   }
@@ -44,7 +49,7 @@ export default function App() {
   return (
     <Suspense fallback={<div className="w-screen h-screen bg-[#182B49]" aria-busy="true" />}>
       <div className="ps-planner-enter">
-        <Planner />
+        <Planner onBack={handleBackToLanding} />
       </div>
     </Suspense>
   );

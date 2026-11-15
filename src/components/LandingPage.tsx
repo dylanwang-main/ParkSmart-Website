@@ -62,6 +62,8 @@ const HOW_IT_WORKS_STEPS = [
   },
 ] as const;
 
+const WHY_QUESTIONS = ['Can my permit park here?', 'Will it be full when I arrive?'] as const;
+
 const WHAT_YOU_GET_ITEMS = [
   {
     label: 'Permit-safe results',
@@ -255,35 +257,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
       <main>
         {/* SECTION 2: WHY IT EXISTS */}
         <section className="lp-section lp-section--white" aria-labelledby="why-heading">
-          <div className="lp-container">
-            <h2 id="why-heading" className="lp-h2 lp-h2--why">
-              Parking on campus is guesswork.
-            </h2>
-            <p className="lp-body">
-              Which lots can your permit use? How full will they be when you arrive? Most drivers find out after they
-              get there. ParkSmart answers both before you leave.
-            </p>
+          <div className="lp-container lp-two-col lp-two-col--why">
+            <div>
+              <h2 id="why-heading" className="lp-h2 lp-h2--why">
+                Parking on campus is guesswork.
+              </h2>
+              <p className="lp-body">
+                Which lots can your permit use? How full will they be when you arrive? Most drivers find out after they
+                get there. ParkSmart answers both before you leave.
+              </p>
+            </div>
+            <div className="lp-why-lot" aria-hidden="true">
+              {WHY_QUESTIONS.map((question) => (
+                <figure key={question} className="lp-why-stall">
+                  <span className="lp-why-mark">?</span>
+                  <figcaption>{question}</figcaption>
+                </figure>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* SECTION 4: HOW IT WORKS */}
-        <section id="how-it-works" className="lp-section lp-section--concrete" aria-labelledby="how-heading">
+        <section id="how-it-works" className="lp-section lp-section--asphalt" aria-labelledby="how-heading">
           <div className="lp-container">
             <h2 id="how-heading" className="lp-h2">
               How it works
             </h2>
             <div className="lp-steps-grid">
-              {HOW_IT_WORKS_STEPS.map((step) => (
-                <article key={step.number} className="lp-step-stall">
-                  <div className="lp-step-copy">
+              {HOW_IT_WORKS_STEPS.map((step, index) => {
+                const isLast = index === HOW_IT_WORKS_STEPS.length - 1;
+                return (
+                  <article key={step.number} className={`lp-step-stall${isLast ? ' lp-step-stall--parked' : ''}`}>
+                    <div className="lp-step-number" aria-hidden="true">
+                      {step.number}
+                    </div>
                     <h3 className="lp-step-title">{step.title}</h3>
                     <p className="lp-step-desc">{step.description}</p>
-                  </div>
-                  <div className="lp-step-number" aria-hidden="true">
-                    {step.number}
-                  </div>
-                </article>
-              ))}
+                    {isLast && <TopDownCar bodyColor="#F7F8FA" windowColor="#182B49" className="lp-step-car" />}
+                  </article>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -295,6 +309,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <h2 id="what-heading" className="lp-h2">
                 Built to be checked, not just trusted.
               </h2>
+              <div className="lp-park-sign" aria-hidden="true">
+                P
+              </div>
             </div>
             <div className="lp-features-list">
               {WHAT_YOU_GET_ITEMS.map((item) => (
