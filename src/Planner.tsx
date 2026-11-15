@@ -10,16 +10,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContainer } from './components/MapContainer.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
-import { DevStateControl } from './components/DevStateControl.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
-import { UsualTripCard } from './components/UsualTripCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
-import { ANIMATION_TIMINGS, isOnCampus } from './constants.ts';
-import { findDestination, getDestination, makePinDestinationId } from './data/destinations.ts';
+import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
+import { findDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
-import { UsualTrip, forgetUsualTrip, loadUsualTrip, nextUsualDate, saveUsualTrip } from './utils/usualTrip.ts';
-import { tightFrom } from './utils/availabilityModel.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { USE_RECOMMENDATION_API } from './config.ts';
@@ -30,19 +26,20 @@ import type { ResultInfo } from './components/ResultsList.tsx';
 import {
   ParkingPlannerRequest,
   ParkingRecommendation,
-  DevSimulationState,
 } from './types.ts';
 
 /** How many earlier searches "Recent" keeps for this visit. */
 const MAX_HISTORY = 5;
 
-/** Same destination, date, time and permit. */
+/** Same destination, date, time, permit, priority, and walking limit. */
 function sameRequest(a: ParkingPlannerRequest, b: ParkingPlannerRequest): boolean {
   return (
     a.destinationId === b.destinationId &&
     a.arrivalDate === b.arrivalDate &&
     a.arrivalTime === b.arrivalTime &&
-    a.permitType === b.permitType
+    a.permitType === b.permitType &&
+    (a.priority ?? DEFAULT_PRIORITY) === (b.priority ?? DEFAULT_PRIORITY) &&
+    (a.maxWalkMinutes ?? null) === (b.maxWalkMinutes ?? null)
   );
 }
 
@@ -87,9 +84,6 @@ function useIsMobile(): boolean {
 /** True when searches attempt the backend; falls back to sample data if env vars are missing or API fails. */
 const USE_API = USE_RECOMMENDATION_API;
 
-/** The state simulator is for developers: shown in dev builds, or in production with ?dev in the URL. */
-const showDevTools = import.meta.env.DEV || new URLSearchParams(window.location.search).has('dev');
-
 /** "HH:MM" to minutes after midnight, clamped to the scrubber's range. */
 function minutesOf(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -106,13 +100,13 @@ function timeOf(minutes: number): string {
  * Existing ParkSmart planner view (loaded lazily only after the user opens the planner).
  */
 export default function Planner() {
-  const [usualTrip, setUsualTrip] = useState<UsualTrip | null>(() => loadUsualTrip());
-
   const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() => ({
     destinationId: '',
     arrivalDate: getTodayDateString(),
     arrivalTime: getCurrentTimeString(),
     permitType: 'S',
+    priority: DEFAULT_PRIORITY,
+    maxWalkMinutes: null,
   }));
 
   const [searchHistory, setSearchHistory] = useState<ParkingPlannerRequest[]>([]);
@@ -158,7 +152,6 @@ export default function Planner() {
 
   const [isPanelOpen, setIsPanelOpen] = useState<boolean>(true);
   const isMobile = useIsMobile();
-  const [devState, setDevState] = useState<DevSimulationState>('normal');
 
   useEffect(() => {
     if (isMobile && isDetailOpen) setIsPanelOpen(false);
@@ -199,15 +192,6 @@ export default function Planner() {
         setIsLoading(false);
 
         setSelectedLocationId(results[0]?.lot.locationId ?? null);
-
-        if (findDestination(inputs.destinationId)?.isPin) return;
-        const usual: UsualTrip = {
-          destinationId: inputs.destinationId,
-          permitType: inputs.permitType,
-          arrivalTime: inputs.arrivalTime,
-        };
-        saveUsualTrip(usual);
-        setUsualTrip(usual);
       };
 
       const finishWithSample = () => {
@@ -262,9 +246,6 @@ export default function Planner() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (devState !== 'normal') {
-      setDevState('normal');
-    }
     runPlanner();
   };
 
@@ -306,14 +287,12 @@ export default function Planner() {
   }, []);
 
   const handleRetry = () => {
-    setDevState('normal');
     runPlanner();
   };
 
   const handleResetFilters = () => {
-    const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S' };
+    const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S', maxWalkMinutes: null };
     setFormInputs(updated);
-    setDevState('normal');
     runPlanner(updated);
   };
 
@@ -345,66 +324,29 @@ export default function Planner() {
 
   const handleRestoreSearch = (request: ParkingPlannerRequest) => {
     setFormInputs(request);
-    setDevState('normal');
     runPlanner(request);
   };
 
   const isApiResults = resultInfo?.source === 'api';
 
-  const usualPreview = useMemo(() => {
-    if (!usualTrip) return null;
-    const request: ParkingPlannerRequest = {
-      destinationId: usualTrip.destinationId,
-      permitType: usualTrip.permitType,
-      arrivalTime: usualTrip.arrivalTime,
-      arrivalDate: nextUsualDate(usualTrip.arrivalTime),
-    };
-    const arrival = parseArrival(request.arrivalDate, request.arrivalTime);
-    if (!arrival) return null;
-    if (!findDestination(request.destinationId)) return null;
-    const topPick = USE_API ? null : getSampleRecommendations(request).recommendations[0] ?? null;
-    const tight = topPick ? tightFrom(topPick.lot, arrival) : null;
-    const fmt = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const isToday = request.arrivalDate === getTodayDateString();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const isTomorrow = request.arrivalDate === toDateString(tomorrow);
-    return {
-      request,
-      destinationName: getDestination(request.destinationId).name,
-      whenLabel: `${isToday ? 'today' : isTomorrow ? 'tomorrow' : arrival.toLocaleDateString('en-US', { weekday: 'long' })} at ${fmt(arrival)}`,
-      topPick,
-      tightAt: tight ? fmt(tight) : null,
-    };
-  }, [usualTrip]);
-
-  const handleShowUsual = () => {
-    if (!usualPreview) return;
-    setFormInputs(usualPreview.request);
-    runPlanner(usualPreview.request);
-  };
-  const handleForgetUsual = () => {
-    forgetUsualTrip();
-    setUsualTrip(null);
-  };
-
   const isStale =
-    searchedRequest !== null &&
-    (searchedRequest.destinationId !== formInputs.destinationId ||
-      searchedRequest.permitType !== formInputs.permitType ||
-      searchedRequest.arrivalDate !== formInputs.arrivalDate ||
-      searchedRequest.arrivalTime !== formInputs.arrivalTime);
+    searchedRequest !== null && !sameRequest(searchedRequest, formInputs);
 
   const arrivalError = getArrivalError(formInputs);
 
   const rankedLotIds = useMemo(() => {
-    if (isStale || devState !== 'normal') return { first: null, backup: null, third: null };
+    if (isStale) return { first: null, backup: null, third: null };
     return {
       first: recommendations[0]?.lot.locationId ?? null,
       backup: recommendations[1]?.lot.locationId ?? null,
       third: recommendations[2]?.lot.locationId ?? null,
     };
-  }, [recommendations, isStale, devState]);
+  }, [recommendations, isStale]);
+
+  const priorityLabel = useMemo(() => {
+    const active = searchedRequest?.priority ?? DEFAULT_PRIORITY;
+    return PRIORITY_OPTIONS.find((o) => o.value === active)?.label ?? null;
+  }, [searchedRequest]);
 
   const handleConfirmLot = useCallback((locationId: string) => {
     setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
@@ -435,17 +377,9 @@ export default function Planner() {
     );
   }, []);
 
-  const activeIsLoading = devState === 'loading' || isLoading;
-  const activeIsError = false;
-  const activeRecommendations = useMemo(() => {
-    if (devState === 'empty') return [];
-    if (devState === 'error' || devState === 'loading') return [];
-    return recommendations;
-  }, [devState, recommendations]);
-
   const routedRecommendation =
-    isApiResults && !isStale && devState === 'normal'
-      ? activeRecommendations.find((rec) => rec.lot.locationId === selectedLocationId) ?? null
+    isApiResults && !isStale
+      ? recommendations.find((rec) => rec.lot.locationId === selectedLocationId) ?? null
       : null;
   const routedDestination = searchedRequest ? findDestination(searchedRequest.destinationId) ?? null : null;
   const routeLegs = useRoutes(
@@ -558,7 +492,7 @@ export default function Planner() {
                   formData={formInputs}
                   onChange={handleFormChange}
                   onSubmit={handleFormSubmit}
-                  isLoading={activeIsLoading}
+                  isLoading={isLoading}
                   arrivalError={arrivalError}
                   onSetArrivalNow={() =>
                     handleFormChange({ arrivalDate: getTodayDateString(), arrivalTime: getCurrentTimeString() })
@@ -583,26 +517,13 @@ export default function Planner() {
                   Recommended Parking
                 </h2>
                 <ResultsList
-                  isLoading={activeIsLoading}
-                  isError={activeIsError}
-                  recommendations={activeRecommendations}
+                  isLoading={isLoading}
+                  isError={false}
+                  recommendations={recommendations}
                   searchedRequest={searchedRequest}
                   searchHistory={searchHistory}
                   onRestoreSearch={handleRestoreSearch}
-                  showIntroPrompt={searchedRequest === null && devState === 'normal'}
-                  usualTripCard={
-                    usualPreview && (
-                      <UsualTripCard
-                        destinationName={usualPreview.destinationName}
-                        whenLabel={usualPreview.whenLabel}
-                        topPick={usualPreview.topPick}
-                        tightAt={usualPreview.tightAt}
-                        showPreview={!isApiResults}
-                        onShowOptions={handleShowUsual}
-                        onForget={handleForgetUsual}
-                      />
-                    )
-                  }
+                  showIntroPrompt={searchedRequest === null}
                   isStale={isStale}
                   availabilityTime={previewTime}
                   confirmedLotId={confirmedLotId}
@@ -612,7 +533,7 @@ export default function Planner() {
                   onRetry={handleRetry}
                   onResetFilters={handleResetFilters}
                   errorMessage={null}
-                  resultInfo={devState === 'normal' ? resultInfo : null}
+                  resultInfo={resultInfo}
                   directions={
                     routedRecommendation && routedDestination ? (
                       <DirectionsPanel
@@ -671,7 +592,7 @@ export default function Planner() {
                   rankLabel={
                     isStale
                       ? null
-                      : activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ?? null
+                      : recommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ?? null
                   }
                   isConfirmed={confirmedLotId === selectedLot.locationId}
                   onConfirm={() => handleConfirmLot(selectedLot.locationId)}
@@ -679,8 +600,9 @@ export default function Planner() {
                   backendEstimate={
                     isStale
                       ? null
-                      : activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.estimate ?? null
+                      : recommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.estimate ?? null
                   }
+                  priorityLabel={isStale ? null : priorityLabel}
                   onPlanFor={(date) =>
                     handleFormChange({
                       arrivalDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
@@ -693,13 +615,6 @@ export default function Planner() {
             )}
           </AnimatePresence>
         </div>
-
-        {showDevTools && (
-          <DevStateControl
-            currentState={devState}
-            onStateChange={(state) => setDevState(state)}
-          />
-        )}
       </div>
     </MotionConfig>
   );
