@@ -441,3 +441,510 @@ body {
   border: 3px solid #FFFFFF;
   box-shadow: 0 0 0 1px rgba(24, 43, 73, 0.35), 0 1px 4px rgba(0, 0, 0, 0.3);
 }
+
+/* ------------------------------------------------------------------ */
+/* Landing page (.ps-landing): plain CSS, parking-lot visual grammar  */
+/* ------------------------------------------------------------------ */
+.ps-landing {
+  --lp-asphalt: #182B49;
+  --lp-deep-asphalt: #101D33;
+  --lp-paint-white: #F7F8FA;
+  --lp-line-yellow: #FFCD00;
+  --lp-line-yellow-hover: #E5B800;
+  --lp-concrete: #E9ECF0;
+  --lp-link-blue: #00629B;
+  --lp-gold: #C69214;
+  --lp-asphalt-hover: #213A61;
+
+  font-family: 'Overpass', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background: var(--lp-paint-white);
+  color: var(--lp-asphalt);
+  min-height: 100vh;
+  overflow-x: clip;
+  opacity: 1;
+  transition: opacity 250ms ease;
+}
+
+.ps-landing--exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ps-planner-enter {
+  animation: lp-planner-fade-in 250ms ease both;
+}
+
+@keyframes lp-planner-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ps-landing *,
+.ps-landing *::before,
+.ps-landing *::after {
+  box-sizing: border-box;
+}
+
+.lp-container {
+  width: 100%;
+  max-width: 1360px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 3.5vw, 48px);
+}
+
+/* Focus rings: 3px white on dark, 3px blue on light */
+.ps-landing .lp-hero :focus-visible,
+.ps-landing .lp-footer :focus-visible {
+  outline: 3px solid var(--lp-paint-white);
+  outline-offset: 3px;
+}
+
+.ps-landing main :focus-visible {
+  outline: 3px solid var(--lp-link-blue);
+  outline-offset: 3px;
+}
+
+/* Buttons (48px tall >= 44px touch target, 8px radius, weight 600) */
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  min-height: 48px;
+  padding-inline: 22px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 150ms ease;
+}
+
+.lp-btn--yellow {
+  background-color: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+.lp-btn--yellow:hover {
+  background-color: var(--lp-line-yellow-hover);
+}
+
+.lp-btn--asphalt {
+  background-color: var(--lp-asphalt);
+  color: var(--lp-paint-white);
+}
+
+.lp-btn--asphalt:hover {
+  background-color: var(--lp-asphalt-hover);
+}
+
+/* Hero (asphalt, full viewport height, left-aligned) */
+.lp-hero {
+  background-color: var(--lp-asphalt);
+  color: var(--lp-paint-white);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.lp-topbar {
+  padding-top: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(198, 146, 20, 0.28);
+}
+
+.lp-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lp-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.375rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--lp-paint-white);
+}
+
+.lp-wordmark-accent {
+  display: inline-block;
+  width: 4px;
+  height: 20px;
+  background-color: var(--lp-gold);
+}
+
+.lp-hero-body {
+  padding-block: clamp(32px, 5vh, 64px) clamp(24px, 4vh, 48px);
+}
+
+.lp-h1 {
+  margin: 0;
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-align: left;
+  color: var(--lp-paint-white);
+  max-width: 26ch;
+}
+
+.lp-subhead {
+  margin: 24px 0 0;
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 60ch;
+  color: var(--lp-paint-white);
+}
+
+.lp-hero-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+}
+
+.lp-hero-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--lp-paint-white);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.lp-hero-link:hover {
+  opacity: 0.85;
+}
+
+/* Signature moment: 7-stall parking row */
+.lp-lot-stage {
+  width: 100%;
+  padding-top: 8px;
+}
+
+.lp-stalls-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.lp-stall {
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-plate-slot {
+  min-height: 36px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+}
+
+.lp-sign-plate {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  opacity: 0;
+  animation: lp-plate-in 200ms ease 1.6s forwards;
+}
+
+.lp-sign-plate--yellow {
+  background-color: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+.lp-sign-plate--white {
+  background-color: var(--lp-paint-white);
+  color: var(--lp-asphalt);
+}
+
+.lp-stall-bay {
+  position: relative;
+  height: 180px;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 14px;
+}
+
+.lp-stall-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.lp-stall-fill {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 205, 0, 0.2);
+  opacity: 0;
+  animation: lp-plate-in 200ms ease 1.6s forwards;
+}
+
+.lp-car {
+  position: relative;
+  z-index: 1;
+  width: min(68%, 78px);
+  height: auto;
+  max-height: 126px;
+  display: block;
+}
+
+.lp-car--arriving {
+  transform: translateY(240px);
+  animation: lp-car-park 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes lp-car-park {
+  from {
+    transform: translateY(240px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes lp-plate-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Under 800px wide: show only the 4 middle stalls (3, 4, 5, 6) */
+@media (max-width: 799px) {
+  .lp-stalls-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .lp-stall--outer {
+    display: none;
+  }
+
+  .lp-sign-plate {
+    font-size: 0.75rem;
+    padding: 4px 7px;
+  }
+
+  .lp-topbar .lp-btn {
+    padding-inline: 16px;
+  }
+}
+
+/* Light and band sections */
+.lp-section {
+  padding-block: clamp(64px, 9vw, 112px);
+}
+
+.lp-section--white {
+  background-color: var(--lp-paint-white);
+  color: var(--lp-asphalt);
+}
+
+.lp-section--concrete {
+  background-color: var(--lp-concrete);
+  color: var(--lp-asphalt);
+}
+
+.lp-section--yellow {
+  background-color: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+  padding-block: clamp(48px, 7vw, 80px);
+}
+
+.lp-h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--lp-asphalt);
+}
+
+.lp-h2--why {
+  max-width: 18ch;
+}
+
+.lp-body {
+  margin: 24px 0 0;
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 60ch;
+  color: var(--lp-asphalt);
+}
+
+/* Section 4: How it works (3 stall outlines open at bottom) */
+.lp-steps-grid {
+  margin-top: clamp(32px, 4vw, 48px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.lp-step-stall {
+  background-color: var(--lp-paint-white);
+  border-top: 4px solid var(--lp-asphalt);
+  border-left: 4px solid var(--lp-asphalt);
+  border-right: 4px solid var(--lp-asphalt);
+  border-bottom: none;
+  padding: 28px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 290px;
+}
+
+.lp-step-title {
+  margin: 0;
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--lp-asphalt);
+}
+
+.lp-step-desc {
+  margin: 12px 0 0;
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 60ch;
+  color: var(--lp-asphalt);
+}
+
+.lp-step-number {
+  margin-top: 32px;
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 0.9;
+  color: var(--lp-asphalt);
+}
+
+@media (max-width: 899px) {
+  .lp-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-step-stall {
+    min-height: 230px;
+  }
+}
+
+/* Section 5: What you get */
+.lp-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+
+.lp-features-list {
+  border-top: 1px solid var(--lp-asphalt);
+}
+
+.lp-feature-row {
+  padding-block: 22px;
+  border-bottom: 1px solid var(--lp-asphalt);
+}
+
+.lp-feature-label {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--lp-asphalt);
+}
+
+.lp-feature-desc {
+  margin: 6px 0 0;
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.6;
+  max-width: 60ch;
+  color: var(--lp-asphalt);
+}
+
+@media (max-width: 899px) {
+  .lp-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Section 6: Honest limits */
+.lp-limits-text {
+  margin: 0 0 24px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: 54ch;
+  text-align: left;
+  color: var(--lp-asphalt);
+}
+
+/* Footer */
+.lp-footer {
+  background-color: var(--lp-deep-asphalt);
+  padding-block: 36px;
+}
+
+.lp-footer-text {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: rgba(247, 248, 250, 0.8);
+}
+
+/* Reduced motion: skip car glide & fade transitions */
+@media (prefers-reduced-motion: reduce) {
+  .ps-landing,
+  .lp-btn {
+    transition: none;
+  }
+
+  .ps-planner-enter {
+    animation: none;
+  }
+
+  .lp-car--arriving {
+    animation: none;
+    transform: translateY(0);
+  }
+
+  .lp-stall-fill,
+  .lp-sign-plate {
+    animation: none;
+    opacity: 1;
+  }
+}
+
