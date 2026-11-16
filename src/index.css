@@ -810,6 +810,48 @@ body {
   color: var(--lp-asphalt);
 }
 
+/* Rows with a status tag, and ruled lists on the dark section */
+.lp-feature-row--tagged {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lp-tag {
+  flex: none;
+  margin-top: 2px;
+  padding: 4px 12px;
+  border: 2px solid var(--lp-paint-white);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--lp-paint-white);
+}
+
+.lp-tag--planned {
+  border-color: var(--lp-line-yellow);
+  background-color: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+.lp-section--asphalt .lp-features-list {
+  border-top-color: rgba(247, 248, 250, 0.35);
+}
+
+.lp-section--asphalt .lp-feature-row {
+  border-bottom-color: rgba(247, 248, 250, 0.35);
+}
+
+.lp-section--asphalt .lp-feature-label {
+  color: var(--lp-paint-white);
+}
+
+.lp-section--asphalt .lp-feature-desc {
+  color: rgba(247, 248, 250, 0.78);
+}
+
 /* Section 4: How it works (three painted stalls on asphalt) */
 .lp-section--asphalt {
   background-color: var(--lp-asphalt);

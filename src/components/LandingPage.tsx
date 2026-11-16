@@ -85,6 +85,53 @@ const WHAT_YOU_GET_ITEMS = [
   },
 ] as const;
 
+const DATA_SOURCES = [
+  {
+    label: 'Parking surveys',
+    description: 'Historical counts of open spaces by lot, permit category, weekday, and time of day.',
+  },
+  {
+    label: 'Lot capacities',
+    description: 'The size of each lot, so open spaces become a share of the lot.',
+  },
+  {
+    label: 'Official permit rules',
+    description: 'Which permits can park where, and when.',
+  },
+  {
+    label: 'UCSD maps',
+    description: 'Lot locations, entrances, and campus destinations.',
+  },
+] as const;
+
+const NEXT_ITEMS = [
+  {
+    label: 'Visitor and daily-pay parking',
+    description: 'For drivers without a permit, with the cost shown.',
+    status: 'Planned',
+  },
+  {
+    label: 'Clearer cards',
+    description: 'Color-coded availability and bigger walking times.',
+    status: 'Planned',
+  },
+  {
+    label: 'Entrance photos',
+    description: 'A small photo of each parking structure entrance.',
+    status: 'Planned',
+  },
+  {
+    label: 'Live parking status',
+    description: 'Only if UCSD can share it. Estimates keep working without it.',
+    status: 'Exploring',
+  },
+  {
+    label: '"Did you find a spot?"',
+    description: 'A quick check-in that could help improve the estimates.',
+    status: 'Exploring',
+  },
+] as const;
+
 /**
  * Top-down simplified car SVG (rounded rectangle body + darker windshield & rear window blocks).
  */
@@ -283,7 +330,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               </h2>
               <p className="lp-body">
                 Which lots can your permit use? How full will they be when you arrive? Most drivers find out after they
-                get there. ParkSmart answers both before you leave.
+                get there. ParkSmart answers both before you leave. Built for UCSD drivers.
               </p>
             </div>
             <div className="lp-why-lot" aria-hidden="true">
@@ -341,12 +388,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
+        {/* SECTION: WHERE THE NUMBERS COME FROM */}
+        <section className="lp-section lp-section--concrete" aria-labelledby="data-heading">
+          <div className="lp-container lp-two-col">
+            <div>
+              <h2 id="data-heading" className="lp-h2">
+                Real UCSD data, with the limits shown.
+              </h2>
+              <p className="lp-body">
+                The detailed surveys mostly cover the first two weeks of each quarter, so we don&apos;t claim the
+                estimates hold for the whole quarter.
+              </p>
+            </div>
+            <div className="lp-features-list">
+              {DATA_SOURCES.map((item) => (
+                <div key={item.label} className="lp-feature-row">
+                  <h3 className="lp-feature-label">{item.label}</h3>
+                  <p className="lp-feature-desc">{item.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: WHAT'S NEXT */}
+        <section className="lp-section lp-section--asphalt" aria-labelledby="next-heading">
+          <div className="lp-container lp-two-col">
+            <div>
+              <h2 id="next-heading" className="lp-h2">
+                What we&apos;re working on next.
+              </h2>
+            </div>
+            <div className="lp-features-list">
+              {NEXT_ITEMS.map((item) => (
+                <div key={item.label} className="lp-feature-row lp-feature-row--tagged">
+                  <div>
+                    <h3 className="lp-feature-label">{item.label}</h3>
+                    <p className="lp-feature-desc">{item.description}</p>
+                  </div>
+                  <span className={`lp-tag lp-tag--${item.status.toLowerCase()}`}>{item.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* SECTION 6: HONEST LIMITS */}
         <section className="lp-section lp-section--yellow" aria-label="Estimates disclaimer">
           <div className="lp-container">
             <p className="lp-limits-text">
               ParkSmart estimates conditions from historical data. It can&apos;t guarantee a space will be open when
-              you arrive.
+              you arrive, and it doesn&apos;t take reservations or payments.
             </p>
             <button type="button" className="lp-btn lp-btn--asphalt" onClick={onPlanClick}>
               Plan my parking
