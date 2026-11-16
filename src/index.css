@@ -1100,7 +1100,7 @@ body {
 .lp-scene {
   display: block;
   overflow: visible;
-  width: min(1100px, 92vw, calc((100dvh - 330px) * 2.142));
+  width: min(1100px, 92vw, calc((100dvh - 370px) * 2));
   height: auto;
 }
 
@@ -1116,10 +1116,57 @@ body {
   fill: #F7F8FA;
 }
 
+.lp-scene-bldg {
+  font-size: 15px;
+  font-weight: 700;
+  fill: rgba(247, 248, 250, 0.78);
+}
+
 .lp-scene-plate {
   font-size: 15px;
   font-weight: 600;
   fill: #182B49;
+}
+
+.lp-intro-caption {
+  margin: 6px 0 0;
+  min-height: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  font-size: 1rem;
+  color: rgba(247, 248, 250, 0.7);
+  opacity: 0;
+  animation: lp-caption 9s linear forwards;
+}
+
+.lp-intro-caption strong {
+  color: #F7F8FA;
+  font-weight: 800;
+}
+
+.lp-intro-caption-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background-color: var(--lp-line-yellow, #FFCD00);
+}
+
+@keyframes lp-caption {
+  0%, 30% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  36%, 68% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  72%, 100% {
+    opacity: 0;
+    transform: translateY(0);
+  }
 }
 
 .lp-intro-cta {
@@ -1134,41 +1181,12 @@ body {
   animation: lp-fx-in 500ms ease var(--d, 0s) forwards;
 }
 
-.lp-draw {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: lp-intro-paint 1000ms ease-in-out 5.1s forwards;
-}
-
-.lp-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: lp-pulse 1.8s ease-out 6.3s infinite;
-}
-
-@keyframes lp-intro-paint {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
 @keyframes lp-fx-in {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes lp-pulse {
-  from {
-    opacity: 0.7;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 0;
-    transform: scale(2.2);
   }
 }
 
@@ -1182,15 +1200,12 @@ body {
     opacity: 1;
   }
 
-  .lp-draw {
+  .lp-intro-caption {
     animation: none;
-    stroke-dashoffset: 0;
+    opacity: 1;
   }
 
-  .lp-pulse {
-    animation: none;
-    opacity: 0;
-  }
+
 }
 
 @media (max-width: 599px) {
