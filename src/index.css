@@ -1192,52 +1192,232 @@ body {
 }
 
 /* Honest limits and what's next */
-.lp-honest {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: clamp(32px, 6vw, 96px);
-  align-items: start;
+/* Under the hood: a route of stages, then the scoring mix */
+.lp-block--hood {
+  background: var(--lp-asphalt);
 }
 
-.lp-marks {
-  margin: 32px 0 0;
+.pp {
+  position: relative;
+}
+
+.pp-road {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 44px;
+  border-radius: 22px;
+  background: #101d33;
+}
+
+.pp-road::before {
+  content: '';
+  position: absolute;
+  inset: 50% 18px auto 18px;
+  border-top: 3px dashed rgba(255, 205, 0, 0.55);
+  transform: translateY(-50%);
+}
+
+.pp-car {
+  position: absolute;
+  top: 50%;
+  display: block;
+  transform: translate(-50%, -50%);
+  transition: left 900ms cubic-bezier(0.45, 0, 0.2, 1);
+}
+
+.pp-car svg {
+  display: block;
+}
+
+.pp-stages {
+  position: relative;
+  margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.lp-marks li {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  font-size: 1.25rem;
-  line-height: 1.35;
+.pp-stage {
+  padding-top: 88px;
+  padding-right: clamp(12px, 2vw, 28px);
+  position: relative;
+  color: rgba(247, 248, 250, 0.62);
+  transition: color 300ms ease;
 }
 
-.lp-marks li::before {
-  content: '';
-  flex: none;
-  width: 22px;
-  height: 5px;
+.pp-stage--on {
+  color: var(--lp-paint-white);
+}
+
+.pp-node {
+  position: absolute;
+  top: 56px;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--lp-line-yellow);
+  background: var(--lp-asphalt);
+  transition: background-color 300ms ease, transform 300ms ease;
+}
+
+.pp-stage--on .pp-node {
   background: var(--lp-line-yellow);
-  transform: translateY(-4px);
+  transform: scale(1.35);
 }
 
-.lp-marks--light li {
-  font-size: 1.125rem;
-}
-
-.lp-next-title {
+.pp-name {
   margin: 0;
   font-family: var(--lp-serif);
-  font-size: 1.5rem;
+  font-size: 1.625rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.pp-text {
+  margin: 10px 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.pp-status {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 5px 11px;
+  border: 2px dashed rgba(255, 205, 0, 0.7);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--lp-line-yellow);
+}
+
+.pp-stage:last-child .pp-status {
+  border-style: solid;
+  background: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+.lp-mix {
+  margin-top: clamp(48px, 7vw, 96px);
+}
+
+.lp-h3-light {
+  margin: 0 0 20px;
+  font-family: var(--lp-serif);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
   font-weight: 500;
   color: var(--lp-line-yellow);
 }
 
-.lp-next .lp-marks {
-  margin-top: 20px;
+.sm-bar {
+  display: flex;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #101d33;
+}
+
+.sm-seg {
+  display: flex;
+  align-items: center;
+  padding-inline: 20px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 1.125rem;
+  font-weight: 800;
+  transition: width 500ms cubic-bezier(0.3, 0.9, 0.3, 1);
+}
+
+.sm-seg--a {
+  background: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+.sm-seg--w {
+  background: #f7f8fa;
+  color: var(--lp-asphalt);
+  justify-content: flex-end;
+}
+
+.sm-note {
+  margin: 14px 0 0;
+  font-size: 1.125rem;
+}
+
+.sm-buttons {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sm-btn {
+  height: 52px;
+  padding-inline: 22px;
+  border: 3px solid var(--lp-paint-white);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--lp-paint-white);
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.sm-btn:hover {
+  transform: translateY(-2px);
+}
+
+.sm-btn--on {
+  border-color: var(--lp-line-yellow);
+  background: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+}
+
+/* Known limits: caution-striped, like a lot under repair */
+.lp-block--caution {
+  background: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+  padding-block: 0;
+}
+
+.lp-stripe {
+  height: 22px;
+  background: repeating-linear-gradient(135deg, var(--lp-asphalt) 0 22px, var(--lp-line-yellow) 22px 44px);
+}
+
+.lp-limits {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(24px, 6vw, 96px);
+  align-items: start;
+  padding-block: clamp(48px, 7vw, 104px);
+}
+
+.lp-limit-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-limit-list li {
+  padding-block: 16px;
+  border-top: 3px solid var(--lp-asphalt);
+  font-size: 1.125rem;
+  line-height: 1.5;
+}
+
+.lp-limit-list li:last-child {
+  border-bottom: 3px solid var(--lp-asphalt);
+}
+
+.lp-limit-list strong {
+  font-weight: 800;
 }
 
 .lp-footer {
@@ -1267,7 +1447,7 @@ body {
 
 @media (max-width: 899px) {
   .lp-hero2-grid,
-  .lp-honest {
+  .lp-limits {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1287,6 +1467,36 @@ body {
 
   .lp-block-head {
     align-items: flex-start;
+  }
+
+  .pp-road,
+  .pp-car {
+    display: none;
+  }
+
+  .pp-stages {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    border-left: 4px dashed rgba(255, 205, 0, 0.55);
+    margin-left: 8px;
+  }
+
+  .pp-stage {
+    padding: 0 0 0 28px;
+  }
+
+  .pp-stage:last-child {
+    padding-right: 0;
+  }
+
+  .pp-node {
+    top: 6px;
+    left: -11px;
+  }
+
+  .sm-seg {
+    padding-inline: 12px;
+    font-size: 0.9375rem;
   }
 
   .tl-range::-webkit-slider-thumb {
@@ -1319,7 +1529,9 @@ body {
     transition: none;
   }
 
-  .lp-sticky {
+  .lp-sticky,
+  .pp-car,
+  .sm-seg {
     transition: none;
   }
 

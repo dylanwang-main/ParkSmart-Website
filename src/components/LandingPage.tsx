@@ -7,6 +7,8 @@ import React from 'react';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
 import { HeroDemo } from './HeroDemo';
 import { PermitLot } from './PermitLot';
+import { Pipeline } from './Pipeline';
+import { ScoreMix } from './ScoreMix';
 import { TimeLot } from './TimeLot';
 import { LandingIntro } from './LandingIntro';
 
@@ -14,6 +16,33 @@ interface LandingPageProps {
   isExiting: boolean;
   onPlanClick: () => void;
 }
+
+const LIMITS = [
+  {
+    lead: 'Past counts, not live ones.',
+    text: 'There is no live feed, so a lot can be full when the estimate says it is usually open.',
+  },
+  {
+    lead: 'Mostly the first two weeks of each quarter.',
+    text: 'The detailed counts cover little else, and the model has not been checked across all ten weeks.',
+  },
+  {
+    lead: 'Simplified permit rules.',
+    text: 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, holidays count as weekdays, and only your arrival moment is checked.',
+  },
+  {
+    lead: 'Scoring weights are starting points.',
+    text: 'The default is a 65/35 mix. The other two presets still need review with experts.',
+  },
+  {
+    lead: 'Sample data on this site.',
+    text: 'The numbers you see here are samples until the backend is connected.',
+  },
+  {
+    lead: 'No promises.',
+    text: 'No reservations, no payments, and not an official UCSD service.',
+  },
+] as const;
 
 const FAQ = [
   {
@@ -26,7 +55,7 @@ const FAQ = [
   },
   {
     q: 'Is the data live?',
-    a: 'No. Estimates come from past parking counts, not a live feed. Live status is something we are exploring.',
+    a: 'No. Estimates come from past parking counts, not a live feed.',
   },
   {
     q: 'Will it guarantee me a space?',
@@ -38,16 +67,8 @@ const FAQ = [
   },
   {
     q: 'Does it work for visitors?',
-    a: 'Not yet. Visitor and daily-pay parking, with costs shown, is planned.',
+    a: 'Not really. It is built around permit types, so visitor and daily-pay parking and costs are not covered.',
   },
-] as const;
-
-const NEXT_UP = [
-  'Visitor and daily-pay parking',
-  'Color-coded availability',
-  'Entrance photos',
-  'Live status, if UCSD can share it',
-  '"Did you find a spot?" check-ins',
 ] as const;
 
 /** The intro plays once per page load, not every time someone returns from the planner. */
@@ -145,27 +166,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section className="lp-block lp-block--navy lp-dark" aria-labelledby="honest-heading">
-          <div className="lp-container lp-honest">
-            <div>
-              <h2 id="honest-heading" className="lp-big lp-big--yellow">
-                A forecast, not a promise.
+        <section className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
+          <div className="lp-container">
+            <div className="lp-block-head">
+              <h2 id="hood-heading" className="lp-big">
+                Under the hood.
               </h2>
-              <ul className="lp-marks">
-                <li>Built on past counts, not live ones</li>
-                <li>Detailed data covers the first two weeks of each quarter</li>
-                <li>No reservations, no payments</li>
-              </ul>
+              <p className="lp-sub">Where a recommendation comes from, and how far along each part is.</p>
             </div>
-            <div className="lp-next">
-              <h3 className="lp-next-title">Coming next</h3>
-              <ul className="lp-marks lp-marks--light">
-                {NEXT_UP.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+            <Pipeline />
+            <div className="lp-mix">
+              <h3 className="lp-h3-light">How a pick is chosen</h3>
+              <ScoreMix />
             </div>
           </div>
+        </section>
+
+        <section className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+          <div className="lp-stripe" aria-hidden="true" />
+          <div className="lp-container lp-limits">
+            <h2 id="limits-heading" className="lp-big lp-big--navy">
+              A forecast, not a promise.
+            </h2>
+            <ul className="lp-limit-list">
+              {LIMITS.map((item) => (
+                <li key={item.lead}>
+                  <strong>{item.lead}</strong> {item.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="lp-stripe" aria-hidden="true" />
         </section>
 
         <section className="lp-block lp-block--paper" aria-labelledby="faq-heading">
