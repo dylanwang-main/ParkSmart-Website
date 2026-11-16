@@ -5,8 +5,9 @@
 
 import React from 'react';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
-import plannerForm from '../assets/planner-form.png';
-import plannerResult from '../assets/planner-result.png';
+import { HeroDemo } from './HeroDemo';
+import { PermitLot } from './PermitLot';
+import { TimeLot } from './TimeLot';
 import { LandingIntro } from './LandingIntro';
 
 interface LandingPageProps {
@@ -14,15 +15,12 @@ interface LandingPageProps {
   onPlanClick: () => void;
 }
 
-const PLANNED = [
-  'Visitor and daily-pay parking, with costs shown',
-  'Color-coded availability and larger walking times',
-  'Entrance photos for parking structures',
-] as const;
-
-const EXPLORING = [
-  'Live parking status, if UCSD can share it',
-  'A "Did you find a spot?" check-in to improve the estimates',
+const NEXT_UP = [
+  'Visitor and daily-pay parking',
+  'Color-coded availability',
+  'Entrance photos',
+  'Live status, if UCSD can share it',
+  '"Did you find a spot?" check-ins',
 ] as const;
 
 /** The intro plays once per page load, not every time someone returns from the planner. */
@@ -42,7 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
   const handleSeeHowItWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const target = document.getElementById('how-it-works');
+    const target = document.getElementById('permit');
     if (!target) return;
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     target.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
@@ -55,155 +53,92 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
       {introActive && <LandingIntro onDone={() => setIntroActive(false)} />}
 
       <div className="lp-doc">
-        <header className="lp-bar">
-          <div className="lp-container lp-bar-inner">
-            <span className="lp-wordmark">
-              <img src={parkSmartLogoHd} alt="" className="lp-wordmark-logo" width={40} height={40} />
-              ParkSmart
-            </span>
-            <button type="button" className="lp-btn lp-btn--asphalt" onClick={onPlanClick}>
-              Plan my parking
-            </button>
+        <section className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
+          <header className="lp-bar">
+            <div className="lp-container lp-bar-inner">
+              <span className="lp-wordmark">
+                <img src={parkSmartLogoHd} alt="" className="lp-wordmark-logo" width={40} height={40} />
+                ParkSmart
+              </span>
+              <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
+                Plan my parking
+              </button>
+            </div>
+          </header>
+          <div className="lp-container lp-hero2-grid">
+            <div className="lp-hero2-copy">
+              <h1 className="lp-h1">Know where to park before you get to campus.</h1>
+              <p className="lp-lede">Tell it your trip. Get a first choice and a backup.</p>
+              <div className="lp-top-actions">
+                <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
+                  Plan my parking
+                </button>
+                <a href="#permit" className="lp-textlink" onClick={handleSeeHowItWorks}>
+                  See how it thinks
+                </a>
+              </div>
+              <p className="lp-fineprint">UCSD student prototype. Runs on sample data for now.</p>
+            </div>
+            <div className="lp-hero2-demo">{!introActive && <HeroDemo />}</div>
           </div>
-        </header>
+        </section>
 
-        <main>
-          <section className="lp-top" aria-label="ParkSmart introduction">
-            <div className="lp-container lp-top-grid">
-              <div>
-                <h1 className="lp-h1">Know where to park before you get to campus.</h1>
-                <p className="lp-lede">
-                  Tell ParkSmart where you&apos;re going, when you&apos;ll arrive, and which permit you have. It picks
-                  a first-choice lot and a backup, and says why.
-                </p>
-                <div className="lp-top-actions">
-                  <button type="button" className="lp-btn lp-btn--asphalt" onClick={onPlanClick}>
-                    Plan my parking
-                  </button>
-                  <a href="#how-it-works" className="lp-textlink" onClick={handleSeeHowItWorks}>
-                    How it works
-                  </a>
-                </div>
-                <p className="lp-fineprint">
-                  A student prototype for UC San Diego. It runs on sample data until the real data is connected.
-                </p>
-              </div>
-              <figure className="lp-top-shot">
-                <img
-                  src={plannerResult}
-                  alt="A ParkSmart result: Lot P503, a 5 minute walk to Geisel Library, usually open, with the reason it was chosen."
-                  width={708}
-                  height={826}
-                />
-              </figure>
-            </div>
-          </section>
-
-          <section className="lp-sec" aria-labelledby="problem-heading">
-            <div className="lp-container lp-sec-grid">
-              <h2 id="problem-heading" className="lp-h2">
-                The problem
+        <section id="permit" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
+          <div className="lp-container">
+            <div className="lp-block-head">
+              <h2 id="permit-heading" className="lp-big">
+                Your permit decides the map.
               </h2>
-              <p className="lp-statement">
-                Most drivers on campus find out two things after they arrive: whether their permit works in that lot,
-                and whether there is any room. ParkSmart answers both before you leave.
-              </p>
+              <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
             </div>
-          </section>
+            <PermitLot />
+            <p className="lp-note">Simplified example lot. Real rules live on UCSD&apos;s permit pages.</p>
+          </div>
+        </section>
 
-          <section id="how-it-works" className="lp-sec" aria-labelledby="how-heading">
-            <div className="lp-container lp-sec-grid">
-              <h2 id="how-heading" className="lp-h2">
-                How it works
+        <section className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
+          <div className="lp-container">
+            <div className="lp-block-head">
+              <h2 id="time-heading" className="lp-big">
+                Drag the clock.
               </h2>
-              <div className="lp-walk">
-                <div className="lp-walk-row">
-                  <div className="lp-steps">
-                    <div>
-                      <h3 className="lp-h3">You describe the trip</h3>
-                      <p className="lp-body">
-                        Pick a destination, a day and time, and your permit (A, B, S, SR, D, or V). Choose whether you
-                        would rather walk less or find more space, and how far you are willing to walk.
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="lp-h3">It answers with a pick and a reason</h3>
-                      <p className="lp-body">
-                        Lots your permit can&apos;t use are removed. The rest are ranked by how much space is usually
-                        open at that time and how far you would walk. You get a first choice, a backup, and a plain
-                        explanation of each.
-                      </p>
-                      <p className="lp-caption">Screens show sample data.</p>
-                    </div>
-                  </div>
-                  <figure className="lp-shot lp-shot--form">
-                    <img
-                      src={plannerForm}
-                      alt="The ParkSmart planner form with destination, arrival date and time, permit type, priority, and maximum walk."
-                      width={766}
-                      height={902}
-                    />
-                  </figure>
-                </div>
-              </div>
+              <p className="lp-sub">Watch a busy lot fill up through the day.</p>
             </div>
-          </section>
+            <TimeLot />
+            <p className="lp-note">Example pattern, not real UCSD data.</p>
+          </div>
+        </section>
 
-          <section className="lp-sec" aria-labelledby="data-heading">
-            <div className="lp-container lp-sec-grid">
-              <h2 id="data-heading" className="lp-h2">
-                What the estimates rest on
+        <section className="lp-block lp-block--navy lp-dark" aria-labelledby="honest-heading">
+          <div className="lp-container lp-honest">
+            <div>
+              <h2 id="honest-heading" className="lp-big lp-big--yellow">
+                A forecast, not a promise.
               </h2>
-              <div className="lp-prose">
-                <p className="lp-body">
-                  Public information only: past parking counts by lot and time of day, lot capacities, UCSD&apos;s
-                  published permit rules, and campus map data. There is no live feed yet.
-                </p>
-                <p className="lp-body">
-                  The detailed counts mostly cover the first two weeks of each quarter, so estimates for later weeks
-                  are less certain. Read every number as a typical day, not a promise. ParkSmart does not reserve
-                  spaces or take payments.
-                </p>
-              </div>
+              <ul className="lp-marks">
+                <li>Built on past counts, not live ones</li>
+                <li>Detailed data covers the first two weeks of each quarter</li>
+                <li>No reservations, no payments</li>
+              </ul>
             </div>
-          </section>
-
-          <section className="lp-sec" aria-labelledby="next-heading">
-            <div className="lp-container lp-sec-grid">
-              <h2 id="next-heading" className="lp-h2">
-                What&apos;s next
-              </h2>
-              <div className="lp-next">
-                <div>
-                  <h3 className="lp-h3">Planned</h3>
-                  <ul className="lp-list">
-                    {PLANNED.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h3 className="lp-h3">Still exploring</h3>
-                  <ul className="lp-list">
-                    {EXPLORING.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+            <div className="lp-next">
+              <h3 className="lp-next-title">Coming next</h3>
+              <ul className="lp-marks lp-marks--light">
+                {NEXT_UP.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
             </div>
-          </section>
-        </main>
+          </div>
+        </section>
 
-        <footer className="lp-footer">
+        <footer className="lp-footer lp-dark">
           <div className="lp-container lp-footer-inner">
             <div>
               <p className="lp-footer-text">
                 Team lead: Yra. Built by Vivaan, Hanrong, Dylan, and Daira for UCSD DS3, Fall 2026.
               </p>
-              <p className="lp-footer-text lp-footer-text--note">
-                A student project, not an official UCSD service.
-              </p>
+              <p className="lp-footer-text lp-footer-text--note">A student project, not an official UCSD service.</p>
             </div>
             <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
               Plan my parking
