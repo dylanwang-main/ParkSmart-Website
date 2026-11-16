@@ -5,6 +5,7 @@
 
 import React from 'react';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
+import { LandingIntro } from './LandingIntro';
 
 interface LandingPageProps {
   isExiting: boolean;
@@ -103,7 +104,21 @@ const TopDownCar: React.FC<{ bodyColor: string; windowColor: string; className?:
   </svg>
 );
 
+/** The intro plays once per page load, not every time someone returns from the planner. */
+let introPlayedThisLoad = false;
+
+const shouldPlayIntro = (): boolean => {
+  if (introPlayedThisLoad) return false;
+  introPlayedThisLoad = true;
+  try {
+    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return true;
+  }
+};
+
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
+  const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
   const handleSeeHowItWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const target = document.getElementById('how-it-works');
@@ -113,7 +128,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
   };
 
   return (
-    <div className={`ps-landing${isExiting ? ' ps-landing--exiting' : ''}`}>
+    <div
+      className={`ps-landing${isExiting ? ' ps-landing--exiting' : ''}${introActive ? ' ps-landing--intro' : ''}`}
+    >
+      {introActive && <LandingIntro onDone={() => setIntroActive(false)} />}
       {/* SECTION 1: HERO */}
       <section className="lp-hero" aria-label="ParkSmart introduction">
         <header className="lp-topbar">
@@ -310,9 +328,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <h2 id="what-heading" className="lp-h2">
                 Built to be checked, not just trusted.
               </h2>
-              <div className="lp-park-sign" aria-hidden="true">
-                P
-              </div>
+              <img src={parkSmartLogoHd} alt="" className="lp-feature-logo" width={144} height={144} />
             </div>
             <div className="lp-features-list">
               {WHAT_YOU_GET_ITEMS.map((item) => (
@@ -343,8 +359,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
       <footer className="lp-footer">
         <div className="lp-container">
           <p className="lp-footer-text">
-            Built by Vivaan, Hanrong, Dylan, and Daira for UCSD DS3, Fall 2026. A student project, not an official UCSD
-            service.
+            Team lead: Yra. Built by Vivaan, Hanrong, Dylan, and Daira for UCSD DS3, Fall 2026.
+          </p>
+          <p className="lp-footer-text lp-footer-text--note">
+            A student project, not an official UCSD service.
           </p>
         </div>
       </footer>
