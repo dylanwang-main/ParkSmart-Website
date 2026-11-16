@@ -8,6 +8,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, Menu } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { MapContainer } from './components/MapContainer.tsx';
+import { LoadingScreen } from './components/LoadingScene.tsx';
 import { PreferenceForm } from './components/PreferenceForm.tsx';
 import { ResultsList } from './components/ResultsList.tsx';
 import { LotDetailCard } from './components/LotDetailCard.tsx';
@@ -107,6 +108,9 @@ interface PlannerProps {
   onBack: () => void;
 }
 
+// True after the first time the planner has been shown in this page load
+let plannerShownOnce = false;
+
 export default function Planner({ onBack }: PlannerProps) {
   // 1. Form inputs. No destination until the user picks one (no Geisel default);
   // date and time start at right now.
@@ -131,6 +135,17 @@ export default function Planner({ onBack }: PlannerProps) {
 
   // 3. Selection State (synchronizes selected card with map marker)
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
+
+  // Full-window loading screen: stays until the map has drawn, and at least a moment on the
+  // first visit so it never flashes when tiles are cached
+  const [mapReady, setMapReady] = useState(false);
+  const [minShown, setMinShown] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMinShown(true), plannerShownOnce ? 500 : 1500);
+    plannerShownOnce = true;
+    return () => window.clearTimeout(id);
+  }, []);
+  const handleMapReady = useCallback(() => setMapReady(true), []);
 
   // 4. Loading & Animation State
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -480,8 +495,11 @@ export default function Planner({ onBack }: PlannerProps) {
     // reducedMotion="user" turns off Motion animations for people who ask their OS for less motion
     <MotionConfig reducedMotion="user">
     <div className="relative w-full h-screen h-[100dvh] overflow-hidden overscroll-none bg-slate-100 font-sans text-navy select-none">
+      <LoadingScreen visible={!(mapReady && minShown)} label="Loading the map" />
+
       {/* Full-Screen MapLibre GL Map */}
       <MapContainer
+        onReady={handleMapReady}
         lots={SAMPLE_LOTS}
         selectedLocationId={selectedLocationId}
         selectedDestination={currentDestination}
