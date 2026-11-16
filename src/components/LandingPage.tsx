@@ -15,6 +15,33 @@ interface LandingPageProps {
   onPlanClick: () => void;
 }
 
+const FAQ = [
+  {
+    q: 'Is this an official UCSD service?',
+    a: 'No. ParkSmart is a student project and is not affiliated with UC San Diego.',
+  },
+  {
+    q: 'Will it work with my permit?',
+    a: 'You choose your permit type (A, B, S, SR, D, or V) and lots it cannot use are filtered out. Always check UCSD\'s permit pages for the final rules.',
+  },
+  {
+    q: 'Is the data live?',
+    a: 'No. Estimates come from past parking counts, not a live feed. Live status is something we are exploring.',
+  },
+  {
+    q: 'Will it guarantee me a space?',
+    a: 'No. It shows where you are most likely to find one, based on typical patterns. Lots can still be full.',
+  },
+  {
+    q: 'Does it cost anything?',
+    a: 'There is nothing to buy and nothing to sign up for.',
+  },
+  {
+    q: 'Does it work for visitors?',
+    a: 'Not yet. Visitor and daily-pay parking, with costs shown, is planned.',
+  },
+] as const;
+
 const NEXT_UP = [
   'Visitor and daily-pay parking',
   'Color-coded availability',
@@ -38,6 +65,15 @@ const shouldPlayIntro = (): boolean => {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
+  const heroRef = React.useRef<HTMLElement | null>(null);
+  const [heroGone, setHeroGone] = React.useState(false);
+  React.useEffect(() => {
+    const el = heroRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => setHeroGone(!entry.isIntersecting), { threshold: 0 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const handleSeeHowItWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const target = document.getElementById('permit');
@@ -53,7 +89,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
       {introActive && <LandingIntro onDone={() => setIntroActive(false)} />}
 
       <div className="lp-doc">
-        <section className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
+        <section ref={heroRef} className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
           <header className="lp-bar">
             <div className="lp-container lp-bar-inner">
               <span className="lp-wordmark">
@@ -132,6 +168,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
+        <section className="lp-block lp-block--paper" aria-labelledby="faq-heading">
+          <div className="lp-container lp-faq">
+            <h2 id="faq-heading" className="lp-big lp-big--navy">
+              Quick answers.
+            </h2>
+            <div className="lp-faq-list">
+              {FAQ.map((item) => (
+                <details key={item.q} className="lp-faq-item">
+                  <summary>{item.q}</summary>
+                  <p>{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <footer className="lp-footer lp-dark">
           <div className="lp-container lp-footer-inner">
             <div>
@@ -145,6 +197,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
             </button>
           </div>
         </footer>
+      </div>
+
+      <div className={`lp-sticky${heroGone && !introActive ? ' lp-sticky--on' : ''}`} aria-hidden={!heroGone}>
+        <button type="button" className="lp-btn lp-btn--yellow" tabIndex={heroGone ? 0 : -1} onClick={onPlanClick}>
+          Plan my parking
+        </button>
       </div>
     </div>
   );
