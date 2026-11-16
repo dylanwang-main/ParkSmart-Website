@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
 
 interface LandingPageProps {
   isExiting: boolean;
@@ -118,7 +119,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
         <header className="lp-topbar">
           <div className="lp-container lp-topbar-inner">
             <span className="lp-wordmark">
-              <span className="lp-wordmark-accent" aria-hidden="true" />
+              <img src={parkSmartLogoHd} alt="" className="lp-wordmark-logo" width={52} height={52} />
               ParkSmart
             </span>
             <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>

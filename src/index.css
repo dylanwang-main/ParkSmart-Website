@@ -578,18 +578,18 @@ body {
 .lp-wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   font-size: 1.375rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--lp-paint-white);
 }
 
-.lp-wordmark-accent {
-  display: inline-block;
-  width: 4px;
-  height: 20px;
-  background-color: var(--lp-gold);
+.lp-wordmark-logo {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .lp-hero-body {
