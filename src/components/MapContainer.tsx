@@ -359,7 +359,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   }, []);
 
   // Helper to frame all lots plus the destination with panel offset padding
-  const frameAllPoints = (map: maplibregl.Map, animate = true) => {
+  const frameAllPoints = (map: maplibregl.Map, animate = true, resetOrientation = false) => {
     if (lots.length === 0) return;
 
     const bounds = new maplibregl.LngLatBounds();
@@ -374,7 +374,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       padding: paddingRef.current,
       maxZoom: 16.0,
       duration: !animate || prefersReducedMotion ? 0 : 600,
+      ...(resetOrientation ? { bearing: 0, pitch: 0 } : {}),
     });
+  };
+
+  // The Reset view button (created once, inside the map effect) calls the latest version of this
+  const resetViewRef = useRef<() => void>(() => {});
+  resetViewRef.current = () => {
+    const map = mapRef.current;
+    if (map) frameAllPoints(map, true, true);
   };
 
   // Initialize MapLibre instance with OpenFreeMap Positron style
@@ -399,12 +407,27 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
     map.addControl(
       new maplibregl.NavigationControl({
-        showCompass: true,
+        showCompass: false,
         showZoom: true,
         visualizePitch: false,
       }),
       'top-right'
     );
+
+    // Reset view: back to the starting frame (all lots plus the destination), facing north.
+    // Sits in the same group as zoom in/out, where the compass used to be.
+    const zoomGroup = map.getContainer().querySelector('.maplibregl-ctrl-zoom-in')?.parentElement;
+    if (zoomGroup) {
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'ps-reset-view';
+      resetButton.title = 'Reset view';
+      resetButton.setAttribute('aria-label', 'Reset view');
+      resetButton.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>';
+      resetButton.addEventListener('click', () => resetViewRef.current());
+      zoomGroup.appendChild(resetButton);
+    }
 
     // Add OpenFreeMap & OpenStreetMap attribution in bottom right
     map.addControl(
