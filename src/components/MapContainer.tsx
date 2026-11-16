@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MapLoading } from './MapLoading.tsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
@@ -131,6 +130,8 @@ interface MapContainerProps {
   isTimeOpen: boolean;
   onTimeToggle: () => void;
   timePanel: React.ReactNode;
+  /** Called once the first tiles have drawn (or a few seconds have passed). */
+  onReady?: () => void;
   /** Whether the left planner panel is showing; controls how much map is covered. */
   isPanelOpen: boolean;
   /** Whether the lot detail card is showing at the bottom of the map. */
@@ -209,6 +210,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   isTimeOpen,
   onTimeToggle,
   timePanel,
+  onReady,
   isPanelOpen,
   isDetailOpen,
   rankedLotIds,
@@ -244,12 +246,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
   // Placeholder shown until the first tiles have drawn (or a few seconds pass)
   const [isMapReady, setIsMapReady] = useState(false);
-  // Keep the loading screen up briefly even when cached tiles draw instantly, so it never flashes
-  const [minShown, setMinShown] = useState(false);
   useEffect(() => {
-    const id = window.setTimeout(() => setMinShown(true), 1500);
-    return () => window.clearTimeout(id);
-  }, []);
+    if (isMapReady) onReady?.();
+  }, [isMapReady, onReady]);
   const [basemapControlEl, setBasemapControlEl] = useState<HTMLElement | null>(null);
 
   // Map padding: reserve the panel's width on the left only while it is open.
@@ -761,9 +760,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         className="absolute inset-0 w-full h-full bg-[#f8f9fa] z-0 focus:outline-none"
         aria-label="Interactive UCSD Campus Parking Map"
       />
-
-      {/* Branded loading screen until the first tiles have drawn (and it has shown long enough to read) */}
-      <MapLoading visible={!(isMapReady && minShown)} />
 
       {/* Map controls, mounted inside the map's top-right control row (left of zoom):
           one row: Drop pin, Time, Map/Satellite.

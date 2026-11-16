@@ -1717,19 +1717,39 @@ body {
 
 /* Map loading screen: a car pulls into the open stall, on a loop */
 .ml {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
   display: grid;
   place-items: center;
+}
+
+.ml--screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   background: #182b49;
   opacity: 1;
   transition: opacity 600ms ease 100ms;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .ml--done {
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 600ms ease 100ms, visibility 0s linear 700ms;
+}
+
+.ml--inline {
+  padding-block: 24px 16px;
+}
+
+.ml--inline .ml-inner {
+  width: min(200px, 70%);
+  gap: 12px;
+}
+
+.ml--inline .ml-text {
+  font-size: 1.125rem;
+  color: #182b49;
 }
 
 .ml-inner {

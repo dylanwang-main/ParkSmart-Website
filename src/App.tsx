@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { LoadingScreen } from './components/LoadingScene.tsx';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { LandingPage } from './components/LandingPage.tsx';
 
@@ -47,7 +48,7 @@ export default function App() {
   }
 
   return (
-    <Suspense fallback={<div className="w-screen h-screen bg-[#182B49]" aria-busy="true" />}>
+    <Suspense fallback={<LoadingScreen />}>
       <div className="ps-planner-enter">
         <Planner onBack={handleBackToLanding} />
       </div>
