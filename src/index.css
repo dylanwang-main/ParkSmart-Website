@@ -1714,3 +1714,108 @@ body {
     display: none;
   }
 }
+
+/* Map loading screen: a car pulls into the open stall, on a loop */
+.ml {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background: #182b49;
+  opacity: 1;
+  transition: opacity 600ms ease 100ms;
+  pointer-events: none;
+}
+
+.ml--done {
+  opacity: 0;
+}
+
+.ml-inner {
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  width: min(320px, 70vw);
+}
+
+.ml-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ml-text {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 500;
+  color: #f7f8fa;
+}
+
+.ml-open {
+  fill: rgba(255, 205, 0, 0.18);
+  stroke: #ffcd00;
+  stroke-width: 3;
+  animation: ml-open 3.4s ease-in-out infinite;
+}
+
+.ml-car {
+  animation: ml-drive 3.4s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+@keyframes ml-drive {
+  0% {
+    transform: translate(-40px, 186px) rotate(90deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  46% {
+    transform: translate(190px, 186px) rotate(90deg);
+  }
+  58% {
+    transform: translate(214px, 172px) rotate(35deg);
+  }
+  74%,
+  92% {
+    transform: translate(215px, 100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(215px, 100px) rotate(0deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ml-open {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  80%,
+  92% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-car {
+    animation: none;
+    transform: translate(215px, 100px);
+  }
+
+  .ml-open {
+    animation: none;
+    opacity: 0;
+  }
+
+  .ml {
+    transition: none;
+  }
+}

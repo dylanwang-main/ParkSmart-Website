@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { MapLoading } from './MapLoading.tsx';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
@@ -243,6 +244,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const [basemap, setBasemap] = useState<BasemapMode>(DEFAULT_BASEMAP);
   // Placeholder shown until the first tiles have drawn (or a few seconds pass)
   const [isMapReady, setIsMapReady] = useState(false);
+  // Keep the loading screen up briefly even when cached tiles draw instantly, so it never flashes
+  const [minShown, setMinShown] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setMinShown(true), 1500);
+    return () => window.clearTimeout(id);
+  }, []);
   const [basemapControlEl, setBasemapControlEl] = useState<HTMLElement | null>(null);
 
   // Map padding: reserve the panel's width on the left only while it is open.
@@ -755,18 +762,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         aria-label="Interactive UCSD Campus Parking Map"
       />
 
-      {/* Placeholder while map tiles load, so the first seconds are not a blank screen */}
-      <div
-        aria-hidden={isMapReady}
-        className={`absolute inset-0 z-[1] flex items-center justify-center bg-slate-100 pointer-events-none transition-opacity duration-500 ${
-          isMapReady ? 'opacity-0' : 'opacity-100'
-        }`}
-      >
-        <div role="status" className="flex items-center gap-2 text-xs font-medium text-muted">
-          <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-          {isMapReady ? '' : 'Loading map...'}
-        </div>
-      </div>
+      {/* Branded loading screen until the first tiles have drawn (and it has shown long enough to read) */}
+      <MapLoading visible={!(isMapReady && minShown)} />
 
       {/* Map controls, mounted inside the map's top-right control row (left of zoom):
           one row: Drop pin, Time, Map/Satellite.
