@@ -551,24 +551,34 @@ body {
   background-color: var(--lp-asphalt-hover);
 }
 
-/* Hero (asphalt, full viewport height, left-aligned) */
-.lp-hero {
-  background-color: var(--lp-asphalt);
-  color: var(--lp-paint-white);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
+/* Landing document: editorial layout, real product screenshots, no cards */
+.lp-doc {
+  --lp-rule: #D3DAE5;
+  --lp-muted: #4B5871;
+  --lp-serif: var(--font-serif);
+  font-family: var(--font-sans);
+  background: #F3F5F9;
+  color: var(--lp-asphalt);
 }
 
-.lp-topbar {
-  padding-top: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(198, 146, 20, 0.28);
+.lp-doc a {
+  color: var(--lp-link-blue);
 }
 
-.lp-topbar-inner {
+.ps-landing .lp-doc :focus-visible {
+  outline: 3px solid var(--lp-link-blue);
+  outline-offset: 3px;
+}
+
+.ps-landing .lp-footer :focus-visible {
+  outline-color: var(--lp-paint-white);
+}
+
+.lp-bar {
+  padding-block: 20px;
+}
+
+.lp-bar-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -578,510 +588,261 @@ body {
 .lp-wordmark {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 1.375rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--lp-paint-white);
+  gap: 10px;
+  font-family: var(--lp-serif);
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lp-asphalt);
 }
 
 .lp-wordmark-logo {
   display: block;
-  width: 52px;
-  height: 52px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
 }
 
-.lp-hero-body {
-  padding-block: clamp(32px, 5vh, 64px) clamp(24px, 4vh, 48px);
+.lp-top {
+  padding-block: clamp(32px, 6vw, 88px) clamp(56px, 9vw, 128px);
+}
+
+.lp-top-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: clamp(32px, 7vw, 112px);
+  align-items: center;
 }
 
 .lp-h1 {
   margin: 0;
-  font-size: clamp(3rem, 7vw, 6.5rem);
-  font-weight: 800;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-  text-align: left;
-  color: var(--lp-paint-white);
-  max-width: 26ch;
+  max-width: 14ch;
+  font-family: var(--lp-serif);
+  font-size: clamp(2.75rem, 6.2vw, 5.5rem);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--lp-asphalt);
 }
 
-.lp-subhead {
-  margin: 24px 0 0;
-  font-size: 1.125rem;
-  font-weight: 400;
-  line-height: 1.6;
-  max-width: 60ch;
-  color: var(--lp-paint-white);
+.lp-lede {
+  margin: 28px 0 0;
+  max-width: 44ch;
+  font-size: 1.25rem;
+  line-height: 1.55;
+  color: var(--lp-asphalt);
 }
 
-.lp-hero-actions {
-  margin-top: 28px;
+.lp-top-actions {
+  margin-top: 32px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px 28px;
+  gap: 12px 28px;
 }
 
-.lp-hero-link {
+.lp-textlink {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  font-size: 1rem;
   font-weight: 600;
-  color: var(--lp-paint-white);
   text-decoration: underline;
   text-underline-offset: 4px;
   text-decoration-thickness: 2px;
 }
 
-.lp-hero-link:hover {
-  opacity: 0.85;
+.lp-fineprint {
+  margin: 28px 0 0;
+  max-width: 46ch;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--lp-muted);
 }
 
-/* Signature moment: 7-stall parking row */
-.lp-lot-stage {
-  width: 100%;
-  padding-top: 8px;
+.lp-top-shot {
+  margin: 0;
 }
 
-.lp-stalls-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-}
-
-.lp-stall {
-  display: flex;
-  flex-direction: column;
-}
-
-.lp-plate-slot {
-  min-height: 36px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 8px;
-}
-
-.lp-sign-plate {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.1;
-  white-space: nowrap;
-  opacity: 0;
-  animation: lp-plate-in 200ms ease 1.6s forwards;
-}
-
-.lp-sign-plate--yellow {
-  background-color: var(--lp-line-yellow);
-  color: var(--lp-asphalt);
-}
-
-.lp-sign-plate--white {
-  background-color: var(--lp-paint-white);
-  color: var(--lp-asphalt);
-}
-
-.lp-stall-bay {
-  position: relative;
-  height: 180px;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 14px;
-}
-
-.lp-stall-lines {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.lp-stall-fill {
-  position: absolute;
-  inset: 0;
-  background-color: rgba(255, 205, 0, 0.2);
-  opacity: 0;
-  animation: lp-plate-in 200ms ease 1.6s forwards;
-}
-
-.lp-car {
-  position: relative;
-  z-index: 1;
-  width: min(68%, 78px);
-  height: auto;
-  max-height: 126px;
+.lp-top-shot img,
+.lp-shot img {
   display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
 }
 
-.lp-car--arriving {
-  transform: translateY(240px);
-  animation: lp-car-park 1.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+.lp-top-shot img {
+  box-shadow: 0 1px 2px rgba(24, 43, 73, 0.18), 0 28px 48px -20px rgba(24, 43, 73, 0.45);
 }
 
-@keyframes lp-car-park {
-  from {
-    transform: translateY(240px);
-  }
-  to {
-    transform: translateY(0);
-  }
+.lp-sec {
+  padding-block: clamp(48px, 7vw, 104px);
+  border-top: 1px solid var(--lp-rule);
 }
 
-@keyframes lp-plate-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* Under 800px wide: show only the 4 middle stalls (3, 4, 5, 6) */
-@media (max-width: 799px) {
-  .lp-stalls-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-  }
-
-  .lp-stall--outer {
-    display: none;
-  }
-
-  .lp-sign-plate {
-    font-size: 0.75rem;
-    padding: 4px 7px;
-  }
-
-  .lp-topbar .lp-btn {
-    padding-inline: 16px;
-  }
-}
-
-/* Light and band sections */
-.lp-section {
-  padding-block: clamp(64px, 9vw, 112px);
-}
-
-.lp-section--white {
-  background-color: var(--lp-paint-white);
-  color: var(--lp-asphalt);
-}
-
-.lp-section--concrete {
-  background-color: var(--lp-concrete);
-  color: var(--lp-asphalt);
-}
-
-.lp-section--yellow {
-  background-color: var(--lp-line-yellow);
-  color: var(--lp-asphalt);
-  padding-block: clamp(48px, 7vw, 80px);
+.lp-sec-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: 24px clamp(24px, 5vw, 80px);
+  align-items: start;
 }
 
 .lp-h2 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.5rem);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-family: var(--lp-serif);
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--lp-asphalt);
 }
 
-.lp-h2--why {
-  max-width: 18ch;
+.lp-h3 {
+  margin: 0;
+  font-family: var(--lp-serif);
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--lp-asphalt);
+}
+
+.lp-statement {
+  margin: 0;
+  max-width: 28ch;
+  font-family: var(--lp-serif);
+  font-size: clamp(1.75rem, 3.4vw, 3rem);
+  font-weight: 400;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  color: var(--lp-asphalt);
 }
 
 .lp-body {
-  margin: 24px 0 0;
-  font-size: 1.125rem;
-  font-weight: 400;
+  margin: 12px 0 0;
+  max-width: 54ch;
+  font-size: 1.0625rem;
   line-height: 1.6;
-  max-width: 60ch;
   color: var(--lp-asphalt);
 }
 
-/* Rows with a status tag, and ruled lists on the dark section */
-.lp-feature-row--tagged {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.lp-prose .lp-body:first-child {
+  margin-top: 0;
 }
 
-.lp-tag {
-  flex: none;
-  margin-top: 2px;
-  padding: 4px 12px;
-  border: 2px solid var(--lp-paint-white);
-  border-radius: 999px;
+.lp-prose .lp-body + .lp-body {
+  margin-top: 18px;
+}
+
+.lp-caption {
+  margin: 16px 0 0;
   font-size: 0.875rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--lp-paint-white);
+  color: var(--lp-muted);
 }
 
-.lp-tag--planned {
-  border-color: var(--lp-line-yellow);
-  background-color: var(--lp-line-yellow);
-  color: var(--lp-asphalt);
-}
-
-.lp-section--asphalt .lp-features-list {
-  border-top-color: rgba(247, 248, 250, 0.35);
-}
-
-.lp-section--asphalt .lp-feature-row {
-  border-bottom-color: rgba(247, 248, 250, 0.35);
-}
-
-.lp-section--asphalt .lp-feature-label {
-  color: var(--lp-paint-white);
-}
-
-.lp-section--asphalt .lp-feature-desc {
-  color: rgba(247, 248, 250, 0.78);
-}
-
-/* Section 4: How it works (three painted stalls on asphalt) */
-.lp-section--asphalt {
-  background-color: var(--lp-asphalt);
-  color: var(--lp-paint-white);
-}
-
-.lp-section--asphalt .lp-h2 {
-  color: var(--lp-paint-white);
-}
-
-.lp-steps-grid {
-  margin-top: clamp(32px, 4vw, 56px);
+.lp-walk {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
+  gap: clamp(40px, 6vw, 72px);
 }
 
-.lp-step-stall {
-  border-top: 4px solid rgba(247, 248, 250, 0.85);
-  border-left: 4px solid rgba(247, 248, 250, 0.85);
-  border-right: 4px solid rgba(247, 248, 250, 0.85);
-  border-bottom: none;
-  padding: 24px 24px 24px;
-  display: flex;
-  flex-direction: column;
-  min-height: 380px;
-}
-
-.lp-step-stall--parked {
-  border-color: var(--lp-line-yellow);
-  background-color: rgba(255, 205, 0, 0.12);
-}
-
-.lp-step-number {
-  font-size: 5rem;
-  font-weight: 800;
-  line-height: 0.9;
-  color: var(--lp-line-yellow);
-}
-
-.lp-step-title {
-  margin: 20px 0 0;
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--lp-paint-white);
-}
-
-.lp-step-desc {
-  margin: 10px 0 0;
-  font-size: 1.125rem;
-  font-weight: 400;
-  line-height: 1.6;
-  max-width: 60ch;
-  color: rgba(247, 248, 250, 0.88);
-}
-
-.lp-step-car {
-  margin: auto auto 0;
-  padding-top: 24px;
-  box-sizing: content-box;
-}
-
-@media (max-width: 899px) {
-  .lp-steps-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .lp-step-stall {
-    min-height: 0;
-  }
-}
-
-/* Section 5: What you get */
-.lp-two-col {
+.lp-walk-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  gap: clamp(32px, 5vw, 72px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px clamp(24px, 4vw, 56px);
   align-items: start;
 }
 
-.lp-features-list {
-  border-top: 1px solid var(--lp-asphalt);
-}
-
-.lp-feature-row {
-  padding-block: 22px;
-  border-bottom: 1px solid var(--lp-asphalt);
-}
-
-.lp-feature-label {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 800;
-  line-height: 1.25;
-  color: var(--lp-asphalt);
-}
-
-.lp-feature-desc {
-  margin: 6px 0 0;
-  font-size: 1.125rem;
-  font-weight: 400;
-  line-height: 1.6;
-  max-width: 60ch;
-  color: var(--lp-asphalt);
-}
-
-@media (max-width: 899px) {
-  .lp-two-col,
-  .lp-two-col--why {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Section 2: two painted question stalls */
-.lp-two-col--why {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  align-items: center;
-}
-
-.lp-why-lot {
-  background-color: var(--lp-asphalt);
-  border-radius: 12px;
-  overflow: hidden;
-  padding: clamp(24px, 3vw, 40px) clamp(20px, 3vw, 36px) 0;
+.lp-steps {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: clamp(32px, 5vw, 56px);
 }
 
-.lp-why-stall {
+.lp-shot {
   margin: 0;
-  min-height: 300px;
-  border-top: 4px solid rgba(247, 248, 250, 0.85);
-  border-left: 4px solid rgba(247, 248, 250, 0.85);
-  border-right: 4px solid rgba(247, 248, 250, 0.85);
-  padding: 24px 14px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
 }
 
-.lp-why-mark {
-  font-size: clamp(5rem, 9vw, 8rem);
-  font-weight: 800;
-  line-height: 1;
-  color: var(--lp-line-yellow);
+.lp-shot--form img {
+  background: #fff;
+  border: 1px solid var(--lp-rule);
 }
 
-.lp-why-stall figcaption {
-  margin-top: 12px;
+.lp-next {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px clamp(24px, 4vw, 56px);
+}
+
+.lp-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-list li {
+  padding-block: 12px;
+  border-top: 1px solid var(--lp-rule);
   font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--lp-paint-white);
+  line-height: 1.45;
 }
 
-@media (max-width: 899px) {
-  .lp-two-col--why {
-    grid-template-columns: 1fr;
-  }
-
-  .lp-why-stall {
-    min-height: 240px;
-  }
+.lp-list li:last-child {
+  border-bottom: 1px solid var(--lp-rule);
 }
 
-/* Section 5: the real logo under the heading */
-.lp-feature-logo {
-  display: block;
-  margin-top: 32px;
-  width: clamp(112px, 12vw, 160px);
-  height: auto;
-}
-
-/* Section 6: Honest limits */
-.lp-limits-text {
-  margin: 0 0 24px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.4;
-  max-width: 54ch;
-  text-align: left;
-  color: var(--lp-asphalt);
-}
-
-/* Footer */
 .lp-footer {
   background-color: var(--lp-deep-asphalt);
-  padding-block: 36px;
+  padding-block: clamp(32px, 5vw, 56px);
 }
 
-.lp-footer-text + .lp-footer-text {
-  margin-top: 4px;
+.lp-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
 }
 
 .lp-footer-text {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 400;
+  font-size: 0.9375rem;
   line-height: 1.6;
-  color: rgba(247, 248, 250, 0.8);
+  color: rgba(247, 248, 250, 0.82);
 }
 
-/* Reduced motion: skip car glide & fade transitions */
+.lp-footer-text + .lp-footer-text {
+  margin-top: 2px;
+}
+
+@media (max-width: 899px) {
+  .lp-top-grid,
+  .lp-sec-grid,
+  .lp-walk-row,
+  .lp-next {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lp-top-shot {
+    max-width: 440px;
+  }
+
+  .lp-shot {
+    max-width: 440px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ps-landing,
   .lp-btn {
     transition: none;
   }
 
+  .ps-landing {
+    scroll-behavior: auto;
+  }
+
   .ps-planner-enter {
     animation: none;
   }
-
-  .lp-car--arriving {
-    animation: none;
-    transform: translateY(0);
-  }
-
-  .lp-stall-fill,
-  .lp-sign-plate {
-    animation: none;
-    opacity: 1;
-  }
 }
-
-
 
 /* Intro: a car drives in, parks, and the route continues on foot. Waits for a click. */
 .ps-landing--intro {
