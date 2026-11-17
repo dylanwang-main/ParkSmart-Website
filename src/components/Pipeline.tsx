@@ -4,7 +4,11 @@
  */
 
 import React from 'react';
+import { RECOMMENDATION_SOURCE } from '../config';
 import { LotCar, prefersReducedMotion, useInView } from './LotParts';
+
+/** The hosted build talks to the AWS backend; other builds (previews) use labeled sample data. */
+const LIVE = RECOMMENDATION_SOURCE === 'api';
 
 /** Where a recommendation comes from, in order. Status says honestly how far along each part is. */
 const STAGES = [
@@ -16,17 +20,17 @@ const STAGES = [
   {
     name: 'Forecast',
     text: 'Typical open share by lot, weekday, and time of day.',
-    status: 'Sample curve for now',
+    status: LIVE ? 'Historical averages' : 'Sample curve here',
   },
   {
     name: 'Backend',
     text: 'A FastAPI service filters by permit, scores, and ranks.',
-    status: 'Not connected here yet',
+    status: LIVE ? 'Live on AWS' : 'Not connected here',
   },
   {
     name: 'Routing',
-    text: 'Drive and walk times from Mapbox or Google Routes, with the key kept on the server.',
-    status: 'Provider not chosen',
+    text: 'Walking and driving paths from OpenStreetMap-based routing, with any key kept on the server.',
+    status: LIVE ? 'Off in this demo; walks are estimates' : 'Not connected here',
   },
   {
     name: 'This website',
@@ -68,8 +72,9 @@ export const Pipeline: React.FC = () => {
         ))}
       </ol>
       <p className="lp-note">
-        Hosting: the site runs on Vercel today. AWS (Amplify, Lambda with API Gateway, and S3) is the plan for the
-        full app.
+        {LIVE
+          ? 'Hosting: AWS Amplify serves the site, Lambda behind API Gateway runs the backend, and S3 holds the data files.'
+          : 'Hosting: this preview uses sample data. The full app runs on AWS (Amplify, Lambda with API Gateway, and S3).'}
       </p>
     </div>
   );

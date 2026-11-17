@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { RECOMMENDATION_SOURCE } from '../config';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
 import { HeroDemo } from './HeroDemo';
 import { PermitLot } from './PermitLot';
@@ -11,6 +12,9 @@ import { Pipeline } from './Pipeline';
 import { ScoreMix } from './ScoreMix';
 import { TimeLot } from './TimeLot';
 import { LandingIntro } from './LandingIntro';
+
+/** The hosted build talks to the AWS backend; other builds (previews) use labeled sample data. */
+const LIVE = RECOMMENDATION_SOURCE === 'api';
 
 interface LandingPageProps {
   isExiting: boolean;
@@ -35,8 +39,10 @@ const LIMITS = [
     text: 'The default is a 65/35 mix. The other two presets still need review with experts.',
   },
   {
-    lead: 'Sample data on this site.',
-    text: 'The numbers you see here are samples until the backend is connected.',
+    lead: LIVE ? 'Historical estimates.' : 'Sample data in this preview.',
+    text: LIVE
+      ? 'Results come from past survey patterns through the hosted backend. Walk times are estimates for now.'
+      : 'The numbers you see here are samples. The hosted app uses the real backend.',
   },
   {
     lead: 'No promises.',
@@ -134,7 +140,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                   See how it thinks
                 </a>
               </div>
-              <p className="lp-fineprint">UCSD student prototype. Runs on sample data for now.</p>
+              <p className="lp-fineprint">{LIVE ? 'UCSD student prototype. Uses historical survey estimates, not live data.' : 'UCSD student prototype. This preview runs on sample data.'}</p>
             </div>
             <div className="lp-hero2-demo">{!introActive && <HeroDemo />}</div>
           </div>
