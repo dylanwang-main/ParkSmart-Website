@@ -489,7 +489,7 @@ body {
   overflow-y: auto;
   overscroll-behavior: auto;
   scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
+  scroll-padding-top: 64px;
   opacity: 1;
   transition: opacity 250ms ease;
 }
@@ -2321,4 +2321,103 @@ body {
   .lp-limits .lp-faq-item summary {
     min-height: 40px;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Header, snapping on desktop only, car cursor                        */
+/* ------------------------------------------------------------------ */
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: 64px;
+  margin-bottom: -64px;
+  background: var(--lp-asphalt);
+  border-bottom: 2px solid var(--lp-gold);
+}
+
+.lp-nav-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lp-nav .lp-wordmark {
+  font-size: 1.375rem;
+  text-decoration: none;
+}
+
+.lp-nav .lp-wordmark-logo {
+  width: 36px;
+  height: 36px;
+}
+
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lp-nav-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: 12px;
+  border-bottom: 3px solid transparent;
+  color: var(--lp-paint-white);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lp-nav-links a:hover {
+  color: var(--lp-line-yellow);
+}
+
+.lp-nav-links a[aria-current='location'] {
+  border-bottom-color: var(--lp-line-yellow);
+}
+
+.lp-nav .lp-btn {
+  min-height: 44px;
+  padding-block: 0;
+}
+
+.ps-landing .lp-nav :focus-visible {
+  outline: 3px solid var(--lp-paint-white);
+  outline-offset: 2px;
+}
+
+.lp-hero2 {
+  padding-top: 64px;
+}
+
+@media (max-width: 899px) {
+  .lp-nav-links {
+    display: none;
+  }
+  .lp-counter {
+    bottom: 16px;
+  }
+}
+
+/* Snap to sections only with a mouse or trackpad on wide screens. Phones and tablets scroll freely. */
+@media (min-width: 900px) and (hover: hover) {
+  .ps-landing {
+    scroll-snap-type: y proximity;
+  }
+}
+
+.lp-car-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.ps-car-cursor .ps-landing,
+.ps-car-cursor .ps-landing * {
+  cursor: none !important;
 }

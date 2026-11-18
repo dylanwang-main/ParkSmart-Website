@@ -12,6 +12,7 @@ import { Pipeline } from './Pipeline';
 import { ScoreMix } from './ScoreMix';
 import { TimeLot } from './TimeLot';
 import { LandingIntro } from './LandingIntro';
+import { CarCursor } from './CarCursor';
 
 /** The hosted build talks to the AWS backend; other builds (previews) use labeled sample data. */
 const LIVE = RECOMMENDATION_SOURCE === 'api';
@@ -138,6 +139,15 @@ const NEXT_ITEMS = [
 
 const SCREEN_COUNT = 9;
 
+/** Header links. `screens` are the data-screen numbers that highlight each link. */
+const NAV = [
+  { id: 'permit', label: 'Demo', screens: [3, 4] },
+  { id: 'how', label: 'How it works', screens: [5, 6] },
+  { id: 'evidence', label: 'Evidence', screens: [7] },
+  { id: 'limits', label: 'Limits & FAQ', screens: [8] },
+  { id: 'next', label: 'What\'s next', screens: [9] },
+] as const;
+
 /** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
 const SCORE_NOTES = [
   {
@@ -167,8 +177,6 @@ const FAQ_OPEN = 2;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
-  const heroRef = React.useRef<HTMLElement | null>(null);
-  const [heroGone, setHeroGone] = React.useState(false);
   const [screen, setScreen] = React.useState(1);
   const docRef = React.useRef<HTMLDivElement | null>(null);
   React.useEffect(() => {
@@ -185,16 +193,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
     root.querySelectorAll('[data-screen]').forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
-  React.useEffect(() => {
-    const el = heroRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
-    const io = new IntersectionObserver(([entry]) => setHeroGone(!entry.isIntersecting), { threshold: 0 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  const handleSeeHowItWorks = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const goTo = (id: string) => (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
-    const target = document.getElementById('permit');
+    const target = document.getElementById(id);
     if (!target) return;
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     target.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'start' });
@@ -204,21 +205,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
     <div
       className={`ps-landing${isExiting ? ' ps-landing--exiting' : ''}${introActive ? ' ps-landing--intro' : ''}`}
     >
+      <CarCursor />
       {introActive && <LandingIntro onDone={() => setIntroActive(false)} />}
 
-      <div className="lp-doc" ref={docRef}>
-        <section ref={heroRef} data-screen="1" className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
-          <header className="lp-bar">
-            <div className="lp-container lp-bar-inner">
-              <span className="lp-wordmark">
-                <img src={parkSmartLogoHd} alt="ParkSmart logo" className="lp-wordmark-logo" width={40} height={40} />
-                ParkSmart
-              </span>
-              <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
-                Plan my parking
-              </button>
-            </div>
-          </header>
+      {!introActive && (
+        <header className="lp-nav">
+          <div className="lp-container lp-nav-inner">
+            <a href="#top" className="lp-wordmark" onClick={goTo('top')} aria-label="ParkSmart, back to top">
+              <img src={parkSmartLogoHd} alt="ParkSmart logo" className="lp-wordmark-logo" width={36} height={36} />
+              ParkSmart
+            </a>
+            <nav className="lp-nav-links" aria-label="Sections">
+              {NAV.map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  onClick={goTo(item.id)}
+                  aria-current={(item.screens as readonly number[]).includes(screen) ? 'location' : undefined}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+            <button type="button" className="lp-btn lp-btn--yellow lp-nav-cta" onClick={onPlanClick}>
+              Plan my parking
+            </button>
+          </div>
+        </header>
+      )}
+
+      <div className="lp-doc" id="top" ref={docRef}>
+        <section data-screen="1" className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
           <div className="lp-container lp-hero2-grid">
             <div className="lp-hero2-copy">
               <h1 className="lp-h1">Know where to park before you get to campus.</h1>
@@ -227,7 +244,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
                   Plan my parking
                 </button>
-                <a href="#permit" className="lp-textlink" onClick={handleSeeHowItWorks}>
+                <a href="#permit" className="lp-textlink" onClick={goTo('permit')}>
                   See how it thinks
                 </a>
               </div>
@@ -244,7 +261,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="2" className="lp-block lp-block--paper" aria-labelledby="problem-heading">
+        <section id="problem" data-screen="2" className="lp-block lp-block--paper" aria-labelledby="problem-heading">
           <div className="lp-container lp-faq">
             <h2 id="problem-heading" className="lp-big lp-big--navy">
               Nobody tells you what is open.
@@ -288,7 +305,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="5" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
+        <section id="how" data-screen="5" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="hood-heading" className="lp-big">
@@ -300,7 +317,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="6" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
+        <section id="scoring" data-screen="6" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
           <div className="lp-container lp-faq">
             <div>
               <h2 id="score-heading" className="lp-big">
@@ -320,7 +337,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="7" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
+        <section id="evidence" data-screen="7" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
           <div className="lp-container lp-faq">
             <h2 id="evidence-heading" className="lp-big">
               Checked against what happened.
@@ -339,7 +356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="8" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+        <section id="limits" data-screen="8" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
           <div className="lp-container lp-limits">
             <div>
@@ -376,7 +393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section data-screen="9" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
+        <section id="next" data-screen="9" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
           <div className="lp-container lp-faq">
             <h2 id="next-heading" className="lp-big">
               What is next.
@@ -420,11 +437,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
         </p>
       )}
 
-      <div className={`lp-sticky${heroGone && !introActive ? ' lp-sticky--on' : ''}`} aria-hidden={!heroGone}>
-        <button type="button" className="lp-btn lp-btn--yellow" tabIndex={heroGone ? 0 : -1} onClick={onPlanClick}>
-          Plan my parking
-        </button>
-      </div>
     </div>
   );
 };
