@@ -361,7 +361,7 @@ export const LandingIntro: React.FC<LandingIntroProps> = ({ onDone }) => {
       aria-label="ParkSmart intro"
     >
       <span className="lp-wordmark lp-intro-brand">
-        <img src={parkSmartLogoHd} alt="" className="lp-wordmark-logo" width={52} height={52} />
+        <img src={parkSmartLogoHd} alt="ParkSmart logo" className="lp-wordmark-logo" width={52} height={52} />
         ParkSmart
       </span>
 

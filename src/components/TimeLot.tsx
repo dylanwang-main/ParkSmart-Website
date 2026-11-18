@@ -55,6 +55,7 @@ const formatHour = (h: number): string => {
 export const TimeLot: React.FC = () => {
   const [hour, setHour] = React.useState(7);
   const touched = React.useRef(false);
+  const [dragged, setDragged] = React.useState(false);
   const [ref, seen] = useInView<HTMLDivElement>();
 
   React.useEffect(() => {
@@ -84,12 +85,36 @@ export const TimeLot: React.FC = () => {
 
   return (
     <div className="tl" ref={ref}>
+      <div className="tl-controls">
       <div className="tl-top">
         <div className="tl-time">{formatHour(hour)}</div>
         <div className={`tl-state tl-state--${state}`}>
           <strong>{openPct}%</strong>
           <span>{label}</span>
         </div>
+      </div>
+      <p className={`tl-cue${dragged ? ' tl-cue--gone' : ''}`} aria-hidden={dragged}>
+        <span aria-hidden="true">&larr;</span> Drag the slider to change the time <span aria-hidden="true">&rarr;</span>
+      </p>
+      <input
+        className="tl-range"
+        type="range"
+        min={7}
+        max={18}
+        step={0.25}
+        value={hour}
+        aria-label="Time of day"
+        onChange={(e) => {
+          touched.current = true;
+          setDragged(true);
+          setHour(Number(e.target.value));
+        }}
+      />
+      <div className="tl-ticks" aria-hidden="true">
+        <span>7 AM</span>
+        <span>12 PM</span>
+        <span>6 PM</span>
+      </div>
       </div>
       <svg className="tl-lot" viewBox="0 0 800 280" role="img" aria-label={`Example lot at ${formatHour(hour)}, ${openPct} percent open`}>
         <rect width="800" height="280" fill="#101D33" />
@@ -123,24 +148,6 @@ export const TimeLot: React.FC = () => {
           );
         })}
       </svg>
-      <input
-        className="tl-range"
-        type="range"
-        min={7}
-        max={18}
-        step={0.25}
-        value={hour}
-        aria-label="Time of day"
-        onChange={(e) => {
-          touched.current = true;
-          setHour(Number(e.target.value));
-        }}
-      />
-      <div className="tl-ticks" aria-hidden="true">
-        <span>7 AM</span>
-        <span>12 PM</span>
-        <span>6 PM</span>
-      </div>
     </div>
   );
 };

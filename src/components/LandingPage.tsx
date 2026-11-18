@@ -131,13 +131,39 @@ const PROBLEM_FACTS = [
 
 const NEXT_ITEMS = [
   { name: 'Hosted planner and backend', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Historical estimates on AWS. Walk times are estimates for now.' },
-  { name: 'Trip alerts', status: 'In progress', text: 'Weather and construction notes near your lot. Informational, never used to rank.' },
+  { name: 'Trip alerts', status: 'In progress', text: 'Weather comes from the Open-Meteo hourly forecast. Construction comes from UCSD\'s public construction map layers, matched within 200 m of your trip. Both are shown as notes only: they never exclude a lot or change its score.' },
   { name: 'Mobile app', status: 'Planned', text: 'The same planner as an iOS app.' },
   { name: 'Live lot counts', status: 'Planned', text: 'Only if a validated source exists, always shown with its retrieval time.' },
 ] as const;
 
 const SCREEN_COUNT = 9;
+
+/** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
+const SCORE_NOTES = [
+  {
+    lead: 'Why 65/35.',
+    text: 'It is a product choice carried over from the first prototype, not tuned on user data. Experts still need to review it.',
+  },
+  {
+    lead: 'Shorter walk makes it 20/80.',
+    text: 'Lots close to your destination rank higher, even if they are usually fuller.',
+  },
+  {
+    lead: 'More space makes it 85/15.',
+    text: 'Lots that are usually open rank higher, even if the walk is longer.',
+  },
+  {
+    lead: 'Before scoring, lots are filtered.',
+    text: 'Lots your permit cannot use, and lots past your max walk (20 minutes by default), never reach the ranking.',
+  },
+  {
+    lead: 'Weather and construction do not change the score.',
+    text: 'They appear as notes next to your result only.',
+  },
+] as const;
 const TOP_LIMITS = 3;
+/** The first FAQ answers start open so the page answers the obvious questions without a click. */
+const FAQ_OPEN = 2;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
@@ -185,7 +211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <header className="lp-bar">
             <div className="lp-container lp-bar-inner">
               <span className="lp-wordmark">
-                <img src={parkSmartLogoHd} alt="" className="lp-wordmark-logo" width={40} height={40} />
+                <img src={parkSmartLogoHd} alt="ParkSmart logo" className="lp-wordmark-logo" width={40} height={40} />
                 ParkSmart
               </span>
               <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
@@ -234,31 +260,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
         </section>
 
         <section id="permit" data-screen="3" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
-          <div className="lp-container">
-            <div className="lp-block-head">
+          <div className="lp-container lp-split">
+            <div className="lp-split-head">
               <h2 id="permit-heading" className="lp-big">
                 Your permit decides the map.
               </h2>
-              <div className="lp-sub-stack">
-                <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
-                <p className="lp-permit-help">Not sure which one you have? The letter is printed on your UCSD permit and listed in your parking account.</p>
-              </div>
+              <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
+              <p className="lp-permit-help">
+                Not sure which one you have? The letter is printed on your UCSD permit and listed in your parking account.
+              </p>
             </div>
             <PermitLot />
-            <p className="lp-note">Simplified example lot. Real rules live on UCSD&apos;s permit pages.</p>
+            <p className="lp-note lp-split-note">Simplified example lot. Real rules live on UCSD&apos;s permit pages.</p>
           </div>
         </section>
 
         <section data-screen="4" className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
-          <div className="lp-container">
-            <div className="lp-block-head">
+          <div className="lp-container lp-split">
+            <div className="lp-split-head">
               <h2 id="time-heading" className="lp-big">
                 Drag the clock.
               </h2>
               <p className="lp-sub">Watch a busy lot fill up through the day.</p>
             </div>
             <TimeLot />
-            <p className="lp-note">Example pattern, not real UCSD data.</p>
+            <p className="lp-note lp-split-note">Example pattern, not real UCSD data.</p>
           </div>
         </section>
 
@@ -266,19 +292,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="hood-heading" className="lp-big">
-                Under the hood.
+                How it works.
               </h2>
-              <p className="lp-sub">Where a recommendation comes from, and how far along each part is.</p>
+              <p className="lp-sub">Each stage: what it does, why, and how far along it is.</p>
             </div>
             <Pipeline />
-            <div className="lp-mix">
-              <h3 className="lp-h3-light">How a pick is chosen</h3>
-              <ScoreMix />
-            </div>
           </div>
         </section>
 
-        <section data-screen="6" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
+        <section data-screen="6" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
+          <div className="lp-container lp-faq">
+            <div>
+              <h2 id="score-heading" className="lp-big">
+                How a pick is chosen.
+              </h2>
+              <div className="lp-mix">
+                <ScoreMix />
+              </div>
+            </div>
+            <ul className="lp-score-list">
+              {SCORE_NOTES.map((item) => (
+                <li key={item.lead}>
+                  <strong>{item.lead}</strong> {item.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section data-screen="7" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
           <div className="lp-container lp-faq">
             <h2 id="evidence-heading" className="lp-big">
               Checked against what happened.
@@ -297,13 +339,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="7" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+        <section data-screen="8" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
           <div className="lp-container lp-limits">
-            <h2 id="limits-heading" className="lp-big lp-big--navy">
-              A forecast, not a promise.
-            </h2>
             <div>
+              <h2 id="limits-heading" className="lp-big lp-big--navy">
+                A forecast, not a promise.
+              </h2>
               <ul className="lp-limit-list">
                 {LIMITS.slice(0, TOP_LIMITS).map((item) => (
                   <li key={item.lead}>
@@ -322,11 +364,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 </ul>
               </details>
             </div>
+            <div className="lp-faq-list" aria-label="Quick answers">
+              {FAQ.map((item, i) => (
+                <details key={item.q} className="lp-faq-item" open={i < FAQ_OPEN || undefined}>
+                  <summary>{item.q}</summary>
+                  <p>{item.a}</p>
+                </details>
+              ))}
+            </div>
           </div>
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section data-screen="8" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
+        <section data-screen="9" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
           <div className="lp-container lp-faq">
             <h2 id="next-heading" className="lp-big">
               What is next.
@@ -339,22 +389,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 </li>
               ))}
             </ul>
-          </div>
-        </section>
-
-        <section data-screen="9" className="lp-block lp-block--paper" aria-labelledby="faq-heading">
-          <div className="lp-container lp-faq">
-            <h2 id="faq-heading" className="lp-big lp-big--navy">
-              Quick answers.
-            </h2>
-            <div className="lp-faq-list">
-              {FAQ.map((item) => (
-                <details key={item.q} className="lp-faq-item">
-                  <summary>{item.q}</summary>
-                  <p>{item.a}</p>
-                </details>
-              ))}
-            </div>
           </div>
         </section>
 
