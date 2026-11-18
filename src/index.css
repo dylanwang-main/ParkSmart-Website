@@ -2491,9 +2491,23 @@ body {
   transition: color 150ms ease, background-color 150ms ease, transform 120ms ease;
 }
 
-.lp-textlink:hover,
+/* No background box: the underline thickens and the text shifts color */
+.lp-textlink,
+.lp-more summary {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  transition: color 150ms ease, text-decoration-thickness 150ms ease, text-underline-offset 150ms ease, transform 120ms ease;
+}
+
+.lp-textlink:hover {
+  color: var(--lp-line-yellow);
+  text-decoration-thickness: 4px;
+  text-underline-offset: 7px;
+}
+
 .lp-more summary:hover {
-  background-color: rgba(255, 205, 0, 0.35);
+  text-decoration-thickness: 4px;
+  text-underline-offset: 7px;
 }
 
 .lp-textlink:active,
