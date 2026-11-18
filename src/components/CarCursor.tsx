@@ -19,12 +19,24 @@ const TURN_RATE = 0.22;
 const MIN_TURN_MOVE_PX = 1.5;
 /** Car scale over buttons, links and other things you can press. */
 const HOVER_SCALE = 1.3;
+/** Car scale while a button is held down: a quick squash. */
+const PRESS_SCALE = 0.78;
+/** Click ripple: how long it lasts and how far it spreads. */
+const RIPPLE_LIFE_MS = 450;
+const RIPPLE_START_PX = 8;
+const RIPPLE_END_PX = 38;
 const REST_SCALE = 1;
 
 const INTERACTIVE = 'a, button, summary, input, select, textarea, label, [role="button"], [role="radio"]';
 const BRAND_YELLOW = '#FFCD00';
 const BRAND_NAVY = '#182B49';
 const PAINT_WHITE = '#F7F8FA';
+
+interface Ripple {
+  x: number;
+  y: number;
+  t: number;
+}
 
 interface TrailPoint {
   x: number;
@@ -108,6 +120,9 @@ export const CarCursor: React.FC = () => {
     resize();
 
     const trail: TrailPoint[] = [];
+    const ripples: Ripple[] = [];
+    let pressed = false;
+    let hoverScale = REST_SCALE;
     const pos = { x: 0, y: 0 };
     let heading = 0;
     let scale = REST_SCALE;
@@ -134,6 +149,22 @@ export const CarCursor: React.FC = () => {
       scale += (targetScale - scale) * 0.25;
 
       while (trail.length && now - trail[0].t > TRAIL_LIFE_MS) trail.shift();
+      while (ripples.length && now - ripples[0].t > RIPPLE_LIFE_MS) ripples.shift();
+
+      // Click ripple: a ring that spreads and fades, navy under white so it shows on any section
+      for (const r of ripples) {
+        const p = (now - r.t) / RIPPLE_LIFE_MS;
+        const eased = 1 - Math.pow(1 - p, 3);
+        const radius = RIPPLE_START_PX + (RIPPLE_END_PX - RIPPLE_START_PX) * eased;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(24, 43, 73, ${0.45 * (1 - p)})`;
+        ctx.lineWidth = 6;
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(255, 205, 0, ${1 - p})`;
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+      }
 
       // Two tire marks, each fading by age. A navy underlay keeps them visible on any section colour.
       ctx.lineCap = 'round';
@@ -172,7 +203,7 @@ export const CarCursor: React.FC = () => {
 
       // Stop drawing once the pointer has been still and the trail has faded
       const idle = now - lastMoveTime > TRAIL_LIFE_MS + 200;
-      if (idle && trail.length === 0 && Math.abs(targetScale - scale) < 0.01) {
+      if (idle && trail.length === 0 && ripples.length === 0 && Math.abs(targetScale - scale) < 0.01) {
         raf = 0;
         return;
       }
@@ -199,7 +230,28 @@ export const CarCursor: React.FC = () => {
         if (trail.length > TRAIL_MAX_POINTS) trail.shift();
       }
       const el = e.target instanceof Element ? e.target : null;
-      targetScale = el?.closest(INTERACTIVE) ? HOVER_SCALE : REST_SCALE;
+      hoverScale = el?.closest(INTERACTIVE) ? HOVER_SCALE : REST_SCALE;
+      targetScale = pressed ? PRESS_SCALE : hoverScale;
+      wake();
+    };
+
+    const onDown = (e: PointerEvent) => {
+      if ((e.pointerType !== 'mouse' && e.pointerType !== 'pen') || e.button !== 0) return;
+      pressed = true;
+      targetScale = PRESS_SCALE;
+      lastMoveTime = performance.now();
+      ripples.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      visible = true;
+      pos.x = e.clientX;
+      pos.y = e.clientY;
+      wake();
+    };
+
+    const onUp = () => {
+      if (!pressed) return;
+      pressed = false;
+      targetScale = hoverScale;
+      lastMoveTime = performance.now();
       wake();
     };
 
@@ -211,10 +263,16 @@ export const CarCursor: React.FC = () => {
     };
 
     window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    window.addEventListener('pointercancel', onUp, { passive: true });
     document.addEventListener('mouseout', onLeave);
     window.addEventListener('resize', resize);
     return () => {
       window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       document.removeEventListener('mouseout', onLeave);
       window.removeEventListener('resize', resize);
       if (raf) cancelAnimationFrame(raf);
