@@ -76,7 +76,7 @@ const FAQ = [
   },
   {
     q: 'Does it work for visitors?',
-    a: 'Partly. You can pick V (Visitor / Daily Pay) and see where visitors may park, but prices and pay-station rules are not covered. Check UCSD\'s visitor parking page before you go.',
+    a: 'Partly. You can pick V (Visitor / Daily Pay) and see where visitors may park, but prices and pay-station rules are not covered. Visitor estimates are also less reliable: in our tests they ran about 24 points too optimistic when lots were nearly full. Check UCSD\'s visitor parking page before you go.',
   },
 ] as const;
 
@@ -349,8 +349,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <p className="lp-evidence-text">
                 On 11,665 held-out survey readings from the newest dates, the forecast missed the actual open
                 share by 21.0 percentage points on average (MAE). When a lot was nearly full, the miss was 13.7 points.
-                The forecast is a historical average per lot, weekday and time. Scores come from ParkSmart&apos;s own
-                test split; expert review is still planned.
+                Another 4,458 held-out readings had no usable history, so ParkSmart shows no estimate for those
+                instead of a guess. Scores come from ParkSmart&apos;s own test split; expert review is still planned.
               </p>
             </div>
           </div>
