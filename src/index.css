@@ -73,8 +73,8 @@ body {
 }
 
 .maplibregl-ctrl-group button {
-  width: 32px !important;
-  height: 32px !important;
+  width: 44px !important;
+  height: 44px !important;
   border-bottom: 1px solid var(--color-line) !important;
 }
 
@@ -130,6 +130,13 @@ body {
   font-family: var(--font-sans);
 }
 .parksmart-marker:focus-visible { outline: none; }
+/* Keyboard focus: a high-contrast ring on the pin itself (white gap, sun-yellow ring, navy edge) */
+.parksmart-marker:focus-visible .ps-glyph,
+.parksmart-marker:focus-visible .ps-balloon-head {
+  outline: 3px solid var(--color-sun);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--color-navy);
+}
 
 /* Resting state: small "P" disc with the name underneath */
 .ps-glyph {
@@ -148,7 +155,7 @@ body {
   line-height: 20px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(24, 43, 73, 0.5);
-  transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: scale 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .parksmart-marker:hover .ps-glyph,
 .parksmart-marker:focus-visible .ps-glyph { scale: 1.15; }
@@ -198,7 +205,7 @@ body {
   flex-direction: column;
   align-items: center;
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
-  animation: ps-balloon-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: ps-balloon-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .ps-balloon-head {
   position: relative;
@@ -260,6 +267,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .ps-balloon,
+  .ps-avail,
   .ps-ground { animation: none; }
   .ps-glyph { transition: none; }
 }
@@ -470,7 +478,7 @@ body {
   --lp-gold: #C69214;
   --lp-asphalt-hover: #213A61;
 
-  font-family: 'Overpass', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   background: var(--lp-paint-white);
   color: var(--lp-asphalt);
   /* The page itself is locked (the planner is one fixed screen), so the landing
@@ -636,7 +644,7 @@ body {
   margin: 0;
   max-width: 12ch;
   font-family: var(--lp-serif);
-  font-size: clamp(2.75rem, 5.6vw, 5.25rem);
+  font-size: clamp(2.5rem, 4.8vw, 4.5rem);
   font-weight: 500;
   line-height: 1;
   letter-spacing: -0.025em;
@@ -891,9 +899,9 @@ body {
   margin: 0;
   max-width: 14ch;
   font-family: var(--lp-serif);
-  font-size: clamp(2.75rem, 7vw, 6.25rem);
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
   font-weight: 500;
-  line-height: 0.95;
+  line-height: 1;
   letter-spacing: -0.03em;
 }
 
@@ -1343,7 +1351,11 @@ body {
   overflow: hidden;
   font-size: 1.125rem;
   font-weight: 800;
-  transition: width 500ms cubic-bezier(0.3, 0.9, 0.3, 1);
+  transition: flex-grow 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-seg { transition: none; }
 }
 
 .sm-seg--a {
@@ -1851,5 +1863,206 @@ body {
 
   .ml {
     transition: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Landing additions: problem, evidence, next, counter, links, skip   */
+/* ------------------------------------------------------------------ */
+.lp-fact-list,
+.lp-next-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lp-fact-list li,
+.lp-next-list li {
+  padding-block: 16px;
+  border-top: 3px solid var(--lp-asphalt);
+  font-size: 1.125rem;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+
+.lp-fact-list li:last-child,
+.lp-next-list li:last-child {
+  border-bottom: 3px solid var(--lp-asphalt);
+}
+
+.lp-fact-list strong,
+.lp-next-list strong {
+  font-weight: 800;
+}
+
+.lp-status {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 10px;
+  border: 2px solid var(--lp-asphalt);
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+}
+
+.lp-evidence {
+  max-width: 62ch;
+}
+
+.lp-evidence-num {
+  margin: 0;
+  font-family: var(--lp-serif);
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--lp-line-yellow);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-evidence-num span {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: 1.25rem;
+  letter-spacing: 0;
+  color: var(--lp-paint-white);
+}
+
+.lp-evidence-text {
+  margin: 20px 0 0;
+  font-size: 1.125rem;
+  line-height: 1.55;
+  color: var(--lp-paint-white);
+}
+
+.lp-permit-help {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.lp-result {
+  margin-top: 28px;
+  max-width: 30rem;
+  padding: 14px 18px;
+  border: 2px solid rgba(247, 248, 250, 0.35);
+  border-radius: 12px;
+  background: var(--lp-asphalt-hover);
+  color: var(--lp-paint-white);
+}
+
+.lp-result p {
+  margin: 0;
+}
+
+.lp-result-tag {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(247, 248, 250, 0.78);
+}
+
+.lp-result-main {
+  margin-top: 4px;
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+
+.lp-result-backup {
+  margin-top: 2px;
+  font-size: 1rem;
+  color: rgba(247, 248, 250, 0.85);
+}
+
+.lp-more {
+  margin-top: 12px;
+}
+
+.lp-more summary {
+  cursor: pointer;
+  padding-block: 10px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lp-counter {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 20;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--lp-asphalt);
+  color: var(--lp-paint-white);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.lp-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin-top: 14px;
+}
+
+.lp-footer-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--lp-paint-white);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 0.9375rem;
+}
+
+.lp-footer-links a:hover {
+  color: var(--lp-line-yellow);
+}
+
+.lp-intro-skip {
+  min-height: 44px;
+  padding: 0 16px;
+  background: none;
+  border: 0;
+  color: rgba(247, 248, 250, 0.85);
+  font: inherit;
+  font-size: 0.9375rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.lp-intro-skip:hover {
+  color: var(--lp-paint-white);
+}
+
+.lp-intro-skip:focus-visible {
+  outline: 3px solid var(--lp-paint-white);
+  outline-offset: 2px;
+}
+
+@media (max-width: 899px) {
+  .lp-counter {
+    bottom: 76px;
+  }
+}
+
+.lp-sub-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 28ch;
+}
+
+/* Phones: map overlay buttons meet the 44px touch target */
+@media (max-width: 639px) {
+  .maplibregl-ctrl button.ps-control-btn {
+    height: 44px;
   }
 }

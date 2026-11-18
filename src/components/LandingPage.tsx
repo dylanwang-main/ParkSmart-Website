@@ -59,7 +59,7 @@ const FAQ = [
   },
   {
     q: 'Will it work with my permit?',
-    a: 'You choose your permit type (A, B, S, SR, D, or V) and lots it cannot use are filtered out. Always check UCSD\'s permit pages for the final rules.',
+    a: 'You choose your permit type (A, B, S, SR, D, or V) and lots it cannot use are filtered out. Your permit letter is on your UCSD permit or in your parking account. Always check UCSD\'s permit pages for the final rules.',
   },
   {
     q: 'Is the data live?',
@@ -75,27 +75,90 @@ const FAQ = [
   },
   {
     q: 'Does it work for visitors?',
-    a: 'Not really. It is built around permit types, so visitor and daily-pay parking and costs are not covered.',
+    a: 'Partly. You can pick V (Visitor / Daily Pay) and see where visitors may park, but prices and pay-station rules are not covered. Check UCSD\'s visitor parking page before you go.',
   },
 ] as const;
 
-/** The intro plays once per page load, not every time someone returns from the planner. */
+/** The intro plays once per browser session, not on every reload or return from the planner. */
+const INTRO_SEEN_KEY = 'parksmart:intro-seen';
 let introPlayedThisLoad = false;
 
 const shouldPlayIntro = (): boolean => {
   if (introPlayedThisLoad) return false;
   introPlayedThisLoad = true;
   try {
-    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (window.sessionStorage.getItem(INTRO_SEEN_KEY)) return false;
   } catch {
-    return true;
+    /* storage blocked: fall through and play once per load */
   }
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  } catch {
+    /* no matchMedia: play it */
+  }
+  try {
+    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+  return true;
 };
+
+/** Public links for judges and teammates. All verified targets in this repo's docs. */
+const LINKS = [
+  { label: 'GitHub', href: 'https://github.com/yraclimaco/parksmart' },
+  { label: 'Design doc', href: 'https://github.com/yraclimaco/parksmart/blob/main/docs/DesignDoc.md' },
+  { label: 'UCSD QPASS surveys', href: 'https://rmp-wapps.ucsd.edu/TS/Survey/QPASS/Contents.html' },
+  { label: 'Imagery: USGS NAIP', href: 'https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer' },
+  { label: 'Map: OpenFreeMap, OpenStreetMap', href: 'https://openfreemap.org/' },
+] as const;
+
+/** Facts from ParkSmart's own dataset notes (docs/issue11_findings.md, docs/issue18_predictions.md). */
+const PROBLEM_FACTS = [
+  {
+    lead: 'UCSD publishes survey counts, not a live feed.',
+    text: 'UCSD Transportation posts QPASS survey workbooks after each quarter. Nothing tells you what is open right now.',
+  },
+  {
+    lead: 'The detailed counts are early-quarter snapshots.',
+    text: 'Surveys mostly cover the first weeks of a quarter, and several years and quarters are missing from the public archive.',
+  },
+  {
+    lead: 'ParkSmart turns 76,102 survey readings into a forecast.',
+    text: 'They span 86 facilities, from June 2018 to October 2026. Forecasts are typical conditions, not today\'s.',
+  },
+] as const;
+
+const NEXT_ITEMS = [
+  { name: 'Hosted planner and backend', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Historical estimates on AWS. Walk times are estimates for now.' },
+  { name: 'Trip alerts', status: 'In progress', text: 'Weather and construction notes near your lot. Informational, never used to rank.' },
+  { name: 'Mobile app', status: 'Planned', text: 'The same planner as an iOS app.' },
+  { name: 'Live lot counts', status: 'Planned', text: 'Only if a validated source exists, always shown with its retrieval time.' },
+] as const;
+
+const SCREEN_COUNT = 9;
+const TOP_LIMITS = 3;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
   const heroRef = React.useRef<HTMLElement | null>(null);
   const [heroGone, setHeroGone] = React.useState(false);
+  const [screen, setScreen] = React.useState(1);
+  const docRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    const root = docRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) setScreen(Number((e.target as HTMLElement).dataset.screen));
+        });
+      },
+      { rootMargin: '-45% 0px -50% 0px' },
+    );
+    root.querySelectorAll('[data-screen]').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
   React.useEffect(() => {
     const el = heroRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') return;
@@ -117,8 +180,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
     >
       {introActive && <LandingIntro onDone={() => setIntroActive(false)} />}
 
-      <div className="lp-doc">
-        <section ref={heroRef} className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
+      <div className="lp-doc" ref={docRef}>
+        <section ref={heroRef} data-screen="1" className="lp-hero2 lp-dark" aria-label="ParkSmart introduction">
           <header className="lp-bar">
             <div className="lp-container lp-bar-inner">
               <span className="lp-wordmark">
@@ -142,26 +205,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                   See how it thinks
                 </a>
               </div>
+              <div className="lp-result" role="group" aria-label="Example result">
+                <p className="lp-result-tag">Example result</p>
+                <p className="lp-result-main">
+                  <strong>Lot P503</strong> · 5 min walk · usually open
+                </p>
+                <p className="lp-result-backup">Backup: Lot P510</p>
+              </div>
               <p className="lp-fineprint">{LIVE ? 'UCSD student prototype. Uses historical survey estimates, not live data.' : 'UCSD student prototype. This preview runs on sample data.'}</p>
             </div>
             <div className="lp-hero2-demo">{!introActive && <HeroDemo />}</div>
           </div>
         </section>
 
-        <section id="permit" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
+        <section data-screen="2" className="lp-block lp-block--paper" aria-labelledby="problem-heading">
+          <div className="lp-container lp-faq">
+            <h2 id="problem-heading" className="lp-big lp-big--navy">
+              Nobody tells you what is open.
+            </h2>
+            <ul className="lp-fact-list">
+              {PROBLEM_FACTS.map((item) => (
+                <li key={item.lead}>
+                  <strong>{item.lead}</strong> {item.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section id="permit" data-screen="3" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="permit-heading" className="lp-big">
                 Your permit decides the map.
               </h2>
-              <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
+              <div className="lp-sub-stack">
+                <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
+                <p className="lp-permit-help">Not sure which one you have? The letter is printed on your UCSD permit and listed in your parking account.</p>
+              </div>
             </div>
             <PermitLot />
             <p className="lp-note">Simplified example lot. Real rules live on UCSD&apos;s permit pages.</p>
           </div>
         </section>
 
-        <section className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
+        <section data-screen="4" className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="time-heading" className="lp-big">
@@ -174,7 +262,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
+        <section data-screen="5" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="hood-heading" className="lp-big">
@@ -190,24 +278,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+        <section data-screen="6" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
+          <div className="lp-container lp-faq">
+            <h2 id="evidence-heading" className="lp-big">
+              Checked against what happened.
+            </h2>
+            <div className="lp-evidence">
+              <p className="lp-evidence-num">
+                21 <span>points off, on average</span>
+              </p>
+              <p className="lp-evidence-text">
+                On 11,665 held-out survey readings from the newest dates, the forecast missed the actual open
+                share by 21.0 percentage points on average (MAE). When a lot was nearly full, the miss was 13.7 points.
+                The forecast is a historical average per lot, weekday and time. Scores come from ParkSmart&apos;s own
+                test split; expert review is still planned.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section data-screen="7" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
           <div className="lp-container lp-limits">
             <h2 id="limits-heading" className="lp-big lp-big--navy">
               A forecast, not a promise.
             </h2>
-            <ul className="lp-limit-list">
-              {LIMITS.map((item) => (
-                <li key={item.lead}>
-                  <strong>{item.lead}</strong> {item.text}
-                </li>
-              ))}
-            </ul>
+            <div>
+              <ul className="lp-limit-list">
+                {LIMITS.slice(0, TOP_LIMITS).map((item) => (
+                  <li key={item.lead}>
+                    <strong>{item.lead}</strong> {item.text}
+                  </li>
+                ))}
+              </ul>
+              <details className="lp-more">
+                <summary>More limits</summary>
+                <ul className="lp-limit-list">
+                  {LIMITS.slice(TOP_LIMITS).map((item) => (
+                    <li key={item.lead}>
+                      <strong>{item.lead}</strong> {item.text}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </div>
           </div>
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section className="lp-block lp-block--paper" aria-labelledby="faq-heading">
+        <section data-screen="8" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
+          <div className="lp-container lp-faq">
+            <h2 id="next-heading" className="lp-big">
+              What is next.
+            </h2>
+            <ul className="lp-next-list">
+              {NEXT_ITEMS.map((item) => (
+                <li key={item.name}>
+                  <span className="lp-status">{item.status}</span>
+                  <strong>{item.name}</strong> {item.text}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
+        <section data-screen="9" className="lp-block lp-block--paper" aria-labelledby="faq-heading">
           <div className="lp-container lp-faq">
             <h2 id="faq-heading" className="lp-big lp-big--navy">
               Quick answers.
@@ -230,6 +365,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 Team lead: Yra. Built by Vivaan, Hanrong, Dylan, and Daira for UCSD DS3, Fall 2026.
               </p>
               <p className="lp-footer-text lp-footer-text--note">A student project, not an official UCSD service.</p>
+              <nav className="lp-footer-links" aria-label="Project links and sources">
+                {LINKS.map((l) => (
+                  <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer">
+                    {l.label}
+                  </a>
+                ))}
+              </nav>
             </div>
             <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
               Plan my parking
@@ -237,6 +379,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </footer>
       </div>
+
+      {!introActive && (
+        <p className="lp-counter" aria-label={`Screen ${screen} of ${SCREEN_COUNT}`}>
+          {screen} of {SCREEN_COUNT}
+        </p>
+      )}
 
       <div className={`lp-sticky${heroGone && !introActive ? ' lp-sticky--on' : ''}`} aria-hidden={!heroGone}>
         <button type="button" className="lp-btn lp-btn--yellow" tabIndex={heroGone ? 0 : -1} onClick={onPlanClick}>
