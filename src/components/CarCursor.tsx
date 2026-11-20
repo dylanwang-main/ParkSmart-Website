@@ -13,6 +13,13 @@ const TRAIL_STEP_PX = 4;
 const TRAIL_MAX_POINTS = 120;
 /** Distance from the car's centre line to each tire mark. */
 const TIRE_OFFSET_PX = 6;
+/** The tire marks are dotted: one dot every this many pixels travelled, so dots never shuffle as the trail fades. */
+const DOT_SPACING_PX = 8;
+const DOT_RADIUS_PX = 1.8;
+/** Black dots, with a soft light ring so they still show on the navy sections. */
+const DOT_COLOR = '0, 0, 0';
+const DOT_HALO_COLOR = '247, 248, 250';
+const DOT_HALO_EXTRA_PX = 1.4;
 /** How quickly the car turns toward its heading (0-1 per frame). */
 const TURN_RATE = 0.22;
 /** Movement below this many pixels per frame does not change the heading. */
@@ -42,6 +49,8 @@ interface TrailPoint {
   x: number;
   y: number;
   t: number;
+  /** Total distance the pointer had travelled when this point was recorded. */
+  d: number;
 }
 
 /** True only for a real mouse or trackpad and when the visitor has not asked for less motion. */
@@ -89,7 +98,7 @@ function drawCar(ctx: CanvasRenderingContext2D) {
 
 /**
  * Landing-page cursor: a small yellow car at the pointer that turns toward where it is
- * heading and leaves two tire marks that fade away. Only for a mouse or trackpad and only
+ * heading and leaves two dotted tire marks that fade away. Only for a mouse or trackpad and only
  * when reduced motion is off; everyone else keeps the normal cursor.
  */
 export const CarCursor: React.FC = () => {
@@ -131,6 +140,7 @@ export const CarCursor: React.FC = () => {
     let raf = 0;
     let lastMoveTime = 0;
     let prev = { x: 0, y: 0 };
+    let travelled = 0;
 
     const frame = (now: number) => {
       ctx.clearRect(0, 0, width, height);
@@ -166,8 +176,8 @@ export const CarCursor: React.FC = () => {
         ctx.stroke();
       }
 
-      // Two tire marks, each fading by age. A navy underlay keeps them visible on any section colour.
-      ctx.lineCap = 'round';
+      // Two dotted tire marks. Dots sit at fixed distances along the path (not relative to the
+      // fading tail), and each fades with its own age.
       for (let i = 1; i < trail.length; i += 1) {
         const a = trail[i - 1];
         const b = trail[i];
@@ -176,19 +186,22 @@ export const CarCursor: React.FC = () => {
         const len = Math.hypot(segX, segY) || 1;
         const nx = -segY / len;
         const ny = segX / len;
-        const life = 1 - (now - b.t) / TRAIL_LIFE_MS;
-        for (const side of [-1, 1]) {
-          const ox = nx * TIRE_OFFSET_PX * side;
-          const oy = ny * TIRE_OFFSET_PX * side;
-          ctx.beginPath();
-          ctx.moveTo(a.x + ox, a.y + oy);
-          ctx.lineTo(b.x + ox, b.y + oy);
-          ctx.strokeStyle = `rgba(24, 43, 73, ${0.35 * life})`;
-          ctx.lineWidth = 4.5;
-          ctx.stroke();
-          ctx.strokeStyle = `rgba(247, 248, 250, ${0.9 * life})`;
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
+        for (let k = Math.ceil(a.d / DOT_SPACING_PX); k * DOT_SPACING_PX <= b.d; k += 1) {
+          const f = b.d === a.d ? 0 : (k * DOT_SPACING_PX - a.d) / (b.d - a.d);
+          const life = 1 - (now - (a.t + (b.t - a.t) * f)) / TRAIL_LIFE_MS;
+          if (life <= 0) continue;
+          for (const side of [-1, 1]) {
+            const x = a.x + segX * f + nx * TIRE_OFFSET_PX * side;
+            const y = a.y + segY * f + ny * TIRE_OFFSET_PX * side;
+            ctx.beginPath();
+            ctx.arc(x, y, DOT_RADIUS_PX + DOT_HALO_EXTRA_PX, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${DOT_HALO_COLOR}, ${0.35 * life})`;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x, y, DOT_RADIUS_PX, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${DOT_COLOR}, ${0.9 * life})`;
+            ctx.fill();
+          }
         }
       }
 
@@ -226,7 +239,8 @@ export const CarCursor: React.FC = () => {
       lastMoveTime = now;
       const last = trail[trail.length - 1];
       if (!last || Math.hypot(pos.x - last.x, pos.y - last.y) >= TRAIL_STEP_PX) {
-        trail.push({ x: pos.x, y: pos.y, t: now });
+        if (last) travelled += Math.hypot(pos.x - last.x, pos.y - last.y);
+        trail.push({ x: pos.x, y: pos.y, t: now, d: travelled });
         if (trail.length > TRAIL_MAX_POINTS) trail.shift();
       }
       const el = e.target instanceof Element ? e.target : null;
