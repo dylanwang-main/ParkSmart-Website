@@ -15,6 +15,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import parkSmartLogo from './assets/parksmart-logo.png';
+import { SchedulePanel, type ClassTrip } from './components/SchedulePanel.tsx';
 import { recordRecentDestination } from './utils/recentDestinations.ts';
 import {
   DEFAULT_PREFERENCES,
@@ -349,6 +350,14 @@ export default function Planner({ onBack }: PlannerProps) {
   const handleDestinationOrFormChange = (changes: Partial<ParkingPlannerRequest>) => {
     handleFormChange(changes);
     if (changes.destinationId) runPlanner({ ...formInputs, ...changes });
+  };
+
+  // Park for a class from the imported schedule: set the arrival just before it starts and,
+  // when its building is known, search right away (a destination pick searches on its own)
+  const handlePlanClass = (trip: ClassTrip) => {
+    const { destinationId, arrivalDate, arrivalTime } = trip;
+    if (destinationId) handleDestinationOrFormChange({ destinationId, arrivalDate, arrivalTime });
+    else handleFormChange({ arrivalDate, arrivalTime });
   };
 
   // Back to the first-visit settings (S permit, balanced, 20 min); the effect below forgets the saved ones
@@ -738,6 +747,9 @@ export default function Planner({ onBack }: PlannerProps) {
                 </p>
               )}
             </section>
+
+            {/* Class schedule: import once, then park for any class in one tap */}
+            <SchedulePanel date={formInputs.arrivalDate} onPlanClass={handlePlanClass} />
 
             {/* Subtle Divider */}
             <div className="flex items-center gap-3 py-0.5 text-[13px] font-semibold text-navy">

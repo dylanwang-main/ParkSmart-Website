@@ -102,10 +102,10 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           <div className="w-10 h-10 mx-auto rounded-full bg-paper flex items-center justify-center text-muted">
             <MapPin className="w-5 h-5" aria-hidden="true" />
           </div>
-          <p className="text-sm font-semibold text-navy">Enter your trip details to see options</p>
+          <p className="text-sm font-semibold text-navy">Where are you headed?</p>
           <p className="text-xs text-muted leading-relaxed">
-            Pick where you're going (or use Drop pin on the map), when you'll arrive and your
-            permit, then press Find parking. Search a lot by name or tap any P to check it.
+            Pick a place (or use Drop pin on the map) and your options appear right away. Search a
+            lot by name or tap any P to check it.
           </p>
         </div>
       </div>

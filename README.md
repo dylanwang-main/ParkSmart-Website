@@ -86,6 +86,12 @@ Sample mode has no backend, so it shows no routes.
 
 **Open in Google Maps** on a result card (or a lot card) opens turn-by-turn driving directions to that lot in Google Maps (the app on phones), starting from the person's current location. It uses a plain Google Maps link: free and no API key.
 
+## Class schedule import
+
+The planner has an **Import schedule (.ics)** panel. Students export their calendar (Google Calendar: Settings, Import & export; Apple Calendar: File, Export) and pick the file. It is read in the browser with a small built-in parser (`src/utils/icsSchedule.ts`): timed events, TZID or UTC times, and weekly repeats (INTERVAL, BYDAY, UNTIL, COUNT, EXDATE). All-day events are skipped, and any other repeat rule is read as a single class. Times are converted to campus time (America/Los_Angeles).
+
+The panel lists the classes on the planner's arrival date. Tapping one sets the arrival time 20 minutes before it starts (`ARRIVE_BEFORE_CLASS_MINUTES`, our choice: about a 10-minute walk plus a margin) and, if the room's building code or full name matches a campus destination exactly (`matchBuilding` in `src/utils/scheduleTrips.ts`), searches for parking there. Remote classes and unknown rooms only set the time and ask the student to pick a destination; nothing is guessed. The schedule is saved in this browser only (`parksmart.schedule.v1`) so it is imported once, is never uploaded, and can be removed with the X.
+
 ## Scoring Formula
 
 Scoring is handled by `calculateParkingScore` in `src/data/sampleRecommendations.ts`:
