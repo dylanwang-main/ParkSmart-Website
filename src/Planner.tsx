@@ -27,7 +27,7 @@ import {
 } from './utils/savedPreferences.ts';
 import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
 import { findDestination, makePinDestinationId } from './data/destinations.ts';
-import { getArrivalError } from './utils/arrival.ts';
+import { alertArrivalTime, getArrivalError } from './utils/arrival.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { RECOMMENDATION_SOURCE } from './config.ts';
@@ -587,7 +587,7 @@ export default function Planner({ onBack }: PlannerProps) {
     routedRecommendation !== null && searchedRequest !== null,
     routedRecommendation && searchedRequest
       ? {
-          arrivalTime: `${searchedRequest.arrivalDate}T${searchedRequest.arrivalTime}:00`,
+          arrivalTime: alertArrivalTime(searchedRequest.arrivalDate, searchedRequest.arrivalTime),
           parkingLocationId: routedRecommendation.lot.locationId,
           destination: routedDestination
             ? { name: routedDestination.name, latitude: routedDestination.latitude, longitude: routedDestination.longitude }
