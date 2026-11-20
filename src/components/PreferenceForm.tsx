@@ -10,6 +10,8 @@ import { DEFAULT_PRIORITY, PERMIT_OPTIONS, PRIORITY_OPTIONS, WALK_LIMIT_OPTIONS 
 import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
 import { maxArrivalDate } from '../utils/arrival.ts';
 import { loadFavorites, toggleFavorite } from '../utils/favorites.ts';
+import { arrivalPresets, matchesPreset } from '../utils/arrivalPresets.ts';
+import { loadRecentDestinations } from '../utils/recentDestinations.ts';
 import { ALL_PARKING } from '../data/parkingLots.ts';
 import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
 
@@ -92,6 +94,20 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
 
   // Before typing: popular places. While typing: matching places and parking, with
   // parking first when the query is clearly a lot ("Gilman", "P406")
+  // Last few searched places, reloaded each time the list opens so a search just made shows up
+  const recents = useMemo(
+    () => (isDestinationOpen ? loadRecentDestinations() : []),
+    [isDestinationOpen]
+  );
+  const recentPlaces = useMemo(
+    () =>
+      recents
+        .filter((id) => !favorites.includes(id))
+        .map((id) => findDestination(id))
+        .filter((d): d is CampusDestination => d !== undefined && !d.isPin)
+        .map((d): Option => ({ kind: 'place', destination: d })),
+    [recents, favorites]
+  );
   const favoritePlaces = useMemo(
     () =>
       favorites
@@ -103,7 +119,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   const { places, parking } = useMemo(() => {
     if (!query) {
       return {
-        places: POPULAR_DESTINATIONS.filter((d) => !favorites.includes(d.id)).map((d): Option => ({ kind: 'place', destination: d })),
+        places: POPULAR_DESTINATIONS.filter((d) => !favorites.includes(d.id) && !recents.includes(d.id)).map((d): Option => ({ kind: 'place', destination: d })),
         parking: [] as Option[],
       };
     }
@@ -111,7 +127,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       places: searchDestinations(query).map((m): Option => ({ kind: 'place', destination: m.destination, matchedOn: m.matchedOn })),
       parking: searchParking(query).map((lot): Option => ({ kind: 'parking', lot })),
     };
-  }, [query, favorites]);
+  }, [query, favorites, recents]);
   const parkingFirst =
     parking.length > 0 &&
     (places.length === 0 || (parking[0].kind === 'parking' && parking[0].lot.name.toLowerCase().startsWith(query.toLowerCase())));
@@ -119,7 +135,7 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
     parkingFirst
       ? [{ label: 'Parking', options: parking }, { label: 'Places', options: places }]
       : [
-          ...(query ? [] : [{ label: 'Favorites', options: favoritePlaces }]),
+          ...(query ? [] : [{ label: 'Recent', options: recentPlaces }, { label: 'Favorites', options: favoritePlaces }]),
           { label: query ? 'Places' : 'Popular', options: places },
           { label: 'Parking', options: parking },
         ]
@@ -392,6 +408,26 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             />
           </div>
         </div>
+      </div>
+
+      {/* One-tap arrival times, so most trips need no typing */}
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick arrival times">
+        {arrivalPresets().map((preset) => {
+          const active = matchesPreset(preset, formData.arrivalDate, formData.arrivalTime);
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange({ arrivalDate: preset.date, arrivalTime: preset.time })}
+              className={`min-h-[44px] sm:min-h-[32px] px-3 rounded-full border text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
+                active ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-line hover:border-navy'
+              }`}
+            >
+              {preset.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Arrival validation: empty or past date/time */}

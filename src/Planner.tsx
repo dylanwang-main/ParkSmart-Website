@@ -15,6 +15,7 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import parkSmartLogo from './assets/parksmart-logo.png';
+import { recordRecentDestination } from './utils/recentDestinations.ts';
 import {
   DEFAULT_PREFERENCES,
   clearPreferences,
@@ -253,7 +254,9 @@ export default function Planner({ onBack }: PlannerProps) {
     (customInputs?: ParkingPlannerRequest) => {
       const inputs = customInputs || formInputs;
       if (getArrivalError(inputs)) return; // the form shows the message; nothing to search
-      if (!findDestination(inputs.destinationId)) return; // no destination picked yet
+      const destination = findDestination(inputs.destinationId);
+      if (!destination) return; // no destination picked yet
+      if (!destination.isPin) recordRecentDestination(destination.id); // one-tap repeat trips
       setIsLoading(true);
       setErrorMessage(null);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
