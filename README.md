@@ -84,7 +84,7 @@ Not modeled yet (open questions in the research doc): A 24/7, reserved, accessib
 
 Sample mode has no backend, so it shows no routes.
 
-After **Select this spot**, **Open in Google Maps** opens turn-by-turn driving directions to that lot in Google Maps (the app on phones), starting from the person's current location. It uses a plain Google Maps link: free and no API key.
+**Open in Google Maps** on a result card (or a lot card) opens turn-by-turn driving directions to that lot in Google Maps (the app on phones), starting from the person's current location. It uses a plain Google Maps link: free and no API key.
 
 ## Scoring Formula
 
@@ -170,8 +170,9 @@ VITE_RECOMMENDATION_SOURCE=api npm run dev
   (`REQUEST_TIMEOUT_MS`, generous for AWS Lambda cold starts) stops with a
   "taking too long" message instead of loading forever. API mode never falls back
   to sample data.
-- Selecting a spot ("Select this spot") also selects its card and map pin, so the
-  highlighted card, the pin and the route always describe the same lot.
+- Opening directions for a spot ("Open in Google Maps") also selects its card and map pin,
+  so the highlighted card, the pin and the route always describe the same lot. There is no
+  separate "Select this spot" step.
 - Availability labels (all worded as historical patterns, never live availability):
   **Usually open** at 20% open or more (green), **Usually full** at 10% or less (red;
   the backend's "Often nearly full" cutoff), **Usually tight** between (yellow).

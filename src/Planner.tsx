@@ -189,7 +189,7 @@ export default function Planner({ onBack }: PlannerProps) {
   const [searchedRequest, setSearchedRequest] = useState<ParkingPlannerRequest | null>(null);
   const searchedRequestRef = useRef<ParkingPlannerRequest | null>(null);
 
-  // Lot the user confirmed with "Select this spot"
+  // Lot the user opened directions for (or otherwise selected); set via SpotActions
   const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
   // Starting point for driving directions (browser location). Only sent to the
@@ -528,6 +528,25 @@ export default function Planner({ onBack }: PlannerProps) {
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 5 * 60_000 }
     );
   }, []);
+
+  // If this browser has already allowed location for the site, use it as the driving start as
+  // soon as there are results, so directions need no tap. Never prompts: when permission is
+  // not granted yet, the "Use my location" button stays the way to ask.
+  const autoLocateTried = useRef(false);
+  const hasResults = recommendations.length > 0;
+  useEffect(() => {
+    if (!hasResults || startPoint || autoLocateTried.current) return;
+    autoLocateTried.current = true;
+    if (!('permissions' in navigator) || !('geolocation' in navigator)) return;
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((status) => {
+        if (status.state === 'granted') handleUseMyLocation();
+      })
+      .catch(() => {
+        // Permissions API unavailable: leave the button as the way to share location
+      });
+  }, [hasResults, startPoint, handleUseMyLocation]);
 
   // Rendering state for the results list
   const activeIsLoading = isLoading;
