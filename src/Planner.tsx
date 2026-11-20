@@ -28,6 +28,14 @@ import {
 import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
 import { findDestination, makePinDestinationId } from './data/destinations.ts';
 import { alertArrivalTime, getArrivalError } from './utils/arrival.ts';
+import {
+  blankRequest,
+  formatLocalDate,
+  formatLocalTime,
+  isResultStale,
+  sameRequest,
+  shouldAutoRefresh,
+} from './utils/plannerState.ts';
 import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { RECOMMENDATION_SOURCE } from './config.ts';
@@ -45,44 +53,20 @@ import {
 /** Quiet time after the last change before results refresh by themselves (about one request a second at most). */
 const AUTO_REFRESH_DELAY_MS = 1000;
 
-/** How many earlier searches "Recent" keeps for this visit. */
-const MAX_HISTORY = 5;
-
-/** Same destination, date, time, permit, priority and walking limit. */
-function sameRequest(a: ParkingPlannerRequest, b: ParkingPlannerRequest): boolean {
-  return (
-    a.destinationId === b.destinationId &&
-    a.arrivalDate === b.arrivalDate &&
-    a.arrivalTime === b.arrivalTime &&
-    a.permitType === b.permitType &&
-    (a.priority ?? DEFAULT_PRIORITY) === (b.priority ?? DEFAULT_PRIORITY) &&
-    (a.maxWalkMinutes ?? null) === (b.maxWalkMinutes ?? null)
-  );
-}
-
 /** Width the open planner panel covers on the left (380px panel + 24px gap). */
 const PANEL_OFFSET_PX = 404;
 
-/**
- * Returns today's date formatted as YYYY-MM-DD in local time.
- */
-function toDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+/** How many earlier searches "Recent" keeps for this visit. */
+const MAX_HISTORY = 5;
 
+/** Today's date as YYYY-MM-DD, local time. */
 function getTodayDateString(): string {
-  return toDateString(new Date());
+  return formatLocalDate(new Date());
 }
 
-/**
- * Returns the current local time formatted as HH:MM (24-hour, as <input type="time"> expects).
- */
+/** The current local time as HH:MM (24-hour). */
 function getCurrentTimeString(): string {
-  const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return formatLocalTime(new Date());
 }
 
 /** True on phone-width screens, where the planner becomes a bottom sheet instead of a left panel. */
@@ -137,16 +121,11 @@ export default function Planner({ onBack }: PlannerProps) {
   // "Your usual" only exists after a real search (saved in this browser only); it is
   // offered as a card, never prefilled into the form.
 
-  // Permit, priority and walking limit come back from the last visit (this browser only);
-  // everything else is per trip.
+  // The permit comes back from the last visit (this browser only); everything else starts blank
+  // and per trip. Priority and walking limit are fixed defaults with no controls.
   const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() => ({
-    destinationId: '',
-    arrivalDate: getTodayDateString(),
-    arrivalTime: getCurrentTimeString(),
+    ...blankRequest(),
     ...(loadPreferences() ?? DEFAULT_PREFERENCES),
-    // Always balanced with the default walking limit; there is no control for them
-    priority: DEFAULT_PRIORITY,
-    maxWalkMinutes: null,
   }));
 
   // Earlier searches this visit, most recent first (the current one is not included).
@@ -187,8 +166,6 @@ export default function Planner({ onBack }: PlannerProps) {
   const [searchedRequest, setSearchedRequest] = useState<ParkingPlannerRequest | null>(null);
   const searchedRequestRef = useRef<ParkingPlannerRequest | null>(null);
 
-  // Lot the user opened directions for (or otherwise selected); set via SpotActions
-  const [confirmedLotId, setConfirmedLotId] = useState<string | null>(null);
 
   // Starting point for driving directions (browser location). Only sent to the
   // ParkSmart backend to compute a route; never saved.
@@ -261,7 +238,6 @@ export default function Planner({ onBack }: PlannerProps) {
       setIsLoading(true);
       setErrorMessage(null);
       setIsDetailOpen(false); // a new search shows results in the panel, not the pin card
-      setConfirmedLotId(null);
 
       const finish = (
         results: ParkingRecommendation[],
@@ -343,7 +319,7 @@ export default function Planner({ onBack }: PlannerProps) {
   };
 
   // Picking a destination in the form searches right away (one request per pick), so a repeat
-  // trip is two taps. Other changes keep the Update button, so one tap never fires several requests.
+  // trip is two taps. Changes to the permit or time refresh on their own after a pause (below).
   const handleDestinationOrFormChange = (changes: Partial<ParkingPlannerRequest>) => {
     handleFormChange(changes);
     if (changes.destinationId) runPlanner({ ...formInputs, ...changes });
@@ -367,14 +343,7 @@ export default function Planner({ onBack }: PlannerProps) {
   // The imported schedule, starred and recent places and "Recent" searches this visit stay.
   const handleClearAll = () => {
     requestRef.current?.abort(); // a search still in flight must not fill the cleared panel
-    setFormInputs({
-      destinationId: '',
-      arrivalDate: getTodayDateString(),
-      arrivalTime: getCurrentTimeString(),
-      ...DEFAULT_PREFERENCES,
-      priority: DEFAULT_PRIORITY,
-      maxWalkMinutes: null,
-    });
+    setFormInputs(blankRequest());
     setRecommendations([]);
     setResultInfo(null);
     setRankedOptions({});
@@ -383,7 +352,6 @@ export default function Planner({ onBack }: PlannerProps) {
     searchedRequestRef.current = null;
     setSearchedRequest(null);
     setSelectedLocationId(null);
-    setConfirmedLotId(null);
     setIsDetailOpen(false);
     setStartPoint(null);
     setLocateError(null);
@@ -499,28 +467,20 @@ export default function Planner({ onBack }: PlannerProps) {
   };
 
   // Results go stale when any trip detail changes after the search that produced them
-  const isStale =
-    searchedRequest !== null &&
-    (searchedRequest.destinationId !== formInputs.destinationId ||
-      searchedRequest.permitType !== formInputs.permitType ||
-      searchedRequest.arrivalDate !== formInputs.arrivalDate ||
-      searchedRequest.arrivalTime !== formInputs.arrivalTime ||
-      (searchedRequest.priority ?? DEFAULT_PRIORITY) !== (formInputs.priority ?? DEFAULT_PRIORITY) ||
-      (searchedRequest.maxWalkMinutes ?? null) !== (formInputs.maxWalkMinutes ?? null));
+  const isStale = isResultStale(searchedRequest, formInputs);
 
   // Inline validation for the arrival date/time (empty or already passed)
   const arrivalError = getArrivalError(formInputs);
 
-  // After a first search, changing the permit, time, priority or walking limit refreshes the
-  // results on its own once the changes settle, so there is no Update tap. One request per
-  // settled change keeps the rate-limited hosted API safe; a new destination searches at once instead.
-  const sameDestinationAsSearch =
-    searchedRequest !== null && searchedRequest.destinationId === formInputs.destinationId;
+  // After a first search, changing the permit or arrival time refreshes the results on its own once
+  // the changes settle, so there is no Update tap. One request per settled change keeps the
+  // rate-limited hosted API safe; a new destination searches at once instead (see shouldAutoRefresh).
+  const autoRefresh = shouldAutoRefresh(searchedRequest, formInputs, arrivalError);
   useEffect(() => {
-    if (!isStale || !sameDestinationAsSearch || arrivalError) return;
+    if (!autoRefresh) return;
     const timer = window.setTimeout(() => runPlanner(formInputs), AUTO_REFRESH_DELAY_MS);
     return () => window.clearTimeout(timer);
-  }, [isStale, sameDestinationAsSearch, arrivalError, formInputs, runPlanner]);
+  }, [autoRefresh, formInputs, runPlanner]);
 
   // First choice / backup IDs for labeling pins (hidden while results are stale)
   const rankedLotIds = useMemo(() => {
@@ -532,10 +492,9 @@ export default function Planner({ onBack }: PlannerProps) {
     };
   }, [recommendations, isStale]);
 
-  // Confirming a spot also selects it, so the highlighted card, the map pin and
-  // the route always point at the same lot. Undoing keeps the selection.
-  const handleConfirmLot = useCallback((locationId: string) => {
-    setConfirmedLotId((prev) => (prev === locationId ? null : locationId));
+  // Opening directions for a spot chooses it, so the highlighted card, the map pin and the
+  // route always point at the same lot. Unlike a card click it never toggles the selection off.
+  const handleChooseLot = useCallback((locationId: string) => {
     setSelectedLocationId(locationId);
   }, []);
 
@@ -611,11 +570,17 @@ export default function Planner({ onBack }: PlannerProps) {
   // Weather and construction notices for the same selected result. Separate from the
   // search: if they fail, the parking results above are unaffected.
   const [alertsRetry, setAlertsRetry] = useState(0);
+  // The arrival sent for weather is worked out once per search. "Now" moves every minute, so
+  // recomputing it on each render would change the request every minute and refetch for nothing.
+  const alertArrival = useMemo(
+    () => (searchedRequest ? alertArrivalTime(searchedRequest.arrivalDate, searchedRequest.arrivalTime) : null),
+    [searchedRequest]
+  );
   const tripAlerts = useTripAlerts(
     routedRecommendation !== null && searchedRequest !== null,
     routedRecommendation && searchedRequest
       ? {
-          arrivalTime: alertArrivalTime(searchedRequest.arrivalDate, searchedRequest.arrivalTime),
+          arrivalTime: alertArrival ?? '',
           parkingLocationId: routedRecommendation.lot.locationId,
           destination: routedDestination
             ? { name: routedDestination.name, latitude: routedDestination.latitude, longitude: routedDestination.longitude }
@@ -813,8 +778,7 @@ export default function Planner({ onBack }: PlannerProps) {
                 showIntroPrompt={searchedRequest === null}
                 isStale={isStale}
                 availabilityTime={previewTime}
-                confirmedLotId={confirmedLotId}
-                onConfirmLot={handleConfirmLot}
+                onChooseLot={handleChooseLot}
                 selectedLocationId={selectedLocationId}
                 onSelectLot={handleSelectLot}
                 onRetry={handleRetry}
@@ -907,8 +871,7 @@ export default function Planner({ onBack }: PlannerProps) {
                       activeRecommendations.find((r) => r.lot.locationId === selectedLot.locationId)?.badgeLabel ??
                       null
                 }
-                isConfirmed={confirmedLotId === selectedLot.locationId}
-                onConfirm={() => handleConfirmLot(selectedLot.locationId)}
+                onChoose={() => handleChooseLot(selectedLot.locationId)}
                 backendMode={USE_API}
                 backendEstimate={
                   isStale

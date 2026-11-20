@@ -8,13 +8,13 @@ import { Navigation } from 'lucide-react';
 import { googleMapsDirectionsUrl } from '../utils/mapsLink.ts';
 
 interface SpotActionsProps {
-  /** True once this lot is already the selected spot. */
-  isConfirmed: boolean;
+  /** True when this lot is already the selected one. */
+  isSelected: boolean;
   disabled?: boolean;
   /** Visual weight: 'primary' (navy, lot card), 'subtle' (outlined, result cards) or 'onDark' (gold, on the navy first-choice card). */
   tone: 'primary' | 'subtle' | 'onDark';
-  /** Selects this lot (card, map pin and route). Called when directions are opened and it is not selected yet. */
-  onConfirm: () => void;
+  /** Chooses this lot (card, map pin and route). Called when directions are opened and it is not selected yet. */
+  onChoose: () => void;
   /** Where "Open in Google Maps" navigates to. */
   lot: { latitude: number; longitude: number };
 }
@@ -24,10 +24,10 @@ interface SpotActionsProps {
  * selects the lot so the highlighted card, the map pin and the route match what was opened.
  */
 export const SpotActions: React.FC<SpotActionsProps> = ({
-  isConfirmed,
+  isSelected,
   disabled = false,
   tone,
-  onConfirm,
+  onChoose,
   lot,
 }) => {
   const base =
@@ -45,7 +45,7 @@ export const SpotActions: React.FC<SpotActionsProps> = ({
           e.preventDefault();
           return;
         }
-        if (!isConfirmed) onConfirm();
+        if (!isSelected) onChoose();
       }}
       className={`w-full ${base} ${
         tone === 'primary'

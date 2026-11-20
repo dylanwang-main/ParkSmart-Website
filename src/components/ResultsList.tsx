@@ -48,8 +48,8 @@ interface ResultsListProps {
   isStale: boolean;
   /** Time every availability number describes (follows the arrival time unless the Time tool is used). */
   availabilityTime: Date;
-  confirmedLotId: string | null;
-  onConfirmLot: (locationId: string) => void;
+  /** Chooses a lot when directions are opened for it (selects it, never toggles it off). */
+  onChooseLot: (locationId: string) => void;
   selectedLocationId: string | null;
   onSelectLot: (locationId: string) => void;
   onRetry: () => void;
@@ -78,8 +78,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   showIntroPrompt,
   isStale,
   availabilityTime,
-  confirmedLotId,
-  onConfirmLot,
+  onChooseLot,
   selectedLocationId,
   onSelectLot,
   onRetry,
@@ -206,8 +205,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 availabilityTime={availabilityTime}
                 destinationName={destinationName}
                 isStale={isStale}
-                isConfirmed={confirmedLotId === rec.lot.locationId}
-                onConfirm={() => onConfirmLot(rec.lot.locationId)}
+                onChoose={() => onChooseLot(rec.lot.locationId)}
                 isSelected={selectedLocationId === rec.lot.locationId}
                 onSelect={() => onSelectLot(rec.lot.locationId)}
                 details={isStale ? null : renderDetails?.(rec) ?? null}

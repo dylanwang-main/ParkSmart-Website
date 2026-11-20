@@ -234,3 +234,127 @@ describe('messy calendars', () => {
     expect(classesOn(events, '2026-11-17').map((c) => c.title)).toEqual(['Class']);
   });
 });
+
+describe('repeat weekdays follow the start time into campus time', () => {
+  const weekdays = (events: ReturnType<typeof parseIcs>, dates: string[]) =>
+    dates.filter((d) => classesOn(events, d).length > 0);
+
+  it('moves BYDAY back a day for an evening class written in UTC', () => {
+    // Mon Nov 16 5:00 PM PST is 01:00 UTC Tuesday, and the exporter writes BYDAY in UTC (TU)
+    const events = parseIcs(
+      wrap(
+        event(
+          'UID:evening',
+          'SUMMARY:Evening lecture',
+          'DTSTART:20261117T010000Z',
+          'DTEND:20261117T035000Z',
+          'RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261212T000000Z'
+        )
+      )
+    );
+    expect(events[0].date).toBe('2026-11-16'); // first session, campus date
+    expect(weekdays(events, ['2026-11-16', '2026-11-17', '2026-11-23', '2026-11-24', '2026-11-30'])).toEqual([
+      '2026-11-16', // Monday
+      '2026-11-23', // Monday
+      '2026-11-30', // Monday
+    ]);
+  });
+
+  it('moves every listed weekday, not just one', () => {
+    // Tue/Thu in UTC are Mon/Wed evenings in California
+    const events = parseIcs(
+      wrap(event('UID:two', 'SUMMARY:Two a week', 'DTSTART:20261117T020000Z', 'DTEND:20261117T040000Z', 'RRULE:FREQ=WEEKLY;BYDAY=TU,TH'))
+    );
+    expect(weekdays(events, ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20'])).toEqual([
+      '2026-11-16',
+      '2026-11-18',
+    ]);
+  });
+
+  it('wraps from Sunday to Saturday', () => {
+    // Sun Nov 22 01:00 UTC is Sat Nov 21 5:00 PM PST
+    const events = parseIcs(
+      wrap(event('UID:wrap', 'SUMMARY:Weekend', 'DTSTART:20261122T010000Z', 'DTEND:20261122T030000Z', 'RRULE:FREQ=WEEKLY;BYDAY=SU'))
+    );
+    expect(weekdays(events, ['2026-11-21', '2026-11-22', '2026-11-28', '2026-11-29'])).toEqual(['2026-11-21', '2026-11-28']);
+  });
+
+  it('moves forward for a zone ahead of California', () => {
+    // Tue 9:00 AM in Tokyo is Mon 4:00 PM in California; BYDAY=TU is in Tokyo's week
+    const events = parseIcs(
+      wrap(
+        event(
+          'UID:tokyo',
+          'SUMMARY:Tokyo class',
+          'DTSTART;TZID=Asia/Tokyo:20261117T090000',
+          'DTEND;TZID=Asia/Tokyo:20261117T100000',
+          'RRULE:FREQ=WEEKLY;BYDAY=TU'
+        )
+      )
+    );
+    expect(events[0]).toMatchObject({ date: '2026-11-16', startMinutes: 16 * 60 });
+    expect(weekdays(events, ['2026-11-16', '2026-11-17', '2026-11-23'])).toEqual(['2026-11-16', '2026-11-23']);
+  });
+
+  it('leaves a class alone when the zone change does not move the date', () => {
+    // Mon Nov 16 9:00 AM PST is 17:00 UTC the same day
+    const events = parseIcs(
+      wrap(event('UID:same', 'SUMMARY:Morning', 'DTSTART:20261116T170000Z', 'DTEND:20261116T180000Z', 'RRULE:FREQ=WEEKLY;BYDAY=MO'))
+    );
+    expect(weekdays(events, ['2026-11-16', '2026-11-17', '2026-11-23'])).toEqual(['2026-11-16', '2026-11-23']);
+  });
+
+  it('still honours COUNT and EXDATE for a shifted class', () => {
+    const events = parseIcs(
+      wrap(
+        event(
+          'UID:count',
+          'SUMMARY:Counted',
+          'DTSTART:20261117T010000Z',
+          'DTEND:20261117T030000Z',
+          'RRULE:FREQ=WEEKLY;BYDAY=TU;COUNT=3',
+          'EXDATE:20261124T010000Z' // the Mon Nov 23 session
+        )
+      )
+    );
+    expect(weekdays(events, ['2026-11-16', '2026-11-23', '2026-11-30', '2026-12-07'])).toEqual(['2026-11-16', '2026-11-30']);
+  });
+});
+
+describe('date-only EXDATE and RECURRENCE-ID', () => {
+  it('skips a session named by a bare date', () => {
+    const events = parseIcs(
+      wrap(
+        event(
+          'UID:d',
+          'SUMMARY:Lecture',
+          'DTSTART;TZID=America/Los_Angeles:20261116T090000',
+          'DTEND;TZID=America/Los_Angeles:20261116T100000',
+          'RRULE:FREQ=WEEKLY;BYDAY=MO',
+          'EXDATE;VALUE=DATE:20261123,20261130'
+        )
+      )
+    );
+    expect(classesOn(events, '2026-11-16')).toHaveLength(1);
+    expect(classesOn(events, '2026-11-23')).toHaveLength(0);
+    expect(classesOn(events, '2026-11-30')).toHaveLength(0);
+    expect(classesOn(events, '2026-12-07')).toHaveLength(1);
+  });
+
+  it('lets a cancelled session with a bare-date RECURRENCE-ID remove just that day', () => {
+    const events = parseIcs(
+      wrap(
+        event(
+          'UID:r',
+          'SUMMARY:Lecture',
+          'DTSTART;TZID=America/Los_Angeles:20261116T090000',
+          'DTEND;TZID=America/Los_Angeles:20261116T100000',
+          'RRULE:FREQ=WEEKLY;BYDAY=MO'
+        ),
+        event('UID:r', 'RECURRENCE-ID;VALUE=DATE:20261123', 'STATUS:CANCELLED', 'SUMMARY:Lecture', 'DTSTART:20261123T090000')
+      )
+    );
+    expect(classesOn(events, '2026-11-23')).toHaveLength(0);
+    expect(classesOn(events, '2026-11-30')).toHaveLength(1);
+  });
+});

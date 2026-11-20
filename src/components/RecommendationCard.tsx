@@ -23,12 +23,12 @@ interface RecommendationCardProps {
   availabilityTime: Date;
   /** Destination the walk time is measured to. */
   destinationName: string;
-  /** Results no longer match the form; disables confirming. */
+  /** Results no longer match the form; disables opening directions. */
   isStale: boolean;
   isSelected: boolean;
-  isConfirmed: boolean;
   onSelect: () => void;
-  onConfirm: () => void;
+  /** Chooses this lot without toggling it off (used when directions are opened). */
+  onChoose: () => void;
   /**
    * Driving and walking time and distance plus weather and construction, for the selected
    * result. When present it replaces the card's own walk line.
@@ -48,9 +48,8 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   destinationName,
   isStale,
   isSelected,
-  isConfirmed,
   onSelect,
-  onConfirm,
+  onChoose,
   details = null,
 }) => {
   const { badgeLabel, lot, reason, access, estimate } = recommendation;
@@ -190,13 +189,13 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
         </div>
       </div>}
 
-      {/* Confirm, then open directions in Google Maps (needs a verified pin) */}
+      {/* Open directions in Google Maps (needs a verified pin) */}
       {Number.isFinite(lot.latitude) && Number.isFinite(lot.longitude) && <div className="mt-3.5">
         <SpotActions
           tone={hero ? 'onDark' : 'subtle'}
-          isConfirmed={isConfirmed}
+          isSelected={isSelected}
           disabled={isStale}
-          onConfirm={onConfirm}
+          onChoose={onChoose}
           lot={lot}
         />
       </div>}

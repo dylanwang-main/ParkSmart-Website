@@ -8,7 +8,8 @@
  * no dependency. Supports what student calendars export: timed events, TZID or UTC times,
  * and weekly repeats (INTERVAL, BYDAY, UNTIL, COUNT, EXDATE). All-day events are ignored
  * (they are holidays and deadlines, not classes). Any other repeat rule is read as a
- * single class on its first date rather than guessed at.
+ * single class on its first date rather than guessed at. A change to "this and all future"
+ * sessions (RANGE=THISANDFUTURE) is not supported.
  *
  * Times are converted to campus time (America/Los_Angeles), because that is the time the
  * planner's arrival fields use.
@@ -180,11 +181,34 @@ function readDateTime(value: string, params: Record<string, string>): Local | nu
   return local;
 }
 
+/** "20261125" as "2026-11-25", or null if the value is not a bare date. */
+function readDateOnly(value: string): string | null {
+  const m = /^(\d{4})(\d{2})(\d{2})$/.exec(value.trim());
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+/** A date for an EXDATE or RECURRENCE-ID value, which may be a bare date or a date-time. */
+function readDateValue(value: string, params: Record<string, string>): string | null {
+  return readDateOnly(value) ?? readDateTime(value, params)?.date ?? null;
+}
+
+/**
+ * How many days converting a date-time to campus time moved its date (for example -1 when
+ * 01:00 UTC on a Tuesday is Monday evening in California). A repeat rule's weekdays are written
+ * in the same zone as the start time, so they move by the same amount.
+ */
+function campusDayShift(value: string, params: Record<string, string>): number {
+  const sourceDate = readDateOnly(value.trim().slice(0, 8));
+  const campus = readDateTime(value, params);
+  if (!sourceDate || !campus) return 0;
+  return dayNumber(campus.date) - dayNumber(sourceDate);
+}
+
 function total(local: Local): number {
   return dayNumber(local.date) * MINUTES_PER_DAY + local.minutes;
 }
 
-function readRule(value: string, start: Local): WeeklyRule | null {
+function readRule(value: string, start: Local, weekdayShift: number): WeeklyRule | null {
   const parts: Record<string, string> = {};
   value.split(';').forEach((kv) => {
     const eq = kv.indexOf('=');
@@ -195,7 +219,9 @@ function readRule(value: string, start: Local): WeeklyRule | null {
   const byDay = (parts.BYDAY ?? '')
     .split(',')
     .map((code) => WEEKDAY_CODES.indexOf(code.slice(-2).toUpperCase() as (typeof WEEKDAY_CODES)[number]))
-    .filter((n) => n >= 0);
+    .filter((n) => n >= 0)
+    // Weekdays are in the start time's own zone; move them to campus time with the start
+    .map((n) => (((n + weekdayShift) % 7) + 7) % 7);
   let untilTotal: number | null = null;
   if (parts.UNTIL) {
     const dateOnly = /^(\d{4})(\d{2})(\d{2})$/.exec(parts.UNTIL);
@@ -264,14 +290,14 @@ function readEvent(lines: Line[], index: number): ReadEvent | null {
     .filter((l) => l.name === 'EXDATE')
     .forEach((l) =>
       l.value.split(',').forEach((v) => {
-        const d = readDateTime(v, l.params);
-        if (d) exdates.push(d.date);
+        const d = readDateValue(v, l.params);
+        if (d) exdates.push(d);
       })
     );
   const rrule = get('RRULE');
   const uid = get('UID')?.value.trim() || `event-${index}`;
   const recurrenceId = get('RECURRENCE-ID');
-  const replacesDate = recurrenceId ? readDateTime(recurrenceId.value, recurrenceId.params)?.date ?? null : null;
+  const replacesDate = recurrenceId ? readDateValue(recurrenceId.value, recurrenceId.params) : null;
   if (get('STATUS')?.value.trim().toUpperCase() === 'CANCELLED') {
     return { event: null, uid, replacesDate };
   }
@@ -283,7 +309,7 @@ function readEvent(lines: Line[], index: number): ReadEvent | null {
     date: start.date,
     startMinutes: start.minutes,
     durationMinutes: length > 0 ? length : DEFAULT_DURATION_MINUTES,
-    rule: rrule ? readRule(rrule.value, start) : null,
+    rule: rrule ? readRule(rrule.value, start, dtstart ? campusDayShift(dtstart.value, dtstart.params) : 0) : null,
     exdates,
   };
   return { event, uid, replacesDate };

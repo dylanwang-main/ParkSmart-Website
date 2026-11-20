@@ -41,9 +41,12 @@ const WheelColumn: React.FC<WheelColumnProps> = ({ label, items, selected, loop,
   const settleTimer = useRef<number | null>(null);
   const frame = useRef<number | null>(null);
   const mounted = useRef(false);
-  // The timer callback must see the latest values, not the ones from when it was set
+  // The timer callback must see the latest values, not the ones from when it was set. The ref is
+  // updated in an effect, not during render, so rendering stays free of side effects.
   const latest = useRef({ selected, onSelect });
-  latest.current = { selected, onSelect };
+  useLayoutEffect(() => {
+    latest.current = { selected, onSelect };
+  });
 
   const rawIndex = () => Math.round((ref.current?.scrollTop ?? 0) / ITEM_HEIGHT);
 
