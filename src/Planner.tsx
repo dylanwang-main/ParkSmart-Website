@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ArrowLeft, ChevronDown, ChevronUp, Menu } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Menu, RotateCcw } from 'lucide-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AnimatePresence, MotionConfig, motion } from 'motion/react';
 import { MapContainer } from './components/MapContainer.tsx';
@@ -362,6 +362,34 @@ export default function Planner({ onBack }: PlannerProps) {
     setFormInputs((prev) => ({ ...prev, ...DEFAULT_PREFERENCES }));
   };
 
+  // Clear all: back to an empty planner, like a fresh visit. The trip form (destination, arrival,
+  // permit) and everything shown from the search (results, selection, routes' start, errors) reset.
+  // The imported schedule, starred and recent places and "Recent" searches this visit stay.
+  const handleClearAll = () => {
+    requestRef.current?.abort(); // a search still in flight must not fill the cleared panel
+    setFormInputs({
+      destinationId: '',
+      arrivalDate: getTodayDateString(),
+      arrivalTime: getCurrentTimeString(),
+      ...DEFAULT_PREFERENCES,
+      priority: DEFAULT_PRIORITY,
+      maxWalkMinutes: null,
+    });
+    setRecommendations([]);
+    setResultInfo(null);
+    setRankedOptions({});
+    setErrorMessage(null);
+    setIsLoading(false);
+    searchedRequestRef.current = null;
+    setSearchedRequest(null);
+    setSelectedLocationId(null);
+    setConfirmedLotId(null);
+    setIsDetailOpen(false);
+    setStartPoint(null);
+    setLocateError(null);
+    setPinNotice(null);
+  };
+
   // Remember the permit after every change. Saving from state (not from the event) means
   // quick successive changes never overwrite each other. The default permit stores nothing.
   const { permitType } = formInputs;
@@ -703,8 +731,19 @@ export default function Planner({ onBack }: PlannerProps) {
               {/* UC San Diego wordmark (transparent PNG, sits directly on the panel) */}
               <img src={ucsdLogo} alt="UC San Diego" className="h-[20px] w-auto block shrink-0" />
             </div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <p className="text-[13px] text-muted leading-snug">
+            {/* Second row: Clear all sits under the hamburger button (the panel's left padding is
+                pulled back on desktop so it lines up with it), then the tagline and Home */}
+            <div className="mt-2 flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={handleClearAll}
+                aria-label="Clear all: reset the destination, time, permit and results"
+                className="shrink-0 -ml-[44px] max-sm:ml-0 inline-flex relative before:content-[''] before:absolute before:-inset-2 items-center gap-1 h-7 pl-2 pr-2.5 rounded-full border border-line bg-white text-[12px] font-semibold text-navy transition-colors duration-200 hover:bg-paper active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Clear all</span>
+              </button>
+              <p className="flex-1 min-w-0 text-[13px] text-muted leading-snug">
                 Find where to park before you arrive.
               </p>
               <button
