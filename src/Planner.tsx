@@ -341,6 +341,13 @@ export default function Planner({ onBack }: PlannerProps) {
     }));
   };
 
+  // Picking a destination in the form searches right away (one request per pick), so a repeat
+  // trip is two taps. Other changes keep the Update button, so one tap never fires several requests.
+  const handleDestinationOrFormChange = (changes: Partial<ParkingPlannerRequest>) => {
+    handleFormChange(changes);
+    if (changes.destinationId) runPlanner({ ...formInputs, ...changes });
+  };
+
   // Back to the first-visit settings (S permit, balanced, 20 min); the effect below forgets the saved ones
   const handleResetPreferences = () => {
     setFormInputs((prev) => ({ ...prev, ...DEFAULT_PREFERENCES }));
@@ -682,7 +689,7 @@ export default function Planner({ onBack }: PlannerProps) {
                 formData={formInputs}
                 hasSavedSettings={isCustomized(preferencesOf(formInputs))}
                 onResetSettings={handleResetPreferences}
-                onChange={handleFormChange}
+                onChange={handleDestinationOrFormChange}
                 onSubmit={handleFormSubmit}
                 isLoading={activeIsLoading}
                 arrivalError={arrivalError}
