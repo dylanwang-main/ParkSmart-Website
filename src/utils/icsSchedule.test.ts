@@ -165,3 +165,72 @@ describe('classesOn', () => {
     expect(classesOn(day, '2026-11-17').map((c) => c.title)).toEqual(['Early', 'Late']);
   });
 });
+
+describe('messy calendars', () => {
+  const MWF = (uid = 'cse100') =>
+    event(
+      `UID:${uid}`,
+      'SUMMARY:CSE 100',
+      'LOCATION:CENTR 115',
+      'DTSTART;TZID=America/Los_Angeles:20261116T093000',
+      'DTEND;TZID=America/Los_Angeles:20261116T104000',
+      'RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;UNTIL=20261211T235959'
+    );
+
+  it('skips a cancelled class', () => {
+    const events = parseIcs(
+      wrap(event('UID:x', 'SUMMARY:Gone', 'STATUS:CANCELLED', 'DTSTART:20261117T090000', 'DTEND:20261117T095000'))
+    );
+    expect(events).toEqual([]);
+  });
+
+  it('replaces one session with its moved version, not both', () => {
+    // The Wednesday Nov 18 session was moved to 2 PM in WLH
+    const moved = event(
+      'UID:cse100',
+      'RECURRENCE-ID;TZID=America/Los_Angeles:20261118T093000',
+      'SUMMARY:CSE 100',
+      'LOCATION:WLH 2001',
+      'DTSTART;TZID=America/Los_Angeles:20261118T140000',
+      'DTEND;TZID=America/Los_Angeles:20261118T151000'
+    );
+    const events = parseIcs(wrap(MWF(), moved));
+    const wed = classesOn(events, '2026-11-18');
+    expect(wed).toHaveLength(1);
+    expect(wed[0]).toMatchObject({ startMinutes: 14 * 60, location: 'WLH 2001' });
+    // Other days are untouched
+    expect(classesOn(events, '2026-11-20')[0]).toMatchObject({ startMinutes: 570, location: 'CENTR 115' });
+  });
+
+  it('drops one cancelled session of a repeating class', () => {
+    const cancelled = event(
+      'UID:cse100',
+      'RECURRENCE-ID;TZID=America/Los_Angeles:20261120T093000',
+      'STATUS:CANCELLED',
+      'SUMMARY:CSE 100',
+      'DTSTART;TZID=America/Los_Angeles:20261120T093000',
+      'DTEND;TZID=America/Los_Angeles:20261120T104000'
+    );
+    const events = parseIcs(wrap(MWF(), cancelled));
+    expect(classesOn(events, '2026-11-20')).toHaveLength(0);
+    expect(classesOn(events, '2026-11-18')).toHaveLength(1);
+    expect(classesOn(events, '2026-11-23')).toHaveLength(1);
+  });
+
+  it('shows the same class once when a calendar lists it twice', () => {
+    const events = parseIcs(wrap(MWF('a'), MWF('b')));
+    expect(classesOn(events, '2026-11-18')).toHaveLength(1);
+  });
+
+  it('keeps reading past events it cannot understand', () => {
+    const events = parseIcs(
+      wrap(
+        event('UID:bad1', 'SUMMARY:Bad time', 'DTSTART:not-a-time'),
+        event('DTSTART:20261117T080000'), // no UID and no title
+        MWF()
+      )
+    );
+    expect(classesOn(events, '2026-11-18').map((c) => c.title)).toContain('CSE 100');
+    expect(classesOn(events, '2026-11-17').map((c) => c.title)).toEqual(['Class']);
+  });
+});

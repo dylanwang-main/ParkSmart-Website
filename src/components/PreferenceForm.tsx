@@ -10,7 +10,6 @@ import { PERMIT_OPTIONS } from '../constants.ts';
 import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
 import { maxArrivalDate } from '../utils/arrival.ts';
 import { loadFavorites, toggleFavorite } from '../utils/favorites.ts';
-import { arrivalPresets, matchesPreset } from '../utils/arrivalPresets.ts';
 import { loadRecentDestinations } from '../utils/recentDestinations.ts';
 import { ALL_PARKING } from '../data/parkingLots.ts';
 import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
@@ -404,26 +403,6 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
             />
           </div>
         </div>
-      </div>
-
-      {/* One-tap arrival times, so most trips need no typing */}
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Quick arrival times">
-        {arrivalPresets().map((preset) => {
-          const active = matchesPreset(preset, formData.arrivalDate, formData.arrivalTime);
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onChange({ arrivalDate: preset.date, arrivalTime: preset.time })}
-              className={`min-h-[44px] sm:min-h-[32px] px-3 rounded-full border text-xs font-semibold cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sky ${
-                active ? 'bg-navy text-white border-navy' : 'bg-white text-navy border-line hover:border-navy'
-              }`}
-            >
-              {preset.label}
-            </button>
-          );
-        })}
       </div>
 
       {/* Arrival validation: empty or past date/time */}

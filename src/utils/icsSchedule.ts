@@ -217,22 +217,39 @@ function readRule(value: string, start: Local): WeeklyRule | null {
 /** The timed events in an .ics file (empty if it is not a calendar or has none). */
 export function parseIcs(text: string): ScheduleEvent[] {
   const events: ScheduleEvent[] = [];
+  /** Dates of single sessions that were changed or cancelled, keyed by the repeating class's UID. */
+  const skipped: Array<{ uid: string; date: string }> = [];
   let current: Line[] | null = null;
   for (const line of readLines(text)) {
     if (line.name === 'BEGIN' && line.value.toUpperCase() === 'VEVENT') {
       current = [];
     } else if (line.name === 'END' && line.value.toUpperCase() === 'VEVENT') {
       const parsed = current ? readEvent(current, events.length) : null;
-      if (parsed) events.push(parsed);
+      if (parsed) {
+        // A changed or cancelled session replaces that day's normal one in the repeating class
+        if (parsed.replacesDate) skipped.push({ uid: parsed.event?.id ?? parsed.uid, date: parsed.replacesDate });
+        if (parsed.event) events.push(parsed.event);
+      }
       current = null;
     } else if (current) {
       current.push(line);
     }
   }
+  skipped.forEach(({ uid, date }) =>
+    events.filter((e) => e.id === uid && e.rule).forEach((e) => e.exdates.push(date))
+  );
   return events.slice(0, MAX_EVENTS);
 }
 
-function readEvent(lines: Line[], index: number): ScheduleEvent | null {
+interface ReadEvent {
+  /** Null for a cancelled event, which only removes a session. */
+  event: ScheduleEvent | null;
+  uid: string;
+  /** For a changed or cancelled single session: the day it replaces in the repeating class. */
+  replacesDate: string | null;
+}
+
+function readEvent(lines: Line[], index: number): ReadEvent | null {
   const get = (name: string) => lines.find((l) => l.name === name);
   const dtstart = get('DTSTART');
   const start = dtstart ? readDateTime(dtstart.value, dtstart.params) : null;
@@ -252,9 +269,15 @@ function readEvent(lines: Line[], index: number): ScheduleEvent | null {
       })
     );
   const rrule = get('RRULE');
+  const uid = get('UID')?.value.trim() || `event-${index}`;
+  const recurrenceId = get('RECURRENCE-ID');
+  const replacesDate = recurrenceId ? readDateTime(recurrenceId.value, recurrenceId.params)?.date ?? null : null;
+  if (get('STATUS')?.value.trim().toUpperCase() === 'CANCELLED') {
+    return { event: null, uid, replacesDate };
+  }
 
-  return {
-    id: get('UID')?.value.trim() || `event-${index}`,
+  const event: ScheduleEvent = {
+    id: uid,
     title: unescapeText(get('SUMMARY')?.value ?? '') || 'Class',
     location: unescapeText(get('LOCATION')?.value ?? ''),
     date: start.date,
@@ -263,6 +286,7 @@ function readEvent(lines: Line[], index: number): ScheduleEvent | null {
     rule: rrule ? readRule(rrule.value, start) : null,
     exdates,
   };
+  return { event, uid, replacesDate };
 }
 
 /* ---------- Expanding to a day ---------- */
@@ -292,8 +316,16 @@ function occursOn(event: ScheduleEvent, day: number): boolean {
 export function classesOn(events: ScheduleEvent[], date: string): ClassSession[] {
   const day = dayNumber(date);
   if (Number.isNaN(day)) return [];
+  const seen = new Set<string>();
   return events
     .filter((e) => occursOn(e, day))
+    .filter((e) => {
+      // The same class listed twice (copied calendars) is shown once
+      const key = `${e.title}|${e.startMinutes}|${e.location}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
     .map((e) => ({
       id: e.id,
       title: e.title,
