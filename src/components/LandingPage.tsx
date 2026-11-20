@@ -8,6 +8,7 @@ import { RECOMMENDATION_SOURCE } from '../config';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
 import { HeroDemo } from './HeroDemo';
 import { PermitLot } from './PermitLot';
+import { ProblemLot } from './ProblemLot';
 import { Pipeline } from './Pipeline';
 import { ScoreMix } from './ScoreMix';
 import { TimeLot } from './TimeLot';
@@ -263,9 +264,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
 
         <section id="problem" data-screen="2" className="lp-block lp-block--paper" aria-labelledby="problem-heading">
           <div className="lp-container lp-faq">
-            <h2 id="problem-heading" className="lp-big lp-big--navy">
-              Nobody tells you what is open.
-            </h2>
+            <div className="lp-problem-lead">
+              <h2 id="problem-heading" className="lp-big lp-big--navy">
+                Nobody tells you what is open.
+              </h2>
+              <ProblemLot />
+              <p className="lp-note">Illustration. Stalls marked ? are the ones nothing can tell you about.</p>
+            </div>
             <ul className="lp-fact-list">
               {PROBLEM_FACTS.map((item) => (
                 <li key={item.lead}>
