@@ -15,6 +15,14 @@ import { LotDetailCard } from './components/LotDetailCard.tsx';
 import { SCRUB_MAX, SCRUB_MIN, TimeScrubber } from './components/TimeScrubber.tsx';
 import ucsdLogo from './assets/ucsd-logo.png';
 import parkSmartLogo from './assets/parksmart-logo.png';
+import {
+  DEFAULT_PREFERENCES,
+  clearPreferences,
+  isCustomized,
+  loadPreferences,
+  savePreferences,
+  type SavedPreferences,
+} from './utils/savedPreferences.ts';
 import { ANIMATION_TIMINGS, DEFAULT_PRIORITY, PRIORITY_OPTIONS, isOnCampus } from './constants.ts';
 import { findDestination, makePinDestinationId } from './data/destinations.ts';
 import { getArrivalError } from './utils/arrival.ts';
@@ -101,6 +109,15 @@ function timeOf(minutes: number): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
+/** The settings that are remembered between visits. */
+function preferencesOf(request: ParkingPlannerRequest): SavedPreferences {
+  return {
+    permitType: request.permitType,
+    priority: request.priority ?? DEFAULT_PRIORITY,
+    maxWalkMinutes: request.maxWalkMinutes ?? null,
+  };
+}
+
 /**
  * Main application component.
  * Owns state for formInputs, recommendations, selectedLocationId, and simulated UI states.
@@ -119,13 +136,13 @@ export default function Planner({ onBack }: PlannerProps) {
   // "Your usual" only exists after a real search (saved in this browser only); it is
   // offered as a card, never prefilled into the form.
 
+  // Permit, priority and walking limit come back from the last visit (this browser only);
+  // everything else is per trip.
   const [formInputs, setFormInputs] = useState<ParkingPlannerRequest>(() => ({
     destinationId: '',
     arrivalDate: getTodayDateString(),
     arrivalTime: getCurrentTimeString(),
-    permitType: 'S',
-    priority: DEFAULT_PRIORITY,
-    maxWalkMinutes: null,
+    ...(loadPreferences() ?? DEFAULT_PREFERENCES),
   }));
 
   // Earlier searches this visit, most recent first (the current one is not included).
@@ -313,10 +330,19 @@ export default function Planner({ onBack }: PlannerProps) {
   // Handle preference form changes
   const handleFormChange = (changes: Partial<ParkingPlannerRequest>) => {
     if (changes.destinationId !== undefined) setPinNotice(null);
+    if ('permitType' in changes || 'priority' in changes || 'maxWalkMinutes' in changes) {
+      savePreferences(preferencesOf({ ...formInputs, ...changes }));
+    }
     setFormInputs((prev) => ({
       ...prev,
       ...changes,
     }));
+  };
+
+  // Back to the first-visit settings (S permit, balanced, 20 min) and forget the saved ones
+  const handleResetPreferences = () => {
+    clearPreferences();
+    setFormInputs((prev) => ({ ...prev, ...DEFAULT_PREFERENCES }));
   };
 
   // Handle Form Submission
@@ -377,6 +403,7 @@ export default function Planner({ onBack }: PlannerProps) {
   // Handle resetting filters from empty state
   const handleResetFilters = () => {
     const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S' };
+    savePreferences(preferencesOf(updated));
     setFormInputs(updated);
     runPlanner(updated);
   };
@@ -644,6 +671,8 @@ export default function Planner({ onBack }: PlannerProps) {
               </h2>
               <PreferenceForm
                 formData={formInputs}
+                hasSavedSettings={isCustomized(preferencesOf(formInputs))}
+                onResetSettings={handleResetPreferences}
                 onChange={handleFormChange}
                 onSubmit={handleFormSubmit}
                 isLoading={activeIsLoading}

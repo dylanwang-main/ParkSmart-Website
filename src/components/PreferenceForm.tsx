@@ -15,6 +15,10 @@ import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.t
 
 interface PreferenceFormProps {
   formData: ParkingPlannerRequest;
+  /** True when the remembered permit, priority or walking limit differ from the defaults. */
+  hasSavedSettings?: boolean;
+  /** Returns permit, priority and walking limit to the defaults and forgets the saved ones. */
+  onResetSettings?: () => void;
   onChange: (newData: Partial<ParkingPlannerRequest>) => void;
   onSubmit: (e: React.FormEvent) => void;
   isLoading: boolean;
@@ -60,6 +64,8 @@ const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => 
  */
 export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   formData,
+  hasSavedSettings = false,
+  onResetSettings,
   onChange,
   onSubmit,
   isLoading,
@@ -501,6 +507,20 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
       </div>
         </div>
       </details>
+
+      {/* Shown only when the permit, priority or walking limit differ from the defaults, so it is clear they were remembered */}
+      {hasSavedSettings && (
+        <p className="flex items-center justify-between gap-2 text-xs text-muted" data-testid="saved-settings-note">
+          <span>Your permit and settings are saved on this device.</span>
+          <button
+            type="button"
+            onClick={onResetSettings}
+            className="min-h-[44px] px-1 font-semibold text-navy underline underline-offset-2 hover:text-navy-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky rounded-md cursor-pointer"
+          >
+            Reset
+          </button>
+        </p>
+      )}
 
       {/* Primary Action Button */}
       <button
