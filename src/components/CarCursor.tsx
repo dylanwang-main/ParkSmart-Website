@@ -5,26 +5,19 @@
 
 import React from 'react';
 
-/** How long a tire mark takes to fade out, in milliseconds. */
+/** How long a dash takes to fade out, in milliseconds. */
 const TRAIL_LIFE_MS = 650;
 /** Minimum distance between trail points, in pixels. Keeps the trail light on fast mice. */
 const TRAIL_STEP_PX = 4;
 /** Hard cap on stored trail points. */
 const TRAIL_MAX_POINTS = 120;
-/** Distance from the car's centre line to each tire mark. */
-const TIRE_OFFSET_PX = 6;
 /**
- * The tire marks are dashed like lane markings on a road: a dash, then a gap, repeating every
- * DASH_PERIOD_PX travelled. Dashes are tied to distance travelled (not to the fading tail),
- * so they never shuffle as the trail fades.
+ * One dashed line down the middle behind the car, like the centre line on a road. Dashes are
+ * tied to distance travelled (not to the fading tail), so they never shuffle as the trail fades.
  */
 const DASH_LENGTH_PX = 11;
 const DASH_PERIOD_PX = 20;
 const DASH_WIDTH_PX = 2.8;
-/** Black dashes, with a soft light edge so they still show on the navy sections. */
-const DASH_COLOR = '0, 0, 0';
-const DASH_HALO_COLOR = '247, 248, 250';
-const DASH_HALO_EXTRA_PX = 2.4;
 /** How quickly the car turns toward its heading (0-1 per frame). */
 const TURN_RATE = 0.22;
 /** Movement below this many pixels per frame does not change the heading. */
@@ -103,7 +96,7 @@ function drawCar(ctx: CanvasRenderingContext2D) {
 
 /**
  * Landing-page cursor: a small yellow car at the pointer that turns toward where it is
- * heading and leaves two dashed lines, like lane markings on a road, that fade away. Only for a mouse or trackpad and only
+ * heading and leaves a single dashed black line, like the centre line on a road, that fades away. Only for a mouse or trackpad and only
  * when reduced motion is off; everyone else keeps the normal cursor.
  */
 export const CarCursor: React.FC = () => {
@@ -181,9 +174,10 @@ export const CarCursor: React.FC = () => {
         ctx.stroke();
       }
 
-      // Two dashed lines, like lane markings. Each trail segment is cut at the dash boundaries
-      // (measured in distance travelled), and each piece fades with its own age.
+      // One black dashed line, like the centre line on a road. Each trail segment is cut at the
+      // dash boundaries (measured in distance travelled), and each piece fades with its own age.
       ctx.lineCap = 'butt';
+      ctx.lineWidth = DASH_WIDTH_PX;
       for (let i = 1; i < trail.length; i += 1) {
         const a = trail[i - 1];
         const b = trail[i];
@@ -191,9 +185,6 @@ export const CarCursor: React.FC = () => {
         if (segLen <= 0) continue;
         const segX = b.x - a.x;
         const segY = b.y - a.y;
-        const len = Math.hypot(segX, segY) || 1;
-        const nx = -segY / len;
-        const ny = segX / len;
         for (let k = Math.floor(a.d / DASH_PERIOD_PX); k * DASH_PERIOD_PX < b.d; k += 1) {
           const start = Math.max(a.d, k * DASH_PERIOD_PX);
           const end = Math.min(b.d, k * DASH_PERIOD_PX + DASH_LENGTH_PX);
@@ -202,19 +193,11 @@ export const CarCursor: React.FC = () => {
           const f1 = (end - a.d) / segLen;
           const life = 1 - (now - (a.t + (b.t - a.t) * f1)) / TRAIL_LIFE_MS;
           if (life <= 0) continue;
-          for (const side of [-1, 1]) {
-            const ox = nx * TIRE_OFFSET_PX * side;
-            const oy = ny * TIRE_OFFSET_PX * side;
-            ctx.beginPath();
-            ctx.moveTo(a.x + segX * f0 + ox, a.y + segY * f0 + oy);
-            ctx.lineTo(a.x + segX * f1 + ox, a.y + segY * f1 + oy);
-            ctx.strokeStyle = `rgba(${DASH_HALO_COLOR}, ${0.35 * life})`;
-            ctx.lineWidth = DASH_WIDTH_PX + DASH_HALO_EXTRA_PX;
-            ctx.stroke();
-            ctx.strokeStyle = `rgba(${DASH_COLOR}, ${0.9 * life})`;
-            ctx.lineWidth = DASH_WIDTH_PX;
-            ctx.stroke();
-          }
+          ctx.beginPath();
+          ctx.moveTo(a.x + segX * f0, a.y + segY * f0);
+          ctx.lineTo(a.x + segX * f1, a.y + segY * f1);
+          ctx.strokeStyle = `rgba(0, 0, 0, ${life})`;
+          ctx.stroke();
         }
       }
 
