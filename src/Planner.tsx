@@ -41,6 +41,9 @@ import {
   ParkingRecommendation,
 } from './types.ts';
 
+/** Quiet time after the last change before results refresh by themselves (about one request a second at most). */
+const AUTO_REFRESH_DELAY_MS = 1000;
+
 /** How many earlier searches "Recent" keeps for this visit. */
 const MAX_HISTORY = 5;
 
@@ -473,6 +476,17 @@ export default function Planner({ onBack }: PlannerProps) {
 
   // Inline validation for the arrival date/time (empty or already passed)
   const arrivalError = getArrivalError(formInputs);
+
+  // After a first search, changing the permit, time, priority or walking limit refreshes the
+  // results on its own once the changes settle, so there is no Update tap. One request per
+  // settled change keeps the rate-limited hosted API safe; a new destination searches at once instead.
+  const sameDestinationAsSearch =
+    searchedRequest !== null && searchedRequest.destinationId === formInputs.destinationId;
+  useEffect(() => {
+    if (!isStale || !sameDestinationAsSearch || arrivalError) return;
+    const timer = window.setTimeout(() => runPlanner(formInputs), AUTO_REFRESH_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [isStale, sameDestinationAsSearch, arrivalError, formInputs, runPlanner]);
 
   // First choice / backup IDs for labeling pins (hidden while results are stale)
   const rankedLotIds = useMemo(() => {
