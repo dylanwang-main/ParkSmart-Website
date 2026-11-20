@@ -114,15 +114,9 @@ function timeOf(minutes: number): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
-/** The settings that are remembered between visits. */
-function preferencesOf(
-  request: Pick<ParkingPlannerRequest, 'permitType' | 'priority' | 'maxWalkMinutes'>
-): SavedPreferences {
-  return {
-    permitType: request.permitType,
-    priority: request.priority ?? DEFAULT_PRIORITY,
-    maxWalkMinutes: request.maxWalkMinutes ?? null,
-  };
+/** The setting that is remembered between visits: the permit. */
+function preferencesOf(request: Pick<ParkingPlannerRequest, 'permitType'>): SavedPreferences {
+  return { permitType: request.permitType };
 }
 
 /**
@@ -150,6 +144,9 @@ export default function Planner({ onBack }: PlannerProps) {
     arrivalDate: getTodayDateString(),
     arrivalTime: getCurrentTimeString(),
     ...(loadPreferences() ?? DEFAULT_PREFERENCES),
+    // Always balanced with the default walking limit; there is no control for them
+    priority: DEFAULT_PRIORITY,
+    maxWalkMinutes: null,
   }));
 
   // Earlier searches this visit, most recent first (the current one is not included).
@@ -360,19 +357,19 @@ export default function Planner({ onBack }: PlannerProps) {
     else handleFormChange({ arrivalDate, arrivalTime });
   };
 
-  // Back to the first-visit settings (S permit, balanced, 20 min); the effect below forgets the saved ones
+  // Back to the first-visit permit (S); the effect below forgets the saved one
   const handleResetPreferences = () => {
     setFormInputs((prev) => ({ ...prev, ...DEFAULT_PREFERENCES }));
   };
 
-  // Remember the three settings after every change. Saving from state (not from the event)
-  // means quick successive changes never overwrite each other. Defaults store nothing.
-  const { permitType, priority, maxWalkMinutes } = formInputs;
+  // Remember the permit after every change. Saving from state (not from the event) means
+  // quick successive changes never overwrite each other. The default permit stores nothing.
+  const { permitType } = formInputs;
   useEffect(() => {
-    const prefs = preferencesOf({ permitType, priority, maxWalkMinutes });
+    const prefs = preferencesOf({ permitType });
     if (isCustomized(prefs)) savePreferences(prefs);
     else clearPreferences();
-  }, [permitType, priority, maxWalkMinutes]);
+  }, [permitType]);
 
   // Handle Form Submission
   const handleFormSubmit = (e: React.FormEvent) => {

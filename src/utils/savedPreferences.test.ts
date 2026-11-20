@@ -7,15 +7,16 @@ import {
   savePreferences,
 } from './savedPreferences.ts';
 
-function fakeStore(initial?: string) {
-  let value = initial ?? null;
+function fakeStore(initial: Record<string, string> = {}) {
+  const data = { ...initial };
   return {
-    getItem: () => value,
-    setItem: (_key: string, next: string) => {
-      value = next;
+    data,
+    getItem: (key: string) => data[key] ?? null,
+    setItem: (key: string, next: string) => {
+      data[key] = next;
     },
-    removeItem: () => {
-      value = null;
+    removeItem: (key: string) => {
+      delete data[key];
     },
   };
 }
@@ -23,35 +24,39 @@ function fakeStore(initial?: string) {
 describe('saved preferences', () => {
   it('returns null when nothing is saved or the data is unreadable', () => {
     expect(loadPreferences(fakeStore())).toBeNull();
-    expect(loadPreferences(fakeStore('not json'))).toBeNull();
-    expect(loadPreferences(fakeStore('[1,2]'))).toEqual(DEFAULT_PREFERENCES);
+    expect(loadPreferences(fakeStore({ 'parksmart.preferences.v2': 'not json' }))).toBeNull();
+    expect(loadPreferences(fakeStore({ 'parksmart.preferences.v2': '[1,2]' }))).toBeNull();
     expect(loadPreferences(null)).toBeNull();
   });
 
-  it('remembers permit, priority and walking limit', () => {
+  it('remembers the permit', () => {
     const store = fakeStore();
-    savePreferences({ permitType: 'B', priority: 'shorter_walk', maxWalkMinutes: 10 }, store);
-    expect(loadPreferences(store)).toEqual({ permitType: 'B', priority: 'shorter_walk', maxWalkMinutes: 10 });
+    savePreferences({ permitType: 'B' }, store);
+    expect(loadPreferences(store)).toEqual({ permitType: 'B' });
   });
 
-  it('remembers the default 20-minute limit as null', () => {
-    const store = fakeStore();
-    savePreferences({ permitType: 'S', priority: 'balanced', maxWalkMinutes: null }, store);
-    expect(loadPreferences(store)?.maxWalkMinutes).toBeNull();
+  it('ignores a permit it does not know', () => {
+    const store = fakeStore({ 'parksmart.preferences.v2': JSON.stringify({ permitType: 'ZZ' }) });
+    expect(loadPreferences(store)).toBeNull();
   });
 
-  it('replaces an invalid field with its default and keeps the valid ones', () => {
-    const stored = JSON.stringify({ permitType: 'ZZ', priority: 'more_availability', maxWalkMinutes: 7 });
-    expect(loadPreferences(fakeStore(stored))).toEqual({
-      permitType: 'S',
-      priority: 'more_availability',
-      maxWalkMinutes: null,
+  it('never reads or keeps an old saved walking limit or priority', () => {
+    const store = fakeStore({
+      'parksmart.preferences.v1': JSON.stringify({ permitType: 'B', priority: 'shorter_walk', maxWalkMinutes: 5 }),
     });
+    expect(loadPreferences(store)).toBeNull();
+    expect(store.data['parksmart.preferences.v1']).toBeUndefined();
   });
 
-  it('forgets saved settings when cleared', () => {
+  it('stores only the permit', () => {
     const store = fakeStore();
-    savePreferences({ permitType: 'D', priority: 'balanced', maxWalkMinutes: 5 }, store);
+    savePreferences({ permitType: 'D' }, store);
+    expect(JSON.parse(store.data['parksmart.preferences.v2'])).toEqual({ permitType: 'D' });
+  });
+
+  it('forgets the saved permit when cleared', () => {
+    const store = fakeStore();
+    savePreferences({ permitType: 'D' }, store);
     clearPreferences(store);
     expect(loadPreferences(store)).toBeNull();
   });
@@ -73,9 +78,8 @@ describe('saved preferences', () => {
     expect(() => clearPreferences(broken)).not.toThrow();
   });
 
-  it('tells defaults from customized settings', () => {
+  it('tells the default permit from a customized one', () => {
     expect(isCustomized(DEFAULT_PREFERENCES)).toBe(false);
-    expect(isCustomized({ ...DEFAULT_PREFERENCES, permitType: 'B' })).toBe(true);
-    expect(isCustomized({ ...DEFAULT_PREFERENCES, maxWalkMinutes: 10 })).toBe(true);
+    expect(isCustomized({ permitType: 'B' })).toBe(true);
   });
 });

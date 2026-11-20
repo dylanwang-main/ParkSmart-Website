@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, ChevronDown, Check, MapPin, Star, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { DEFAULT_PRIORITY, PERMIT_OPTIONS, PRIORITY_OPTIONS, WALK_LIMIT_OPTIONS } from '../constants.ts';
+import { PERMIT_OPTIONS } from '../constants.ts';
 import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../data/destinations.ts';
 import { maxArrivalDate } from '../utils/arrival.ts';
 import { loadFavorites, toggleFavorite } from '../utils/favorites.ts';
@@ -17,9 +17,9 @@ import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.t
 
 interface PreferenceFormProps {
   formData: ParkingPlannerRequest;
-  /** True when the remembered permit, priority or walking limit differ from the defaults. */
+  /** True when the remembered permit differs from the default. */
   hasSavedSettings?: boolean;
-  /** Returns permit, priority and walking limit to the defaults and forgets the saved ones. */
+  /** Returns the permit to the default and forgets the saved one. */
   onResetSettings?: () => void;
   onChange: (newData: Partial<ParkingPlannerRequest>) => void;
   onSubmit: (e: React.FormEvent) => void;
@@ -83,10 +83,6 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
   const [favorites, setFavorites] = useState<string[]>(() => loadFavorites());
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
-
-  const priority = formData.priority ?? DEFAULT_PRIORITY;
-  // Keep Refine open when someone has already changed a default, so a non-default choice is never hidden
-  const refineChanged = priority !== DEFAULT_PRIORITY || (formData.maxWalkMinutes ?? null) !== null;
 
   // No destination until the user picks one (or drops a pin on the map)
   const selectedDestination = findDestination(formData.destinationId) ?? null;
@@ -501,53 +497,10 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         </div>
       </div>
 
-      {/* What matters most: walk vs availability, then a personal walking limit. Most people keep the defaults. */}
-      <details className="group" open={refineChanged || undefined}>
-        <summary className="flex items-center justify-between gap-2 min-h-[44px] cursor-pointer list-none text-[13px] font-semibold text-navy rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sky">
-          <span>Refine: {PRIORITY_OPTIONS.find((p) => p.value === priority)?.label ?? 'Balanced'}, max walk {WALK_LIMIT_OPTIONS.find((o) => o.value === (formData.maxWalkMinutes ?? null))?.label ?? '20 min'}</span>
-          <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" aria-hidden="true" />
-        </summary>
-        <div className="space-y-4 pt-1">
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span id="priority-label" className="block text-[13px] font-semibold text-ink">Prioritize</span>
-          <span className="text-xs text-muted text-right whitespace-nowrap">
-            {PRIORITY_OPTIONS.find((p) => p.value === priority)?.description}
-          </span>
-        </div>
-        <SegmentedControl
-          labelledBy="priority-label"
-          layoutId="priority-thumb"
-          options={PRIORITY_OPTIONS.map((option) => ({ key: option.value, label: option.label, value: option.value }))}
-          selected={priority}
-          onSelect={(value) => onChange({ priority: value })}
-        />
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span id="walk-label" className="block text-[13px] font-semibold text-ink">Max walk</span>
-          <span className="text-xs text-muted">From parking to your destination</span>
-        </div>
-        <SegmentedControl
-          labelledBy="walk-label"
-          layoutId="walk-limit-thumb"
-          options={WALK_LIMIT_OPTIONS.map((option) => ({
-            key: String(option.value),
-            label: option.label,
-            value: option.value,
-          }))}
-          selected={formData.maxWalkMinutes ?? null}
-          onSelect={(value) => onChange({ maxWalkMinutes: value })}
-        />
-      </div>
-        </div>
-      </details>
-
-      {/* Shown only when the permit, priority or walking limit differ from the defaults, so it is clear they were remembered */}
+      {/* Shown only when the permit differs from the default, so it is clear it was remembered */}
       {hasSavedSettings && (
         <p className="flex items-center justify-between gap-2 text-xs text-muted" data-testid="saved-settings-note">
-          <span>Your permit and settings are saved on this device.</span>
+          <span>Your permit is saved on this device.</span>
           <button
             type="button"
             onClick={onResetSettings}
@@ -599,55 +552,4 @@ function arrowSelect<T>(
   onSelect(options[next].value);
   const radios = e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]');
   radios[next]?.focus();
-}
-
-/** Pill radio group in the same style as the permit picker. */
-function SegmentedControl<T>({
-  labelledBy,
-  layoutId,
-  options,
-  selected,
-  onSelect,
-}: {
-  labelledBy: string;
-  layoutId: string;
-  options: Array<{ key: string; label: string; value: T }>;
-  selected: T;
-  onSelect: (value: T) => void;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-labelledby={labelledBy}
-      onKeyDown={(e) => arrowSelect(e, options, selected, onSelect)}
-      className="grid gap-0.5 p-0.5 bg-paper border border-line rounded-[10px]"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((option) => {
-        const isSelected = option.value === selected;
-        return (
-          <button
-            key={option.key}
-            type="button"
-            role="radio"
-            aria-checked={isSelected}
-            tabIndex={isSelected ? 0 : -1}
-            onClick={() => onSelect(option.value)}
-            className={`relative max-sm:min-h-[44px] py-1.5 text-xs font-semibold rounded-[10px] transition-colors duration-200 text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-sky cursor-pointer ${
-              isSelected ? 'text-white' : 'text-muted hover:text-navy'
-            }`}
-          >
-            {isSelected && (
-              <motion.span
-                layoutId={layoutId}
-                className="absolute inset-0 rounded-[8px] bg-navy"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-              />
-            )}
-            <span className="relative">{option.label}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
