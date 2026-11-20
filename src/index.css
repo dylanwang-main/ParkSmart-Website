@@ -1385,37 +1385,6 @@ body {
   font-size: 1.125rem;
 }
 
-.sm-buttons {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.sm-btn {
-  height: 52px;
-  padding-inline: 22px;
-  border: 3px solid var(--lp-paint-white);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--lp-paint-white);
-  font: inherit;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
-}
-
-.sm-btn:hover {
-  transform: translateY(-2px);
-}
-
-.sm-btn--on {
-  border-color: var(--lp-line-yellow);
-  background: var(--lp-line-yellow);
-  color: var(--lp-asphalt);
-}
-
 /* Known limits: caution-striped, like a lot under repair */
 .lp-block--caution {
   background: var(--lp-line-yellow);
@@ -2454,7 +2423,6 @@ body {
 /* ------------------------------------------------------------------ */
 .lp-btn,
 .pl-btn,
-.sm-btn,
 .lp-intro-skip {
   transition: background-color 150ms ease, color 150ms ease, transform 120ms ease, box-shadow 150ms ease;
 }
@@ -2477,14 +2445,12 @@ body {
   background-color: var(--lp-deep-asphalt);
 }
 
-.pl-btn:hover:not(.pl-btn--on),
-.sm-btn:hover:not(.sm-btn--on) {
+.pl-btn:hover:not(.pl-btn--on) {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(16, 29, 51, 0.3);
 }
 
-.pl-btn:active,
-.sm-btn:active {
+.pl-btn:active {
   transform: translateY(1px) scale(0.94);
   box-shadow: none;
 }
@@ -2572,8 +2538,6 @@ body {
   .lp-btn:active,
   .pl-btn:hover,
   .pl-btn:active,
-  .sm-btn:hover,
-  .sm-btn:active,
   .lp-nav-links a:active,
   .lp-intro-skip:active {
     transform: none;

@@ -39,8 +39,8 @@ const LIMITS = [
       : 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, holidays count as weekdays, and only your arrival moment is checked.',
   },
   {
-    lead: 'Scoring weights are starting points.',
-    text: 'The default is a 65/35 mix. The other two presets still need review with experts.',
+    lead: 'The scoring mix is a starting point.',
+    text: 'The 65/35 balance has not been tuned on user data and still needs review with experts.',
   },
   {
     lead: LIVE ? 'Historical estimates.' : 'Sample data in this preview.',
@@ -156,20 +156,16 @@ const SCORE_NOTES = [
     text: 'It is a product choice carried over from the first prototype, not tuned on user data. Experts still need to review it.',
   },
   {
-    lead: 'Shorter walk makes it 20/80.',
-    text: 'Lots close to your destination rank higher, even if they are usually fuller.',
-  },
-  {
-    lead: 'More space makes it 85/15.',
-    text: 'Lots that are usually open rank higher, even if the walk is longer.',
+    lead: 'One mix for every search.',
+    text: 'There is no walk-or-space switch, so everyone gets the same balance. Expected availability counts about twice as much as the walk, and a lot that is close but usually full can still lose to one a bit farther that is usually open.',
   },
   {
     lead: 'Before scoring, lots are filtered.',
-    text: 'Lots your permit cannot use, and lots past your max walk (20 minutes by default), never reach the ranking.',
+    text: 'Lots your permit cannot use, and lots more than a 20-minute walk from your destination, never reach the ranking.',
   },
   {
     lead: 'Weather and construction do not change the score.',
-    text: 'They appear as notes next to your result only.',
+    text: 'They show as a collapsed line on your result instead.',
   },
 ] as const;
 const TOP_LIMITS = 3;
