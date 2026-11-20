@@ -58,8 +58,10 @@ interface ResultsListProps {
   errorMessage?: string | null;
   /** Source and backend messages for the current results; null for the dev simulator. */
   resultInfo?: ResultInfo | null;
-  /** Driving/walking directions for the selected result (API mode), shown under the cards. */
-  directions?: React.ReactNode;
+  /** Trip details (drive and walk time and distance, weather, construction) for a result, or null. */
+  renderDetails?: (recommendation: ParkingRecommendation) => React.ReactNode;
+  /** Extra lines for the collapsed Notes (route disclaimers and attribution). */
+  extraNotes?: React.ReactNode;
 }
 
 /**
@@ -84,7 +86,8 @@ export const ResultsList: React.FC<ResultsListProps> = ({
   onResetFilters,
   errorMessage = null,
   resultInfo = null,
-  directions = null,
+  renderDetails,
+  extraNotes = null,
 }) => {
   const api = resultInfo?.source === 'api' ? resultInfo : null;
   // Show the top 3, then reveal 5 more per "Show more" click; reset on every new search
@@ -141,7 +144,7 @@ export const ResultsList: React.FC<ResultsListProps> = ({
               : 'Try a different time, destination or permit.'}
           </p>
         </div>
-        <Limitations notes={api.limitations} />
+        <Notes notes={api.limitations} />
       </div>
     );
   }
@@ -209,22 +212,12 @@ export const ResultsList: React.FC<ResultsListProps> = ({
                 onConfirm={() => onConfirmLot(rec.lot.locationId)}
                 isSelected={selectedLocationId === rec.lot.locationId}
                 onSelect={() => onSelectLot(rec.lot.locationId)}
+                details={isStale ? null : renderDetails?.(rec) ?? null}
               />
             </motion.div>
           );
         })}
       </div>
-
-      {!isStale && directions}
-
-      {api ? (
-        <Limitations notes={api.limitations} />
-      ) : (
-        <p className="px-1 text-xs text-muted leading-snug">
-          Open-space numbers are a time-of-day estimate from sample data, not live counts. Walk times are
-          straight-line estimates. Always check posted signs and UCSD Transportation before you park.
-        </p>
-      )}
 
       {visibleCount < recommendations.length && (
         <button
@@ -243,6 +236,17 @@ export const ResultsList: React.FC<ResultsListProps> = ({
           </span>
         </button>
       )}
+
+      <Notes
+        notes={
+          api
+            ? api.limitations
+            : [
+                'Open-space numbers are a time-of-day estimate from sample data, not live counts. Walk times are straight-line estimates. Always check posted signs and UCSD Transportation before you park.',
+              ]
+        }
+        extra={extraNotes}
+      />
     </div>
   );
 };
@@ -254,12 +258,22 @@ const ExampleBadge: React.FC = () => (
   </div>
 );
 
-/** The backend's limitations for these results, in its own words. */
-const Limitations: React.FC<{ notes: string[] }> = ({ notes }) =>
-  notes.length === 0 ? null : (
-    <ul className="px-1 space-y-1 text-xs text-muted leading-snug list-disc list-inside">
-      {notes.map((note) => (
-        <li key={note}>{note}</li>
-      ))}
-    </ul>
+/**
+ * The backend's limitations (and route disclaimers) in its own words, collapsed so the tips do
+ * not push the results off screen.
+ */
+const Notes: React.FC<{ notes: string[]; extra?: React.ReactNode }> = ({ notes, extra = null }) =>
+  notes.length === 0 && !extra ? null : (
+    <details className="group px-1 text-xs text-muted leading-snug">
+      <summary className="flex items-center justify-between gap-2 min-h-[36px] cursor-pointer list-none font-semibold text-navy rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-sky">
+        <span>Notes and limits</span>
+        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" aria-hidden="true" />
+      </summary>
+      <ul className="mt-1 space-y-1 list-disc list-inside">
+        {notes.map((note) => (
+          <li key={note}>{note}</li>
+        ))}
+      </ul>
+      {extra && <div className="mt-1.5 space-y-1">{extra}</div>}
+    </details>
   );

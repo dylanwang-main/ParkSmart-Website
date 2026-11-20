@@ -29,6 +29,11 @@ interface RecommendationCardProps {
   isConfirmed: boolean;
   onSelect: () => void;
   onConfirm: () => void;
+  /**
+   * Driving and walking time and distance plus weather and construction, for the selected
+   * result. When present it replaces the card's own walk line.
+   */
+  details?: React.ReactNode;
 }
 
 /**
@@ -46,6 +51,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
   isConfirmed,
   onSelect,
   onConfirm,
+  details = null,
 }) => {
   const { badgeLabel, lot, reason, access, estimate } = recommendation;
   // Backend results carry their own numbers and explanation; every sample-only part
@@ -117,7 +123,7 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
           {lot.name}
         </button>
       </h3>
-      <div className={`mt-1.5 flex items-center gap-2 ${muted}`}>
+      {details === null && <div className={`mt-1.5 flex items-center gap-2 ${muted}`}>
         <Footprints className={`shrink-0 ${hero ? 'w-6 h-6' : 'w-5 h-5'}`} aria-hidden="true" />
         {walkingMinutes === null ? (
           <span className="text-[13px]">Walk time unavailable</span>
@@ -129,29 +135,22 @@ export const RecommendationCard: React.FC<RecommendationCardProps> = ({
             walk to {destinationName}
           </span>
         )}
-      </div>
+      </div>}
 
       {/* Availability: the same readout the map's lot card shows */}
       <div className="mt-3.5">
         <AvailabilityMeter percent={percent} timeLabel={timeLabel} tone={hero ? 'dark' : 'light'} size={hero ? 'lg' : 'md'} />
       </div>
 
-      {/* One-line reasoning */}
-      <p className={`mt-3 text-[13px] leading-relaxed ${hero ? 'text-white/90' : 'text-ink'}`}>{reason}</p>
-      {/* Why this pick suits the chosen priority (backend results only) */}
-      {fromBackend && estimate.fitReason && (
-        <p className={`mt-1.5 text-[12px] leading-snug ${hero ? 'text-white/75' : 'text-muted'}`}>
-          <span className="font-semibold">Why it fits: </span>
-          {estimate.fitReason}
-        </p>
+      {/* Sample mode explains itself in a line; backend results show trip details instead
+          (the permit explanation is in the results' Notes, and an example response is badged above) */}
+      {!fromBackend && <p className={`mt-3 text-[13px] leading-relaxed ${hero ? 'text-white/90' : 'text-ink'}`}>{reason}</p>}
+      {fromBackend && estimate.isExample && (
+        <p className={`mt-2 text-xs ${muted}`}>Example only, not a real estimate.</p>
       )}
+      {details}
 
       {/* Non-D permits that get in only through D stalls: the Sept 18 D restriction is unresolved */}
-      {fromBackend && (
-        <p className={`mt-2 text-xs ${muted}`}>
-          {estimate.isExample ? 'Example only, not a real estimate.' : 'Historical estimate from past surveys, not live availability.'}
-        </p>
-      )}
 
       {!fromBackend && arrival && relyOnUnverifiedDAccess(userPermit, lot.spaceCategories, arrival) && (
         <p className={`mt-2 text-[12px] font-medium ${hero ? 'text-sun' : 'text-[#835300]'}`}>

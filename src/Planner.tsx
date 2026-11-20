@@ -32,8 +32,8 @@ import { parseArrival } from './utils/permitRules.ts';
 import { SAMPLE_LOTS, getSampleRecommendations } from './data/sampleRecommendations.ts';
 import { RECOMMENDATION_SOURCE } from './config.ts';
 import { fetchRecommendations, toRankedOptions, type RankedOption } from './api/recommendations.ts';
-import { DirectionsPanel } from './components/DirectionsPanel.tsx';
-import { TripAlertsPanel } from './components/TripAlertsPanel.tsx';
+import { TripDetails } from './components/TripDetails.tsx';
+import { OSM_FIX_THE_MAP_URL } from './api/routes.ts';
 import { useTripAlerts } from './hooks/useTripAlerts.ts';
 import { useRoutes } from './hooks/useRoutes.ts';
 import type { ResultInfo } from './components/ResultsList.tsx';
@@ -575,6 +575,11 @@ export default function Planner({ onBack }: PlannerProps) {
     routeRetry
   );
 
+  const routeAttribution =
+    [routeLegs.driving, routeLegs.walking].find(
+      (leg): leg is Extract<typeof routeLegs.driving, { status: 'ok' }> => leg.status === 'ok'
+    )?.route.attribution ?? null;
+
   // Weather and construction notices for the same selected result. Separate from the
   // search: if they fail, the parking results above are unaffected.
   const [alertsRetry, setAlertsRetry] = useState(0);
@@ -777,13 +782,13 @@ export default function Planner({ onBack }: PlannerProps) {
                 onResetFilters={handleResetFilters}
                 errorMessage={errorMessage}
                 resultInfo={resultInfo}
-                directions={
-                  routedRecommendation && routedDestination ? (
-                    <div className="space-y-3">
-                    <DirectionsPanel
-                      lotName={routedRecommendation.lot.name}
+                renderDetails={(rec) =>
+                  routedRecommendation && routedDestination && rec.lot.locationId === routedRecommendation.lot.locationId ? (
+                    <TripDetails
+                      tone={rec.badgeLabel === 'First choice' ? 'dark' : 'light'}
                       destinationName={routedDestination.name}
                       legs={routeLegs}
+                      fallbackWalkMinutes={rec.estimate?.walkingMinutes ?? rec.lot.walkingMinutes ?? null}
                       startLabel={startPoint ? 'your location' : null}
                       isLocating={isLocating}
                       locateError={locateError}
@@ -792,14 +797,27 @@ export default function Planner({ onBack }: PlannerProps) {
                         setStartPoint(null);
                         setLocateError(null);
                       }}
-                      onRetry={() => setRouteRetry((n) => n + 1)}
+                      onRetryRoutes={() => setRouteRetry((n) => n + 1)}
+                      alerts={tripAlerts}
+                      onRetryAlerts={() => setAlertsRetry((n) => n + 1)}
                     />
-                    <TripAlertsPanel
-                      lotName={routedRecommendation.lot.name}
-                      state={tripAlerts}
-                      onRetry={() => setAlertsRetry((n) => n + 1)}
-                    />
-                    </div>
+                  ) : null
+                }
+                extraNotes={
+                  routedRecommendation ? (
+                    <p>
+                      Drive and walk times are typical, without live traffic. Routes use the parking location’s map point,
+                      which may not be its entrance.
+                      {routeAttribution && (
+                        <>
+                          {' '}
+                          {routeAttribution} ·{' '}
+                          <a href={OSM_FIX_THE_MAP_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-navy">
+                            Fix the map
+                          </a>
+                        </>
+                      )}
+                    </p>
                   ) : null
                 }
               />

@@ -11,6 +11,7 @@ import { POPULAR_DESTINATIONS, findDestination, searchDestinations } from '../da
 import { maxArrivalDate } from '../utils/arrival.ts';
 import { loadFavorites, toggleFavorite } from '../utils/favorites.ts';
 import { loadRecentDestinations } from '../utils/recentDestinations.ts';
+import { TimeWheel } from './TimeWheel.tsx';
 import { ALL_PARKING } from '../data/parkingLots.ts';
 import { ParkingPlannerRequest, CampusDestination, ParkingLot } from '../types.ts';
 
@@ -361,13 +362,10 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         )}
       </div>
 
-      {/* Arrival Date and Time Grid */}
-      <div className="grid grid-cols-2 gap-2.5">
+      {/* Arrival date, then a rolling time wheel (spin instead of typing) */}
+      <div className="space-y-2.5">
         <div>
-          <label
-            htmlFor="arrival-date"
-            className="block text-[13px] font-semibold text-ink mb-1.5"
-          >
+          <label htmlFor="arrival-date" className="block text-[13px] font-semibold text-ink mb-1.5">
             Arrival date
           </label>
           <div className="relative">
@@ -385,23 +383,15 @@ export const PreferenceForm: React.FC<PreferenceFormProps> = ({
         </div>
 
         <div>
-          <label
-            htmlFor="arrival-time"
-            className="block text-[13px] font-semibold text-ink mb-1.5"
-          >
+          <span id="arrival-time-label" className="block text-[13px] font-semibold text-ink mb-1.5">
             Arrival time
-          </label>
-          <div className="relative">
-            <input
-              id="arrival-time"
-              type="time"
-              value={formData.arrivalTime}
-              onChange={(e) => onChange({ arrivalTime: e.target.value })}
-              aria-invalid={arrivalError !== null}
-              aria-describedby={arrivalError ? 'arrival-error' : undefined}
-              className="w-full max-sm:min-h-[44px] px-2.5 py-2 rounded-[10px] bg-white border border-line text-[13px] font-medium text-navy focus:outline-none focus:ring-2 focus:ring-sky focus:border-sky "
-            />
-          </div>
+          </span>
+          <TimeWheel
+            value={formData.arrivalTime}
+            onChange={(arrivalTime) => onChange({ arrivalTime })}
+            invalid={arrivalError !== null}
+            describedBy={arrivalError ? 'arrival-error' : undefined}
+          />
         </div>
       </div>
 

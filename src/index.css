@@ -2579,3 +2579,18 @@ body {
     transform: none;
   }
 }
+
+/* Rolling time wheel: no scrollbar, the rows themselves show the position */
+.tw-col {
+  scrollbar-width: none;
+}
+
+.tw-col::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw-col > div > div {
+    transition: none !important;
+  }
+}
