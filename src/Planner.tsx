@@ -673,7 +673,8 @@ export default function Planner({ onBack }: PlannerProps) {
       <aside
         id="planner-panel"
         aria-label="Parking planner controls and recommendations"
-        aria-hidden={!isPanelOpen}
+        // `inert` alone hides a closed panel from assistive tech and takes focus out of it. Adding
+        // aria-hidden as well made the browser warn when something inside still had focus.
         inert={!isPanelOpen}
         className={`absolute top-0 left-0 bottom-0 w-[388px] max-w-full max-sm:top-1/2 max-sm:bottom-9 max-sm:left-3 max-sm:right-3 max-sm:w-auto max-sm:max-w-none z-20 flex flex-col transition-transform duration-300 ease-out motion-reduce:transition-none ${
           isPanelOpen
