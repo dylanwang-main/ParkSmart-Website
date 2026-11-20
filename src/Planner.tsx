@@ -110,7 +110,9 @@ function timeOf(minutes: number): string {
 }
 
 /** The settings that are remembered between visits. */
-function preferencesOf(request: ParkingPlannerRequest): SavedPreferences {
+function preferencesOf(
+  request: Pick<ParkingPlannerRequest, 'permitType' | 'priority' | 'maxWalkMinutes'>
+): SavedPreferences {
   return {
     permitType: request.permitType,
     priority: request.priority ?? DEFAULT_PRIORITY,
@@ -330,20 +332,25 @@ export default function Planner({ onBack }: PlannerProps) {
   // Handle preference form changes
   const handleFormChange = (changes: Partial<ParkingPlannerRequest>) => {
     if (changes.destinationId !== undefined) setPinNotice(null);
-    if ('permitType' in changes || 'priority' in changes || 'maxWalkMinutes' in changes) {
-      savePreferences(preferencesOf({ ...formInputs, ...changes }));
-    }
     setFormInputs((prev) => ({
       ...prev,
       ...changes,
     }));
   };
 
-  // Back to the first-visit settings (S permit, balanced, 20 min) and forget the saved ones
+  // Back to the first-visit settings (S permit, balanced, 20 min); the effect below forgets the saved ones
   const handleResetPreferences = () => {
-    clearPreferences();
     setFormInputs((prev) => ({ ...prev, ...DEFAULT_PREFERENCES }));
   };
+
+  // Remember the three settings after every change. Saving from state (not from the event)
+  // means quick successive changes never overwrite each other. Defaults store nothing.
+  const { permitType, priority, maxWalkMinutes } = formInputs;
+  useEffect(() => {
+    const prefs = preferencesOf({ permitType, priority, maxWalkMinutes });
+    if (isCustomized(prefs)) savePreferences(prefs);
+    else clearPreferences();
+  }, [permitType, priority, maxWalkMinutes]);
 
   // Handle Form Submission
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -403,7 +410,6 @@ export default function Planner({ onBack }: PlannerProps) {
   // Handle resetting filters from empty state
   const handleResetFilters = () => {
     const updated: ParkingPlannerRequest = { ...formInputs, permitType: 'S' };
-    savePreferences(preferencesOf(updated));
     setFormInputs(updated);
     runPlanner(updated);
   };
