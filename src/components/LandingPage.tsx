@@ -31,7 +31,7 @@ const LIMITS = [
   },
   {
     lead: 'Counts come from the first two weeks of each quarter.',
-    text: 'UCSD only surveys lots by hand in those weeks, and they are used to stand for the whole quarter.',
+    text: 'UCSD\'s Assistant Vice Chancellor of Transportation confirmed those weeks are an accurate picture of the whole quarter.',
   },
   {
     lead: 'Simplified permit rules.',
