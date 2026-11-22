@@ -4,109 +4,62 @@
  */
 
 import React from 'react';
-import { RECOMMENDATION_SOURCE } from '../config';
+import { Check, X } from 'lucide-react';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
 import { AlertsDemo } from './AlertsDemo';
+import { EvidenceTest } from './EvidenceTest';
+import { NextUp } from './NextUp';
 import { ClassPlanDemo } from './ClassPlanDemo';
 import { HeroDemo } from './HeroDemo';
-import { PermitLot } from './PermitLot';
-import { ProblemLot } from './ProblemLot';
+import { PermitMap } from './PermitMap';
+import { WhyFunnel } from './WhyFunnel';
 import { Pipeline } from './Pipeline';
 import { ScoreMix } from './ScoreMix';
 import { LandingIntro } from './LandingIntro';
 import { CarCursor } from './CarCursor';
-
-/** The hosted build talks to the AWS backend; other builds (previews) use labeled sample data. */
-const LIVE = RECOMMENDATION_SOURCE === 'api';
 
 interface LandingPageProps {
   isExiting: boolean;
   onPlanClick: () => void;
 }
 
-const LIMITS = [
-  {
-    lead: 'Past counts, not live ones.',
-    text: 'There is no live feed, so a lot can be full when the estimate says it is usually open.',
-  },
-  {
-    lead: 'Counts come from the first two weeks of each quarter.',
-    text: 'UCSD\'s Assistant Vice Chancellor of Transportation confirmed those weeks are an accurate picture of the whole quarter.',
-  },
-  {
-    lead: 'Simplified permit rules.',
-    text: LIVE
-      ? 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, options that need holiday verification are not shown, and only your arrival moment is checked.'
-      : 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, holidays count as weekdays, and only your arrival moment is checked.',
-  },
-  {
-    lead: 'The scoring mix follows expert advice, not user data.',
-    text: 'Parking experts told us to favor the lot more likely to have space, so availability gets 65% of the score. It has not been tuned on user data yet.',
-  },
-  {
-    lead: LIVE ? 'Historical estimates.' : 'Sample data in this preview.',
-    text: LIVE
-      ? 'Results come from past survey patterns through the hosted backend. Walk times are estimates for now.'
-      : 'The numbers you see here are samples. The hosted app uses the real backend.',
-  },
-  {
-    lead: 'No promises.',
-    text: 'No reservations, no payments, and not an official UCSD service.',
-  },
+/**
+ * The coverage screen: what ParkSmart does and what it does not do yet, without repeating other
+ * sections. Sources: docs/recommendations.md (permits, special stalls, arrival-only checks),
+ * docs/issue27_additional_data.md (visitor near-full overestimate), docs/routing.md (walk times).
+ */
+const COVERS = [
+  { lead: 'Every main permit:', text: 'A, B, S, SR, D, and V (visitor)' },
+  { lead: 'Your class schedule,', text: 'imported from a calendar (.ics) file' },
+  { lead: '46 campus lots and structures', text: 'with UCSD survey history' },
+  { lead: 'Weather and construction', text: 'notes for your trip' },
+  { lead: 'A first choice and a backup', text: 'for every search' },
+  { lead: 'Free.', text: 'No account, no sign-up' },
 ] as const;
 
-const FAQ = [
-  {
-    q: 'Is this an official UCSD service?',
-    a: 'No. ParkSmart is a student project and is not affiliated with UC San Diego.',
-  },
-  {
-    q: 'Will it work with my permit?',
-    a: 'You choose your permit type (A, B, S, SR, D, or V) and lots it cannot use are filtered out. Your permit letter is on your UCSD permit or in your parking account. Always check UCSD\'s permit pages for the final rules.',
-  },
-  {
-    q: 'Can I use my class schedule?',
-    a: 'Yes. Import your calendar (.ics) in the planner and it lists your classes. Tap one and ParkSmart sets your arrival 20 minutes before it starts and finds parking near that building. If it cannot tell the building, you pick one. The file stays on your device.',
-  },
-  {
-    q: 'Is the data live?',
-    a: 'No. Estimates come from past parking counts, not a live feed.',
-  },
-  {
-    q: 'Will it guarantee me a space?',
-    a: 'No. It shows where you are most likely to find one, based on typical patterns. Lots can still be full.',
-  },
-  {
-    q: 'Does it cost anything?',
-    a: 'There is nothing to buy and nothing to sign up for.',
-  },
-  {
-    q: 'Does it work for visitors?',
-    a: 'Partly. You can pick V (Visitor / Daily Pay) and see where visitors may park, but prices and pay-station rules are not covered. Visitor estimates are also less reliable: in our tests they ran about 24 points too optimistic when lots were nearly full. Check UCSD\'s visitor parking page before you go.',
-  },
+const NOT_COVERED = [
+  { lead: 'Live counts.', text: 'Forecasts come from past surveys' },
+  { lead: 'Events and posted closures', text: '' },
+  { lead: 'Special permits and stalls:', text: 'SuperSaver, carpool, accessible, EV, reserved' },
+  { lead: 'Visitor prices and pay stations.', text: 'Visitor forecasts run optimistic when lots are nearly full' },
+  { lead: 'Real walking routes.', text: 'Walk times are straight-line estimates' },
+  { lead: 'Missing survey years.', text: 'Some years and quarters are missing from UCSD\'s archive' },
+  { lead: 'How long you stay.', text: 'Only your arrival time is checked' },
 ] as const;
 
-/** The intro plays once per browser session, not on every reload or return from the planner. */
-const INTRO_SEEN_KEY = 'parksmart:intro-seen';
+/**
+ * The intro plays on every page load, so every visit starts there. It does not replay when someone
+ * comes back to the landing page from the planner (Home), or when they prefer reduced motion.
+ */
 let introPlayedThisLoad = false;
 
 const shouldPlayIntro = (): boolean => {
   if (introPlayedThisLoad) return false;
   introPlayedThisLoad = true;
   try {
-    if (window.sessionStorage.getItem(INTRO_SEEN_KEY)) return false;
-  } catch {
-    /* storage blocked: fall through and play once per load */
-  }
-  try {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
   } catch {
     /* no matchMedia: play it */
-  }
-  try {
-    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-  } catch {
-    /* ignore */
   }
   return true;
 };
@@ -120,30 +73,7 @@ const LINKS = [
   { label: 'Map: OpenFreeMap, OpenStreetMap', href: 'https://openfreemap.org/' },
 ] as const;
 
-/** What sets ParkSmart apart (screen 2). Figures are from docs/issue11_findings.md and docs/issue18_predictions.md. */
-const PROBLEM_FACTS = [
-  {
-    lead: 'Other tools show spots.',
-    text: 'ParkSmart picks the lot that fits your permit, your walk to your building, and your class time, using UCSD\'s own survey data.',
-  },
-  {
-    lead: 'Built around your classes, your permit, and your arrival time.',
-    text: 'Import your schedule and every class gets a first choice and a backup.',
-  },
-  {
-    lead: 'UCSD publishes survey counts, not a live feed.',
-    text: 'ParkSmart turns 76,102 readings across 86 facilities (June 2018 to October 2026) into a forecast of typical conditions, not today\'s. Several years and quarters are missing from the public archive.',
-  },
-] as const;
 
-const NEXT_ITEMS = [
-  { name: 'Hosted planner and backend', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Historical estimates on AWS. Walk times are estimates for now.' },
-  { name: 'Trip alerts', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Weather comes from the Open-Meteo hourly forecast. Construction comes from UCSD\'s public construction map layers, matched within 200 m of your trip. Both are shown as notes only: they never exclude a lot or change its score.' },
-  { name: 'Mobile app', status: 'Planned', text: 'The same planner as an iOS app.' },
-  { name: 'Live lot counts', status: 'Planned', text: 'Only if a validated source exists, always shown with its retrieval time.' },
-] as const;
-
-const SCREEN_COUNT = 10;
 
 /** Header links. `screens` are the data-screen numbers that highlight each link. */
 const NAV = [
@@ -151,33 +81,33 @@ const NAV = [
   { id: 'permit', label: 'Permit', screens: [4] },
   { id: 'alerts', label: 'Alerts', screens: [5] },
   { id: 'how', label: 'How it works', screens: [6, 7] },
-  { id: 'evidence', label: 'Evidence', screens: [8] },
-  { id: 'limits', label: 'Limits & FAQ', screens: [9] },
+  { id: 'evidence', label: 'Accuracy', screens: [8] },
+  { id: 'limits', label: 'Coverage', screens: [9] },
   { id: 'next', label: 'What\'s next', screens: [10] },
 ] as const;
 
-/** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
-const SCORE_NOTES = [
+/**
+ * How a pick is chosen, in the order the backend does it (docs/recommendations.md and
+ * src/ranking.py in the backend repo). Keep in step with those when the rules change.
+ */
+const SCORE_STEPS = [
   {
-    lead: '65/35, weighted the way experts advised.',
-    text: 'Parking experts told us to favor the lot more likely to have space over a slightly shorter walk. So expected availability counts about twice as much as the walk, in every search.',
+    lead: 'Filter.',
+    text: 'Only lots your permit allows at your arrival time make it through. Rules ParkSmart cannot confirm, like D stalls, reserved stalls, or holiday hours, count as not allowed. Lots over a 20-minute walk from your building, or with no survey history for that time, are skipped, never guessed.',
   },
   {
-    lead: 'One mix for every search.',
-    text: 'There is no walk-or-space switch, so everyone gets the same balance. A lot that is close but usually full can still lose to one a bit farther that is usually open.',
+    lead: 'Score: 65% space, 35% walk.',
+    text: 'Parking experts advised favoring the lot more likely to have space, so the share of spots open in past surveys counts 65%. The walk counts 35%: right next door earns full marks, 20 minutes earns none. A close lot that is usually full can lose to one a bit farther that is usually open.',
   },
   {
-    lead: 'Before scoring, lots are filtered.',
-    text: 'Lots your permit cannot use, and lots more than a 20-minute walk from your destination, never reach the ranking.',
+    lead: 'Pick two.',
+    text: 'The top lot is your first choice. Your backup is the best different lot, so if the first one is full you are not sent back to the same place.',
   },
   {
-    lead: 'Weather and construction do not change the score.',
-    text: 'They show as a collapsed line on your result instead.',
+    lead: 'Add notes, not points.',
+    text: 'Weather at your arrival time and UCSD construction near your trip show under the result. They never change a score or hide a lot.',
   },
 ] as const;
-const TOP_LIMITS = 3;
-/** The first FAQ answers start open so the page answers the obvious questions without a click. */
-const FAQ_OPEN = 3;
 
 export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick }) => {
   const [introActive, setIntroActive] = React.useState(shouldPlayIntro);
@@ -261,7 +191,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 </p>
                 <p className="lp-result-backup">Backup: Lot P510</p>
               </div>
-              <p className="lp-fineprint">{LIVE ? 'UCSD student prototype. Uses historical survey estimates, not live data.' : 'UCSD student prototype. This preview runs on sample data.'}</p>
+              <p className="lp-fineprint">UCSD student prototype. Uses historical survey estimates, not live data.</p>
             </div>
             <div className="lp-hero2-demo">{!introActive && <HeroDemo />}</div>
           </div>
@@ -271,18 +201,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-container lp-faq">
             <div className="lp-problem-lead">
               <h2 id="problem-heading" className="lp-big lp-big--navy">
-                Parking, planned around your day.
+                Why ParkSmart.
               </h2>
-              <ProblemLot />
-              <p className="lp-note">Illustration. Finding a spot is easy. Finding the right one for your day is not.</p>
+              <p className="lp-sub">
+                Other apps show you every spot on campus. ParkSmart narrows it down to the one that fits your day.
+              </p>
+              <button type="button" className="lp-btn lp-btn--yellow lp-why-cta" onClick={onPlanClick}>
+                Plan my parking
+              </button>
             </div>
-            <ul className="lp-fact-list">
-              {PROBLEM_FACTS.map((item) => (
-                <li key={item.lead}>
-                  <strong>{item.lead}</strong> {item.text}
-                </li>
-              ))}
-            </ul>
+            <WhyFunnel />
           </div>
         </section>
 
@@ -292,13 +220,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <h2 id="classes-heading" className="lp-big">
                 Import your classes.
               </h2>
-              <p className="lp-sub">Get parking for each one.</p>
+              <p className="lp-sub">One import covers your whole quarter. No typing in every trip.</p>
+              <ol className="cp-steps">
+                <li>
+                  <span>
+                    <strong>Export your calendar</strong> as an .ics file.
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <strong>Import it once.</strong> ParkSmart reads each room code, like CENTR 115, and finds the building.
+                  </span>
+                </li>
+                <li>
+                  <span>
+                    <strong>Tap a class.</strong> You get a first choice and a backup, with arrival set 20 minutes early.
+                  </span>
+                </li>
+              </ol>
               <p className="lp-permit-help">
-                Export your calendar as an .ics file. It is read on your device and never uploaded.
+                Google Calendar: Settings, Import &amp; export, Export. Apple Calendar: File, Export. The file stays on your
+                device.
               </p>
             </div>
             <ClassPlanDemo />
-            <p className="lp-note lp-split-note">Example classes and lots, not real UCSD data. The 20-minute lead is what the planner uses.</p>
+            <p className="lp-note lp-split-note">Example classes and lots, not real UCSD data. Room matching and the 20-minute lead are what the planner uses.</p>
           </div>
         </section>
 
@@ -308,13 +254,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <h2 id="permit-heading" className="lp-big">
                 Your permit decides the map.
               </h2>
-              <p className="lp-sub">Pick yours. Everything you can&apos;t use fades out.</p>
+              <p className="lp-sub">Pick your permit and when you arrive. Lots you can&apos;t use fade out.</p>
               <p className="lp-permit-help">
-                Not sure which one you have? The letter is printed on your UCSD permit and listed in your parking account.
+                The rules change with the clock: an S permit also gets A and B lots after 4 PM and on weekends. ParkSmart
+                checks them for your arrival time.
               </p>
+              <p className="lp-permit-help">
+                <strong>Set it once.</strong> ParkSmart remembers your permit. The letter is on your UCSD permit and in your
+                parking account.
+              </p>
+              <p className="lp-note">Example map with made-up lots. The permit rules are the ones ParkSmart uses.</p>
             </div>
-            <PermitLot />
-            <p className="lp-note lp-split-note">Simplified example lot. Real rules live on UCSD&apos;s permit pages.</p>
+            <PermitMap />
           </div>
         </section>
 
@@ -355,90 +306,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 <ScoreMix />
               </div>
             </div>
-            <ul className="lp-score-list">
-              {SCORE_NOTES.map((item) => (
+            <ol className="lp-score-list lp-score-list--steps">
+              {SCORE_STEPS.map((item) => (
                 <li key={item.lead}>
                   <strong>{item.lead}</strong> {item.text}
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
         </section>
 
         <section id="evidence" data-screen="8" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
-          <div className="lp-container lp-faq">
-            <h2 id="evidence-heading" className="lp-big">
-              Checked against what happened.
-            </h2>
-            <div className="lp-evidence">
-              <p className="lp-evidence-num">
-                21 <span>points average miss</span>
-              </p>
-              <p className="lp-evidence-text">
-                <strong>What that means:</strong> we tested the forecast on 11,665 survey readings it had never seen,
-                from the newest survey dates. On average, the share of spots it said were open was 21 percentage
-                points away from what surveyors actually counted. So if it says a lot is about 60% open, treat that as
-                a rough guide to what past surveys showed, not an exact count or a promise of space.
-              </p>
-              <p className="lp-evidence-text">
-                When a lot was nearly full, the average miss was smaller, 13.7 points. Another 4,458 readings had no
-                usable history, so ParkSmart shows no estimate for those instead of a guess. These numbers come from
-                ParkSmart&apos;s own test, not a promise for any single day.
-              </p>
-            </div>
+          <div className="lp-container">
+            <EvidenceTest
+              heading={
+                <h2 id="evidence-heading" className="lp-big">
+                  How accurate is it?
+                </h2>
+              }
+            />
           </div>
         </section>
 
         <section id="limits" data-screen="9" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
-          <div className="lp-container lp-limits">
-            <div>
-              <h2 id="limits-heading" className="lp-big lp-big--navy">
-                A forecast, not a promise.
-              </h2>
-              <ul className="lp-limit-list">
-                {LIMITS.slice(0, TOP_LIMITS).map((item) => (
+          <div className="lp-container lp-cover">
+            <h2 id="limits-heading" className="lp-big lp-big--navy lp-cover-title">
+              What it covers, and what it doesn&apos;t.
+            </h2>
+            <div className="lp-cover-col">
+              <h3 className="lp-cover-head">
+                <Check aria-hidden="true" /> Covers
+              </h3>
+              <ul className="lp-cover-list">
+                {COVERS.map((item) => (
                   <li key={item.lead}>
                     <strong>{item.lead}</strong> {item.text}
                   </li>
                 ))}
               </ul>
-              <details className="lp-more">
-                <summary>More limits</summary>
-                <ul className="lp-limit-list">
-                  {LIMITS.slice(TOP_LIMITS).map((item) => (
-                    <li key={item.lead}>
-                      <strong>{item.lead}</strong> {item.text}
-                    </li>
-                  ))}
-                </ul>
-              </details>
             </div>
-            <div className="lp-faq-list" aria-label="Quick answers">
-              {FAQ.map((item, i) => (
-                <details key={item.q} className="lp-faq-item" open={i < FAQ_OPEN || undefined}>
-                  <summary>{item.q}</summary>
-                  <p>{item.a}</p>
-                </details>
-              ))}
+            <div className="lp-cover-col">
+              <h3 className="lp-cover-head">
+                <X aria-hidden="true" /> Doesn&apos;t cover yet
+              </h3>
+              <ul className="lp-cover-list">
+                {NOT_COVERED.map((item) => (
+                  <li key={item.lead}>
+                    <strong>{item.lead}</strong> {item.text}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section id="next" data-screen="10" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
-          <div className="lp-container lp-faq">
-            <h2 id="next-heading" className="lp-big">
-              What is next.
-            </h2>
-            <ul className="lp-next-list">
-              {NEXT_ITEMS.map((item) => (
-                <li key={item.name}>
-                  <span className="lp-status">{item.status}</span>
-                  <strong>{item.name}</strong> {item.text}
-                </li>
-              ))}
-            </ul>
+        <section id="next" data-screen="10" className="lp-block lp-block--navy lp-dark" aria-labelledby="next-heading">
+          <div className="lp-container">
+            <NextUp
+              heading={
+                <h2 id="next-heading" className="lp-big">
+                  What&apos;s next.
+                </h2>
+              }
+            />
           </div>
         </section>
 
@@ -463,12 +395,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </footer>
       </div>
-
-      {!introActive && (
-        <p className="lp-counter" aria-label={`Screen ${screen} of ${SCREEN_COUNT}`}>
-          {screen} of {SCREEN_COUNT}
-        </p>
-      )}
 
     </div>
   );
