@@ -13,7 +13,6 @@ import { PermitLot } from './PermitLot';
 import { ProblemLot } from './ProblemLot';
 import { Pipeline } from './Pipeline';
 import { ScoreMix } from './ScoreMix';
-import { TimeLot } from './TimeLot';
 import { LandingIntro } from './LandingIntro';
 import { CarCursor } from './CarCursor';
 
@@ -41,8 +40,8 @@ const LIMITS = [
       : 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, holidays count as weekdays, and only your arrival moment is checked.',
   },
   {
-    lead: 'The scoring mix is a starting point.',
-    text: 'The 65/35 balance has not been tuned on user data and still needs review with experts.',
+    lead: 'The scoring mix is expert-recommended, not tuned.',
+    text: 'Experts recommended the 65/35 balance. It has not been tuned on user data yet.',
   },
   {
     lead: LIVE ? 'Historical estimates.' : 'Sample data in this preview.',
@@ -144,28 +143,28 @@ const NEXT_ITEMS = [
   { name: 'Live lot counts', status: 'Planned', text: 'Only if a validated source exists, always shown with its retrieval time.' },
 ] as const;
 
-const SCREEN_COUNT = 11;
+const SCREEN_COUNT = 10;
 
 /** Header links. `screens` are the data-screen numbers that highlight each link. */
 const NAV = [
   { id: 'classes', label: 'Classes', screens: [3] },
-  { id: 'permit', label: 'Demo', screens: [4, 5] },
-  { id: 'alerts', label: 'Alerts', screens: [6] },
-  { id: 'how', label: 'How it works', screens: [7, 8] },
-  { id: 'evidence', label: 'Evidence', screens: [9] },
-  { id: 'limits', label: 'Limits & FAQ', screens: [10] },
-  { id: 'next', label: 'What\'s next', screens: [11] },
+  { id: 'permit', label: 'Permit', screens: [4] },
+  { id: 'alerts', label: 'Alerts', screens: [5] },
+  { id: 'how', label: 'How it works', screens: [6, 7] },
+  { id: 'evidence', label: 'Evidence', screens: [8] },
+  { id: 'limits', label: 'Limits & FAQ', screens: [9] },
+  { id: 'next', label: 'What\'s next', screens: [10] },
 ] as const;
 
 /** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
 const SCORE_NOTES = [
   {
-    lead: 'Why 65/35.',
-    text: 'It is a product choice carried over from the first prototype, not tuned on user data. Experts still need to review it.',
+    lead: 'Experts recommended 65/35.',
+    text: 'Expected availability counts about twice as much as the walk. This is the balance experts recommended, so it is the one every search uses.',
   },
   {
     lead: 'One mix for every search.',
-    text: 'There is no walk-or-space switch, so everyone gets the same balance. Expected availability counts about twice as much as the walk, and a lot that is close but usually full can still lose to one a bit farther that is usually open.',
+    text: 'There is no walk-or-space switch, so everyone gets the same balance. A lot that is close but usually full can still lose to one a bit farther that is usually open.',
   },
   {
     lead: 'Before scoring, lots are filtered.',
@@ -319,20 +318,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="5" className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
-          <div className="lp-container lp-split">
-            <div className="lp-split-head">
-              <h2 id="time-heading" className="lp-big">
-                Drag the clock.
-              </h2>
-              <p className="lp-sub">Watch a busy lot fill up through the day.</p>
-            </div>
-            <TimeLot />
-            <p className="lp-note lp-split-note">Example pattern, not real UCSD data.</p>
-          </div>
-        </section>
-
-        <section id="alerts" data-screen="6" className="lp-block lp-block--paper" aria-labelledby="alerts-heading">
+        <section id="alerts" data-screen="5" className="lp-block lp-block--paper" aria-labelledby="alerts-heading">
           <div className="lp-container lp-split">
             <div className="lp-split-head">
               <h2 id="alerts-heading" className="lp-big lp-big--navy">
@@ -347,7 +333,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="how" data-screen="7" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
+        <section id="how" data-screen="6" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="hood-heading" className="lp-big">
@@ -359,7 +345,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="scoring" data-screen="8" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
+        <section id="scoring" data-screen="7" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
           <div className="lp-container lp-faq">
             <div>
               <h2 id="score-heading" className="lp-big">
@@ -379,26 +365,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="evidence" data-screen="9" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
+        <section id="evidence" data-screen="8" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
           <div className="lp-container lp-faq">
             <h2 id="evidence-heading" className="lp-big">
               Checked against what happened.
             </h2>
             <div className="lp-evidence">
               <p className="lp-evidence-num">
-                21 <span>points off, on average</span>
+                21 <span>points average miss</span>
               </p>
               <p className="lp-evidence-text">
-                On 11,665 held-out survey readings from the newest dates, the forecast missed the actual open
-                share by 21.0 percentage points on average (MAE). When a lot was nearly full, the miss was 13.7 points.
-                Another 4,458 held-out readings had no usable history, so ParkSmart shows no estimate for those
-                instead of a guess. Scores come from ParkSmart&apos;s own test split; expert review is still planned.
+                <strong>What that means:</strong> we tested the forecast on 11,665 survey readings it had never seen,
+                from the newest survey dates. On average, the share of spots it said were open was 21 percentage
+                points away from what surveyors actually counted. So if it says a lot is about 60% open, treat that as
+                a rough guide to what past surveys showed, not an exact count or a promise of space.
+              </p>
+              <p className="lp-evidence-text">
+                When a lot was nearly full, the average miss was smaller, 13.7 points. Another 4,458 readings had no
+                usable history, so ParkSmart shows no estimate for those instead of a guess. These numbers come from
+                ParkSmart&apos;s own test, not a promise for any single day.
               </p>
             </div>
           </div>
         </section>
 
-        <section id="limits" data-screen="10" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+        <section id="limits" data-screen="9" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
           <div className="lp-container lp-limits">
             <div>
@@ -435,7 +426,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section id="next" data-screen="11" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
+        <section id="next" data-screen="10" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
           <div className="lp-container lp-faq">
             <h2 id="next-heading" className="lp-big">
               What is next.

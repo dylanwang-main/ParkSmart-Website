@@ -69,9 +69,9 @@ Not modeled yet (open questions in the research doc): A 24/7, reserved, accessib
 
 ---
 
-## Time Scrubber and "Your Usual"
+## Availability labels and "Your Usual"
 
-- **Time scrubber** (top of the map): drag or press play to watch every pin recolor as campus fills and empties through the day. "Use this time" copies the previewed time into the arrival time. Availability by time comes from `src/utils/availabilityModel.ts`, a **sample** daily curve; swap `availabilityAt` for the real forecast when the backend connects. Labels pair numbers with plain words about past surveys (Usually open / Usually tight / Usually full). The percent is the share of spaces open in past surveys, not a chance of finding a space.
+- **No time scrubber.** The map's Time tool and the landing page's "Drag the clock" screen were removed: arrival is set with the rolling time wheel, and the class schedule is the shortcut. In sample mode the pins' availability dots follow the arrival time, from `src/utils/availabilityModel.ts`, a **sample** daily curve; swap `availabilityAt` for the real forecast when the backend connects. Labels pair numbers with plain words about past surveys (Usually open / Usually tight / Usually full). The percent is the share of spaces open in past surveys, not a chance of finding a space.
 - **Your usual**: only appears after you have searched. The last search is saved in this browser only (`localStorage`, `src/utils/usualTrip.ts`); next visit a card answers it instantly (the form is not prefilled), with "Forget my usual" to clear it.
 
 ---
@@ -106,7 +106,7 @@ Sample mode has no backend, so it shows no routes.
 
 ## Landing page
 
-Eleven one-screen sections in `src/components/LandingPage.tsx`, with one message: ParkSmart plans UCSD parking around your class schedule, with your permit, a first choice and a backup, and weather and construction alerts. In order: hero, what sets it apart from other "find a spot" tools, **Import your classes** (`ClassPlanDemo.tsx`: tap a class, arrival is set 20 minutes before, first choice and backup near that building), your permit, drag the clock, **Weather and construction, built in** (`AlertsDemo.tsx`: notes only, they never change the score), how it works, how a pick is chosen, evidence, limits and FAQ, what's next. Header links and the "N of 11" counter come from `NAV` and `SCREEN_COUNT`, and each section has a `data-screen` number, so adding a screen means renumbering the ones after it. The demos use made-up example classes and lots, labeled as examples; the 20-minute lead is the real `ARRIVE_BEFORE_CLASS_MINUTES` (`src/utils/classTime.ts`). The "first two weeks" limit is worded from UCSD's Assistant vice chancellor of transportation confirming those weeks reflect the whole quarter.
+Ten one-screen sections in `src/components/LandingPage.tsx`, with one message: ParkSmart plans UCSD parking around your class schedule, with your permit, a first choice and a backup, and weather and construction alerts. In order: hero, what sets it apart from other "find a spot" tools, **Import your classes** (`ClassPlanDemo.tsx`: tap a class, arrival is set 20 minutes before, first choice and backup near that building), your permit, **Weather and construction, built in** (`AlertsDemo.tsx`: notes only, they never change the score), how it works, how a pick is chosen, evidence, limits and FAQ, what's next. Header links and the "N of 10" counter come from `NAV` and `SCREEN_COUNT`, and each section has a `data-screen` number, so adding a screen means renumbering the ones after it. The demos use made-up example classes and lots, labeled as examples; the 20-minute lead is the real `ARRIVE_BEFORE_CLASS_MINUTES` (`src/utils/classTime.ts`). The "first two weeks" limit is worded from UCSD's Assistant vice chancellor of transportation confirming those weeks reflect the whole quarter.
 
 ## Class schedule import
 
@@ -215,3 +215,7 @@ VITE_RECOMMENDATION_SOURCE=api npm run dev
 - All cards and markers support keyboard navigation (`Tab`, `Enter`, `Space`).
 - Accessible semantic HTML with proper labels and ARIA attributes (`role="radiogroup"`, `role="listbox"`, `aria-pressed`, `aria-label`).
 - Respects `prefers-reduced-motion` for map transitions and card entrance animations.
+
+## Clear all
+
+The "Clear all" pill under the hamburger button forgets everything, like a fresh visit: the destination, time, permit and results, plus what is saved on this device: the imported class schedule, starred places, recent places and the saved permit (`clearAllSavedData` in `src/utils/savedData.ts`, tested). It keeps only the note that the planner was opened before, so a returning visitor still skips the intro. To remove just the classes, use the X in the class schedule panel.
