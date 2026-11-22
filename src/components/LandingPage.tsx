@@ -6,6 +6,8 @@
 import React from 'react';
 import { RECOMMENDATION_SOURCE } from '../config';
 import parkSmartLogoHd from '../assets/parksmart-logo-hd.png';
+import { AlertsDemo } from './AlertsDemo';
+import { ClassPlanDemo } from './ClassPlanDemo';
 import { HeroDemo } from './HeroDemo';
 import { PermitLot } from './PermitLot';
 import { ProblemLot } from './ProblemLot';
@@ -29,8 +31,8 @@ const LIMITS = [
     text: 'There is no live feed, so a lot can be full when the estimate says it is usually open.',
   },
   {
-    lead: 'Mostly the first two weeks of each quarter.',
-    text: 'The detailed counts cover little else, and the model has not been checked across all ten weeks.',
+    lead: 'Counts come from the first two weeks of each quarter.',
+    text: 'UCSD\'s Assistant vice chancellor of transportation confirmed those weeks reflect the whole quarter.',
   },
   {
     lead: 'Simplified permit rules.',
@@ -119,38 +121,40 @@ const LINKS = [
   { label: 'Map: OpenFreeMap, OpenStreetMap', href: 'https://openfreemap.org/' },
 ] as const;
 
-/** Facts from ParkSmart's own dataset notes (docs/issue11_findings.md, docs/issue18_predictions.md). */
+/** What sets ParkSmart apart (screen 2). Figures are from docs/issue11_findings.md and docs/issue18_predictions.md. */
 const PROBLEM_FACTS = [
   {
+    lead: 'Other tools show spots.',
+    text: 'ParkSmart picks the lot that fits your permit, your walk to your building, and your class time, using UCSD\'s own survey data.',
+  },
+  {
+    lead: 'Built around your classes, your permit, and your arrival time.',
+    text: 'Import your schedule and every class gets a first choice and a backup.',
+  },
+  {
     lead: 'UCSD publishes survey counts, not a live feed.',
-    text: 'UCSD Transportation posts QPASS survey workbooks after each quarter. Nothing tells you what is open right now.',
-  },
-  {
-    lead: 'The detailed counts are early-quarter snapshots.',
-    text: 'Surveys mostly cover the first weeks of a quarter, and several years and quarters are missing from the public archive.',
-  },
-  {
-    lead: 'ParkSmart turns 76,102 survey readings into a forecast.',
-    text: 'They span 86 facilities, from June 2018 to October 2026. Forecasts are typical conditions, not today\'s.',
+    text: 'ParkSmart turns 76,102 readings across 86 facilities (June 2018 to October 2026) into a forecast of typical conditions, not today\'s. Several years and quarters are missing from the public archive.',
   },
 ] as const;
 
 const NEXT_ITEMS = [
   { name: 'Hosted planner and backend', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Historical estimates on AWS. Walk times are estimates for now.' },
-  { name: 'Trip alerts', status: 'In progress', text: 'Weather comes from the Open-Meteo hourly forecast. Construction comes from UCSD\'s public construction map layers, matched within 200 m of your trip. Both are shown as notes only: they never exclude a lot or change its score.' },
+  { name: 'Trip alerts', status: LIVE ? 'Live' : 'Live in the hosted app', text: 'Weather comes from the Open-Meteo hourly forecast. Construction comes from UCSD\'s public construction map layers, matched within 200 m of your trip. Both are shown as notes only: they never exclude a lot or change its score.' },
   { name: 'Mobile app', status: 'Planned', text: 'The same planner as an iOS app.' },
   { name: 'Live lot counts', status: 'Planned', text: 'Only if a validated source exists, always shown with its retrieval time.' },
 ] as const;
 
-const SCREEN_COUNT = 9;
+const SCREEN_COUNT = 11;
 
 /** Header links. `screens` are the data-screen numbers that highlight each link. */
 const NAV = [
-  { id: 'permit', label: 'Demo', screens: [3, 4] },
-  { id: 'how', label: 'How it works', screens: [5, 6] },
-  { id: 'evidence', label: 'Evidence', screens: [7] },
-  { id: 'limits', label: 'Limits & FAQ', screens: [8] },
-  { id: 'next', label: 'What\'s next', screens: [9] },
+  { id: 'classes', label: 'Classes', screens: [3] },
+  { id: 'permit', label: 'Demo', screens: [4, 5] },
+  { id: 'alerts', label: 'Alerts', screens: [6] },
+  { id: 'how', label: 'How it works', screens: [7, 8] },
+  { id: 'evidence', label: 'Evidence', screens: [9] },
+  { id: 'limits', label: 'Limits & FAQ', screens: [10] },
+  { id: 'next', label: 'What\'s next', screens: [11] },
 ] as const;
 
 /** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
@@ -240,7 +244,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-container lp-hero2-grid">
             <div className="lp-hero2-copy">
               <h1 className="lp-h1">Know where to park before you get to campus.</h1>
-              <p className="lp-lede">Tell it your trip. Get a first choice and a backup.</p>
+              <p className="lp-lede">
+                ParkSmart plans UCSD parking around your class schedule: your permit, a first choice and a backup, and weather and construction alerts.
+              </p>
               <div className="lp-top-actions">
                 <button type="button" className="lp-btn lp-btn--yellow" onClick={onPlanClick}>
                   Plan my parking
@@ -266,10 +272,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-container lp-faq">
             <div className="lp-problem-lead">
               <h2 id="problem-heading" className="lp-big lp-big--navy">
-                Nobody tells you what is open.
+                Parking, planned around your day.
               </h2>
               <ProblemLot />
-              <p className="lp-note">Illustration. Stalls marked ? are the ones nothing can tell you about.</p>
+              <p className="lp-note">Illustration. Finding a spot is easy. Finding the right one for your day is not.</p>
             </div>
             <ul className="lp-fact-list">
               {PROBLEM_FACTS.map((item) => (
@@ -281,7 +287,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="permit" data-screen="3" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
+        <section id="classes" data-screen="3" className="lp-block lp-block--navy lp-dark" aria-labelledby="classes-heading">
+          <div className="lp-container lp-split">
+            <div className="lp-split-head">
+              <h2 id="classes-heading" className="lp-big">
+                Import your classes.
+              </h2>
+              <p className="lp-sub">Get parking for each one.</p>
+              <p className="lp-permit-help">
+                Export your calendar as an .ics file. It is read on your device and never uploaded.
+              </p>
+            </div>
+            <ClassPlanDemo />
+            <p className="lp-note lp-split-note">Example classes and lots, not real UCSD data. The 20-minute lead is what the planner uses.</p>
+          </div>
+        </section>
+
+        <section id="permit" data-screen="4" className="lp-block lp-block--yellow" aria-labelledby="permit-heading">
           <div className="lp-container lp-split">
             <div className="lp-split-head">
               <h2 id="permit-heading" className="lp-big">
@@ -297,7 +319,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section data-screen="4" className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
+        <section data-screen="5" className="lp-block lp-block--blue lp-dark" aria-labelledby="time-heading">
           <div className="lp-container lp-split">
             <div className="lp-split-head">
               <h2 id="time-heading" className="lp-big">
@@ -310,7 +332,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="how" data-screen="5" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
+        <section id="alerts" data-screen="6" className="lp-block lp-block--paper" aria-labelledby="alerts-heading">
+          <div className="lp-container lp-split">
+            <div className="lp-split-head">
+              <h2 id="alerts-heading" className="lp-big lp-big--navy">
+                Weather and construction, built in.
+              </h2>
+              <p className="lp-sub">Every result shows the forecast for your arrival time and UCSD construction notices near your trip.</p>
+            </div>
+            <AlertsDemo />
+            <p className="lp-note lp-split-note">
+              Example values. Weather comes from Open-Meteo, construction from UCSD&apos;s public construction map.
+            </p>
+          </div>
+        </section>
+
+        <section id="how" data-screen="7" className="lp-block lp-block--hood lp-dark" aria-labelledby="hood-heading">
           <div className="lp-container">
             <div className="lp-block-head">
               <h2 id="hood-heading" className="lp-big">
@@ -322,7 +359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="scoring" data-screen="6" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
+        <section id="scoring" data-screen="8" className="lp-block lp-block--navy lp-dark" aria-labelledby="score-heading">
           <div className="lp-container lp-faq">
             <div>
               <h2 id="score-heading" className="lp-big">
@@ -342,7 +379,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="evidence" data-screen="7" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
+        <section id="evidence" data-screen="9" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
           <div className="lp-container lp-faq">
             <h2 id="evidence-heading" className="lp-big">
               Checked against what happened.
@@ -361,7 +398,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           </div>
         </section>
 
-        <section id="limits" data-screen="8" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
+        <section id="limits" data-screen="10" className="lp-block lp-block--caution" aria-labelledby="limits-heading">
           <div className="lp-stripe" aria-hidden="true" />
           <div className="lp-container lp-limits">
             <div>
@@ -398,7 +435,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
           <div className="lp-stripe" aria-hidden="true" />
         </section>
 
-        <section id="next" data-screen="9" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
+        <section id="next" data-screen="11" className="lp-block lp-block--yellow" aria-labelledby="next-heading">
           <div className="lp-container lp-faq">
             <h2 id="next-heading" className="lp-big">
               What is next.

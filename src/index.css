@@ -2602,3 +2602,249 @@ body {
     opacity: 0.7;
   }
 }
+
+/* Class import demo (screen 3) and weather/construction demo (screen 6) */
+.cp,
+.ad {
+  grid-area: graphic;
+  align-self: center;
+  min-width: 0;
+}
+
+.cp-card,
+.ad-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(16px, 2.4vw, 28px);
+  border-radius: 20px;
+  background: var(--lp-paint-white);
+  color: var(--lp-asphalt);
+  box-shadow: 0 18px 50px rgba(16, 29, 51, 0.28);
+}
+
+.cp-head {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 1rem;
+}
+
+.cp-head strong {
+  font-family: var(--lp-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.cp-head span {
+  color: rgba(24, 43, 73, 0.65);
+  font-weight: 600;
+}
+
+.cp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cp-class {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: #fff;
+  border: 2px solid rgba(24, 43, 73, 0.14);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.cp-class:hover {
+  border-color: var(--lp-asphalt);
+}
+
+.cp-class:focus-visible {
+  outline: 3px solid var(--lp-link-blue);
+  outline-offset: 2px;
+}
+
+.cp-class--picked {
+  border-color: var(--lp-asphalt);
+  background: rgba(255, 205, 0, 0.3);
+}
+
+.cp-time {
+  flex: none;
+  min-width: 5.2ch;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.cp-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.cp-title span {
+  color: rgba(24, 43, 73, 0.7);
+  font-size: 0.9375rem;
+}
+
+.cp-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+.cp-icon--hint {
+  opacity: 0.4;
+}
+
+.cp-out {
+  min-height: 9.5rem;
+  padding-top: 12px;
+  border-top: 2px dashed rgba(24, 43, 73, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cp-cue {
+  margin: 0;
+  font-weight: 700;
+  color: var(--lp-link-blue);
+}
+
+.cp-arrive {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.cp-result {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: cp-in 320ms ease both;
+}
+
+.cp-first,
+.cp-backup {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.cp-first strong {
+  font-family: var(--lp-serif);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.cp-first span:last-child,
+.cp-backup span:last-child {
+  color: rgba(24, 43, 73, 0.75);
+  font-size: 0.9375rem;
+}
+
+.cp-tag,
+.ad-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--lp-line-yellow);
+  color: var(--lp-asphalt);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.cp-tag--quiet {
+  background: var(--lp-concrete);
+}
+
+@keyframes cp-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ad-top {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px dashed rgba(24, 43, 73, 0.2);
+}
+
+.ad-top strong {
+  font-family: var(--lp-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.ad-top span:last-child {
+  flex-basis: 100%;
+  color: rgba(24, 43, 73, 0.75);
+  font-size: 0.9375rem;
+}
+
+.ad-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.ad-icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  color: var(--lp-link-blue);
+}
+
+.ad-label {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ad-text {
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+.ad-pill {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(214, 138, 0, 0.18);
+  color: #835300;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.ad-honest {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--lp-concrete);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-result { animation: none; }
+  .cp-class { transition: none; }
+}
