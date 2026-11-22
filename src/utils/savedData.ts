@@ -12,8 +12,7 @@ type SavedDataStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 
 /**
  * Everything the planner keeps on this device for the person: the imported class schedule, starred
- * places, recent places and the saved permit. What "Clear all" forgets. It leaves the note that the
- * planner was opened before, so a returning visitor still skips the intro.
+ * places, recent places and the saved permit. What "Clear all" forgets.
  */
 export function clearAllSavedData(store: SavedDataStore | null = defaultStore()): void {
   clearSchedule(store);

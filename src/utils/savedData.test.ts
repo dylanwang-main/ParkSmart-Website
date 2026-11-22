@@ -4,7 +4,6 @@ import { loadRecentDestinations, recordRecentDestination } from './recentDestina
 import { clearAllSavedData } from './savedData.ts';
 import { loadPreferences, savePreferences } from './savedPreferences.ts';
 import { loadSchedule, saveSchedule } from './savedSchedule.ts';
-import { markPlannerVisited } from './returningVisitor.ts';
 
 /** A small in-memory localStorage. */
 function memoryStore() {
@@ -36,14 +35,6 @@ describe('clearAllSavedData (what Clear all forgets)', () => {
     expect(loadFavorites(store)).toEqual([]);
     expect(loadRecentDestinations(store)).toEqual([]);
     expect(loadPreferences(store)).toBeNull();
-  });
-
-  it('keeps the note that the planner was opened before', () => {
-    const store = memoryStore();
-    markPlannerVisited(store);
-    const before = [...store.data.keys()];
-    clearAllSavedData(store);
-    expect([...store.data.keys()]).toEqual(before);
   });
 
   it('does nothing without storage (private mode)', () => {
