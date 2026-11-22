@@ -31,7 +31,7 @@ const LIMITS = [
   },
   {
     lead: 'Counts come from the first two weeks of each quarter.',
-    text: 'UCSD\'s Assistant vice chancellor of transportation confirmed those weeks reflect the whole quarter.',
+    text: 'UCSD only surveys lots by hand in those weeks, and they are used to stand for the whole quarter.',
   },
   {
     lead: 'Simplified permit rules.',
@@ -40,8 +40,8 @@ const LIMITS = [
       : 'Ordinary stalls only. Reserved, accessible, and A 24/7 stalls are left out, holidays count as weekdays, and only your arrival moment is checked.',
   },
   {
-    lead: 'The scoring mix is expert-recommended, not tuned.',
-    text: 'Experts recommended the 65/35 balance. It has not been tuned on user data yet.',
+    lead: 'The scoring mix follows expert advice, not user data.',
+    text: 'Parking experts told us to favor the lot more likely to have space, so availability gets 65% of the score. It has not been tuned on user data yet.',
   },
   {
     lead: LIVE ? 'Historical estimates.' : 'Sample data in this preview.',
@@ -114,7 +114,7 @@ const shouldPlayIntro = (): boolean => {
 /** Public links for judges and teammates. All verified targets in this repo's docs. */
 const LINKS = [
   { label: 'GitHub', href: 'https://github.com/yraclimaco/parksmart' },
-  { label: 'Design doc', href: 'https://github.com/yraclimaco/parksmart/blob/main/docs/DesignDoc.md' },
+  { label: 'Design doc', href: 'https://lucid.app/lucidchart/326e969e-634e-4050-8e27-3d232a43aae4/view' },
   { label: 'UCSD QPASS surveys', href: 'https://rmp-wapps.ucsd.edu/TS/Survey/QPASS/Contents.html' },
   { label: 'Imagery: USGS NAIP', href: 'https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer' },
   { label: 'Map: OpenFreeMap, OpenStreetMap', href: 'https://openfreemap.org/' },
@@ -159,8 +159,8 @@ const NAV = [
 /** Why the scores look the way they do (docs/recommendations.md in the backend repo). */
 const SCORE_NOTES = [
   {
-    lead: 'Experts recommended 65/35.',
-    text: 'Expected availability counts about twice as much as the walk. This is the balance experts recommended, so it is the one every search uses.',
+    lead: '65/35, weighted the way experts advised.',
+    text: 'Parking experts told us to favor the lot more likely to have space over a slightly shorter walk. So expected availability counts about twice as much as the walk, in every search.',
   },
   {
     lead: 'One mix for every search.',
