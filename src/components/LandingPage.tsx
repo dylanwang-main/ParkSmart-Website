@@ -33,7 +33,7 @@ const COVERS = [
   { lead: 'Your class schedule,', text: 'imported from a calendar (.ics) file' },
   { lead: '45 campus lots and structures', text: 'in UCSD’s latest parking survey' },
   { lead: 'Weather and construction', text: 'notes for your trip' },
-  { lead: 'A first choice and a backup', text: 'for every search' },
+  { lead: 'A first choice and a backup', text: 'when more than one lot fits' },
   { lead: 'Free.', text: 'No account, no sign-up' },
 ] as const;
 
@@ -97,7 +97,7 @@ const SCORE_STEPS = [
   },
   {
     lead: 'Score: 65% space, 35% walk.',
-    text: 'Parking experts advised favoring the lot more likely to have space, so the share of spots open in past surveys counts 65%. The walk counts 35%: right next door earns full marks, 20 minutes earns none. A close lot that is usually full can lose to one a bit farther that is usually open.',
+    text: 'Parking experts advised favoring the lot more likely to have space, so the share of spots open in past surveys counts 65%. The walk counts 35%: the shorter the walk, the higher it scores, and a 20-minute walk scores nothing. A close lot that is usually full can lose to one a bit farther that is usually open.',
   },
   {
     lead: 'Pick two.',
@@ -234,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 </li>
                 <li>
                   <span>
-                    <strong>Tap a class.</strong> You get a first choice and a backup, with arrival set 20 minutes early.
+                    <strong>Tap a class.</strong> Arrival is set 20 minutes before it starts, and if ParkSmart recognizes the building, it searches right away.
                   </span>
                 </li>
               </ol>
