@@ -2272,59 +2272,6 @@ body {
   display: block;
 }
 
-/* Evidence: what the test found */
-.et {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin-top: 28px;
-  max-width: 980px;
-}
-
-.et-result {
-  padding: 20px 24px;
-  border-radius: 8px;
-  background: var(--lp-paint-white);
-  color: var(--lp-asphalt);
-}
-
-.et-big {
-  margin: 0;
-  font-size: clamp(2rem, 4.5vw, 3rem);
-  font-weight: 800;
-  line-height: 1.1;
-}
-
-.et-big span {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin-left: 8px;
-}
-
-.et-explain {
-  margin: 8px 0 0;
-  font-size: 1.125rem;
-  line-height: 1.45;
-}
-
-.et-facts {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 1.0625rem;
-  line-height: 1.45;
-}
-
-
-.et-intro {
-  margin: 0;
-  max-width: 68ch;
-  font-size: 1.1875rem;
-  line-height: 1.5;
-}
 
 /* ------------------------------------------------------------------ */
 /* One section per screen: each section fills the window below the     */
@@ -2334,46 +2281,6 @@ body {
   min-height: calc(100vh - 64px);
   min-height: calc(100svh - 64px);
   padding-block: clamp(24px, 5vh, 72px);
-}
-
-/* Accuracy: heading beside the intro, result beside the facts */
-.et-head {
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: clamp(20px, 4vw, 64px);
-  align-items: end;
-}
-
-.et {
-  margin-top: 0;
-  max-width: none;
-  gap: clamp(16px, 2.6vh, 24px);
-}
-
-.et-bottom {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(16px, 3vw, 40px);
-  align-items: start;
-}
-
-.et-bottom .et-facts {
-  gap: 10px;
-}
-
-@media (max-width: 899px) {
-  .et-head,
-  .et-bottom {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-.et-facts strong {
-  font-weight: 800;
-}
-
-.et-note {
-  margin: 0;
 }
 
 /* Hero: vertical padding follows the window height, not its width, so it fits short laptops */
@@ -2884,4 +2791,74 @@ body {
   font-size: 0.8125rem;
   line-height: 1.45;
   opacity: 0.7;
+}
+
+/* Accuracy screen: one result card in the split layout's graphic column */
+.et-sub {
+  max-width: 30ch;
+}
+
+.et {
+  grid-area: graphic;
+  align-self: center;
+  padding: clamp(24px, 3.2vw, 44px);
+  border-radius: 16px;
+  background: var(--lp-paint-white);
+  color: var(--lp-asphalt);
+}
+
+.et p {
+  margin: 0;
+}
+
+.et-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.et .et-big {
+  margin-top: 8px;
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.et .et-explain {
+  margin-top: 12px;
+  font-size: 1.125rem;
+  line-height: 1.45;
+}
+
+.et-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.5vw, 32px);
+  margin: 28px 0 0;
+  padding: 24px 0 0;
+  border-top: 2px solid rgba(24, 43, 73, 0.12);
+  list-style: none;
+}
+
+.et-stats li {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.et-num {
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+@media (max-width: 600px) {
+  .et-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -313,7 +313,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
         </section>
 
         <section id="evidence" data-screen="8" className="lp-block lp-block--blue lp-dark" aria-labelledby="evidence-heading">
-          <div className="lp-container">
+          <div className="lp-container lp-split">
             <EvidenceTest
               heading={
                 <h2 id="evidence-heading" className="lp-big">
