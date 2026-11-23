@@ -229,7 +229,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 </li>
                 <li>
                   <span>
-                    <strong>Import it once.</strong> ParkSmart reads each room code, like CENTR 115, and finds the building.
+                    <strong>Import it once.</strong> ParkSmart reads each room code, like CENTR 115, and finds the building. The file stays on your device.
                   </span>
                 </li>
                 <li>
@@ -238,13 +238,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                   </span>
                 </li>
               </ol>
-              <p className="lp-permit-help">
-                Google Calendar: Settings, Import &amp; export, Export. Apple Calendar: File, Export. The file stays on your
-                device.
-              </p>
             </div>
             <ClassPlanDemo />
-            <p className="lp-note lp-split-note">Example classes and lots, not real UCSD data. Room matching and the 20-minute lead are what the planner uses.</p>
+            <p className="lp-note lp-split-note lp-example">Example classes and lots, not real UCSD data. Room matching and the 20-minute lead are what the planner uses.</p>
           </div>
         </section>
 
@@ -263,7 +259,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 <strong>Set it once.</strong> ParkSmart remembers your permit. The letter is on your UCSD permit and in your
                 parking account.
               </p>
-              <p className="lp-note">Example map with made-up lots. The permit rules are the ones ParkSmart uses. Posted signs always win.</p>
+              <p className="lp-note lp-example">Example map with made-up lots. The permit rules are the ones ParkSmart uses. Posted signs always win.</p>
             </div>
             <PermitMap />
           </div>
@@ -278,7 +274,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
               <p className="lp-sub">Every result shows the forecast for your arrival time and UCSD construction notices near your trip.</p>
             </div>
             <AlertsDemo />
-            <p className="lp-note lp-split-note">
+            <p className="lp-note lp-split-note lp-example">
               Example values. Weather comes from Open-Meteo, construction from UCSD&apos;s public construction map.
             </p>
           </div>

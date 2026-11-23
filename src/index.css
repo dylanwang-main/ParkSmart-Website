@@ -1440,15 +1440,8 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/* Landing additions: problem,
-evidence,
-next,
-counter,
-links {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
+/* Landing additions: permit help, hero example result, footer links      */
+/* ------------------------------------------------------------------ */
 
 .lp-permit-help {
   margin: 0;
@@ -1813,8 +1806,7 @@ links {
 
 /* ------------------------------------------------------------------ */
 /* Hover and pressed states for every landing control. With the system */
-/* cursor hidden,
-the control itself has to answer the pointer.        */
+/* cursor hidden, the control itself has to answer the pointer.        */
 /* ------------------------------------------------------------------ */
 .lp-btn,
 .lp-intro-skip {
@@ -1923,24 +1915,6 @@ the control itself has to answer the pointer.        */
 
 .lp-problem-lead .lp-note {
   margin: 0;
-}
-
-/* The ? glyphs: nobody can tell if these stalls are free {
-  fill: #ffcd00;
-  font-size: 34px;
-  font-weight: 800;
-  opacity: 0.35;
-  animation: pr-q-pulse 2.4s ease-in-out infinite;
-}
-
-@keyframes pr-q-pulse {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 0.95;
-  }
 }
 
 /* Class import demo (screen 3) and weather/construction demo (screen 6) */
@@ -2298,60 +2272,13 @@ the control itself has to answer the pointer.        */
   display: block;
 }
 
-/* Evidence: the three-step test, then what it found */
+/* Evidence: what the test found */
 .et {
   display: flex;
   flex-direction: column;
   gap: 24px;
   margin-top: 28px;
   max-width: 980px;
-}
-
-.et-steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.et-step {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  border: 2px solid rgba(247, 248, 250, 0.45);
-  border-radius: 8px;
-  font-size: 1.0625rem;
-  line-height: 1.4;
-}
-
-.et-step strong {
-  font-size: 1.25rem;
-  font-weight: 800;
-}
-
-.et-num {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  margin-bottom: 4px;
-  border-radius: 50%;
-  background: var(--lp-line-yellow);
-  color: var(--lp-asphalt);
-  font-weight: 800;
-}
-
-.et-steps:not(.et-steps--in) .et-step {
-  opacity: 0;
-  transform: translateX(-12px);
-}
-
-.et-steps--in .et-step {
-  transition: opacity 400ms ease-out, transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--et-i) * 150ms);
 }
 
 .et-result {
@@ -2391,31 +2318,6 @@ the control itself has to answer the pointer.        */
   line-height: 1.45;
 }
 
-.et-facts strong,
-.et-takeaway {
-  font-weight: 800;
-}
-
-.et-takeaway {
-  margin: 0;
-  font-size: 1.125rem;
-}
-
-@media (max-width: 720px) {
-  .et-steps {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .et-steps:not(.et-steps--in) .et-step {
-    opacity: 1;
-    transform: none;
-  }
-  .et-steps--in .et-step {
-    transition: none;
-  }
-}
 
 .et-intro {
   margin: 0;
@@ -2448,15 +2350,6 @@ the control itself has to answer the pointer.        */
   gap: clamp(16px, 2.6vh, 24px);
 }
 
-.et-step {
-  padding: 12px 16px;
-}
-
-.et-num {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
 .et-bottom {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2475,10 +2368,12 @@ the control itself has to answer the pointer.        */
   }
 }
 
-.et-side {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+.et-facts strong {
+  font-weight: 800;
+}
+
+.et-note {
+  margin: 0;
 }
 
 /* Hero: vertical padding follows the window height, not its width, so it fits short laptops */
@@ -2982,4 +2877,11 @@ the control itself has to answer the pointer.        */
   .pm-map:not(.pm-map--in) .pm-lot {
     opacity: 1;
   }
+}
+
+/* Notes about example data: small and quiet, so they read as captions, not content */
+.lp-example {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  opacity: 0.7;
 }
