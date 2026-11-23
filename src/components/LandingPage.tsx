@@ -31,7 +31,7 @@ interface LandingPageProps {
 const COVERS = [
   { lead: 'Every main permit:', text: 'A, B, S, SR, D, and V (visitor)' },
   { lead: 'Your class schedule,', text: 'imported from a calendar (.ics) file' },
-  { lead: '46 campus lots and structures', text: 'with UCSD survey history' },
+  { lead: '45 campus lots and structures', text: 'in UCSD’s latest parking survey' },
   { lead: 'Weather and construction', text: 'notes for your trip' },
   { lead: 'A first choice and a backup', text: 'for every search' },
   { lead: 'Free.', text: 'No account, no sign-up' },
@@ -263,7 +263,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ isExiting, onPlanClick
                 <strong>Set it once.</strong> ParkSmart remembers your permit. The letter is on your UCSD permit and in your
                 parking account.
               </p>
-              <p className="lp-note">Example map with made-up lots. The permit rules are the ones ParkSmart uses.</p>
+              <p className="lp-note">Example map with made-up lots. The permit rules are the ones ParkSmart uses. Posted signs always win.</p>
             </div>
             <PermitMap />
           </div>

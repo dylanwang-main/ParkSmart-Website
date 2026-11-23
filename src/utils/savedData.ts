@@ -19,6 +19,24 @@ export function clearAllSavedData(store: SavedDataStore | null = defaultStore())
   clearFavorites(store);
   clearRecentDestinations(store);
   clearPreferences(store);
+  forgetRetiredKeys(store);
+}
+
+/**
+ * Keys older versions of the site saved and nothing reads any more: `parksmart.visited.v1` made
+ * returning visitors skip the landing page, which every visit now shows.
+ */
+export const RETIRED_KEYS = ['parksmart.visited.v1'] as const;
+
+/** Removes the retired keys; run once on load so old browsers do not keep them forever. */
+export function forgetRetiredKeys(store: Pick<Storage, 'removeItem'> | null = defaultStore()): void {
+  for (const key of RETIRED_KEYS) {
+    try {
+      store?.removeItem(key);
+    } catch {
+      // Nothing to do if storage is blocked
+    }
+  }
 }
 
 function defaultStore(): SavedDataStore | null {

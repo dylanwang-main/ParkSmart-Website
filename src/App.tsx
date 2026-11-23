@@ -7,6 +7,7 @@ import { LoadingScreen } from './components/LoadingScene.tsx';
 import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { LandingPage } from './components/LandingPage.tsx';
 import { PlannerBoundary } from './components/PlannerBoundary.tsx';
+import { forgetRetiredKeys } from './utils/savedData.ts';
 
 // Lazy-load the planner so MapLibre, tile workers, and map APIs do not load until opened.
 const Planner = lazy(() => import('./Planner.tsx'));
@@ -18,6 +19,11 @@ export default function App() {
   const [view, setView] = useState<'landing' | 'planner'>('landing');
   const [isExitingLanding, setIsExitingLanding] = useState(false);
   const timerRef = useRef<number | null>(null);
+
+  // Drop keys older versions saved (the old "skip the landing page" flag)
+  useEffect(() => {
+    forgetRetiredKeys();
+  }, []);
 
   useEffect(() => {
     return () => {

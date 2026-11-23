@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { toggleFavorite, loadFavorites } from './favorites.ts';
 import { loadRecentDestinations, recordRecentDestination } from './recentDestinations.ts';
-import { clearAllSavedData } from './savedData.ts';
+import { clearAllSavedData, forgetRetiredKeys } from './savedData.ts';
 import { loadPreferences, savePreferences } from './savedPreferences.ts';
 import { loadSchedule, saveSchedule } from './savedSchedule.ts';
 
@@ -35,6 +35,23 @@ describe('clearAllSavedData (what Clear all forgets)', () => {
     expect(loadFavorites(store)).toEqual([]);
     expect(loadRecentDestinations(store)).toEqual([]);
     expect(loadPreferences(store)).toBeNull();
+    expect(store.data.size).toBe(0); // nothing ParkSmart saved is left behind
+  });
+
+  it('also forgets the retired "skip the landing page" flag', () => {
+    const store = memoryStore();
+    store.setItem('parksmart.visited.v1', '1');
+    clearAllSavedData(store);
+    expect(store.getItem('parksmart.visited.v1')).toBeNull();
+  });
+
+  it('forgetRetiredKeys removes the old flag and leaves current data alone', () => {
+    const store = memoryStore();
+    store.setItem('parksmart.visited.v1', '1');
+    savePreferences({ permitType: 'B' }, store);
+    forgetRetiredKeys(store);
+    expect(store.getItem('parksmart.visited.v1')).toBeNull();
+    expect(loadPreferences(store)).toEqual({ permitType: 'B' });
   });
 
   it('does nothing without storage (private mode)', () => {
